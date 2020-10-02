@@ -9,7 +9,7 @@ let particles;
 function preload() {
     this.load.image('sky', 'assets/space3.png');
     this.load.image('logo', 'assets/phaser3-logo.png');
-    this.load.image('red', 'assets/red.png');
+    this.load.image('particle', 'assets/particle.png');
 }
 
 function create_trail() {
@@ -24,7 +24,7 @@ function create_trail() {
 function create() {
     this.add.image(400, 300, 'sky');
 
-    particles = this.add.particles('red');
+    particles = this.add.particles('particle');
     emitter = create_trail();
     
     var logo = this.physics.add.image(400, 100, 'logo');
