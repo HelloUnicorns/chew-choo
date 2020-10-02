@@ -31,6 +31,7 @@ function create() {
 
     logo.setVelocity(100, 200);
     logo.setBounce(1, 1);
+    logo.setGravity(0, 100);
     logo.setCollideWorldBounds(true);
 
     if (emitter_tint) {
