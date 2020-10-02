@@ -3,6 +3,7 @@ const { send_event, event_handlers } = require('./websockets.js');
 let game_inited = false;
 let emitter;
 let client_id;
+let emitter_tint;
 let other_players_emitters = {};
 let particles;
 
@@ -16,8 +17,7 @@ function create_trail() {
     return particles.createEmitter({
         speed: 100,
         scale: { start: 1, end: 0 },
-        blendMode: 'ADD', 
-        tint: Math.random() * 0xffffff
+        blendMode: 'ADD'
     });
 }
 
@@ -32,12 +32,16 @@ function create() {
     logo.setVelocity(100, 200);
     logo.setBounce(1, 1);
     logo.setCollideWorldBounds(true);
+
+    if (emitter_tint) {
+        emitter.setTint(emitter_tint);
+    }
+
     game_inited = true;
 }
 
 function update() {
     emitter.setPosition(game.input.mousePointer.x, game.input.mousePointer.y);
-    console.log(emitter);
     send_event({type: 'location', x: game.input.mousePointer.x, y: game.input.mousePointer.y});
 }
 
@@ -54,6 +58,7 @@ event_handlers.locations = (event) => {
         }
         new_other_players_emitters[info.client_id] = old_other_players_emitters[info.client_id] || create_trail();
         new_other_players_emitters[info.client_id].setPosition(info.x, info.y);
+        new_other_players_emitters[info.client_id].setTint(info.tint);
         delete old_other_players_emitters[info.client_id];
     });
 
@@ -67,6 +72,10 @@ event_handlers.locations = (event) => {
 
 event_handlers.connection = (event) => {
     client_id = event.client_id;
+    emitter_tint = event.tint;
+    if (game_inited) {
+        emitter.setTint(emitter_tint);
+    }
 };
 
 const game = new Phaser.Game({
