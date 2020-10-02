@@ -1,5 +1,6 @@
 const express = require('express');
 const { Server } = require('ws');
+const { run_game } = require('./game.js');
 
 const PORT = process.env.PORT || 3000;
 const INDEX = '/index.html';
@@ -12,13 +13,4 @@ const server = app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 
 const wss = new Server({ server });
 
-wss.on('connection', (ws) => {
-  console.log('Client connected');
-  ws.on('close', () => console.log('Client disconnected'));
-});
-
-setInterval(() => {
-  wss.clients.forEach((client) => {
-    client.send(new Date().toTimeString());
-  });
-}, 1000);
+run_game(wss);
