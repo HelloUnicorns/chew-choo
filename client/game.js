@@ -13,14 +13,14 @@ function preload() {
 }
 
 function create_trail() {
-    let trail = particles.createEmitter({
+    return particles.createEmitter({
         speed: 100,
         scale: { start: 1, end: 0 },
-        blendMode: 'ADD'
+        blendMode: 'ADD', 
+        tint: Math.random() * 0xffffff
     });
-    trail.setTint(Math.random() * 0xffffff);
-    return trail;
 }
+
 function create() {
     this.add.image(400, 300, 'sky');
 
@@ -41,7 +41,7 @@ function update() {
     send_event({type: 'location', x: game.input.mousePointer.x, y: game.input.mousePointer.y});
 }
 
-event_handlers['locations'] = (event) => {
+event_handlers.locations = (event) => {
     if (!game_inited) {
         return;
     }
@@ -65,12 +65,13 @@ event_handlers['locations'] = (event) => {
     }
 };
 
-event_handlers['connection'] = (event) => {
+event_handlers.connection = (event) => {
     client_id = event.client_id;
 };
 
 const game = new Phaser.Game({
     type: Phaser.AUTO,
+    parent: 'game-container',
     width: 800,
     height: 600,
     physics: {
