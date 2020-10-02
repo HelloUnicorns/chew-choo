@@ -16,7 +16,7 @@ function preload() {
 function create_trail() {
     return particles.createEmitter({
         speed: 100,
-        scale: { start: 1, end: 0 },
+        scale: { start: 0.3, end: 0 },
         blendMode: 'ADD'
     });
 }
