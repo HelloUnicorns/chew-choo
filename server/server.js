@@ -7,9 +7,9 @@ const INDEX = '/index.html';
 
 const app = express();
 
-
+app.use(compression())
 app.use(express.static('dist'));
-app.use(compression());
+
 const server = app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 
 const wss = new Server({ server });
