@@ -38,8 +38,14 @@ function create() {
     if (emitter_tint) {
         emitter.setTint(emitter_tint);
     }
-
+    console.log(game.input.events);
+    console.log(game.input.mousePointer);
+    this.input.on('pointerdown', click_handler);
     game_inited = true;
+}
+
+function click_handler() {
+    send_event({type: 'switch_tint'});
 }
 
 function update() {
@@ -56,6 +62,7 @@ event_handlers.locations = (event) => {
 
     event.location_info.forEach((info) => {
         if (info.client_id == client_id) {
+            emitter.setTint(info.tint);
             return;
         }
         new_other_players_emitters[info.client_id] = old_other_players_emitters[info.client_id] || create_trail();

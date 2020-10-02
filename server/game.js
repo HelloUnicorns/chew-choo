@@ -15,19 +15,24 @@ function makeid(length) {
 
 let client_data = {};
 
+function get_random_tint() {
+    return Math.random() * 0xffffff;
+}
+
 wss.on('connection', (client) => {
     let client_id = makeid(ID_LEN);
     let data = {
         x: 0,
         y: 0, 
-        tint: Math.random() * 0xffffff
+        tint: get_random_tint()
     };
 
     client_data[client_id] = data;
 
     console.log(`Client ${client_id} connected`);
+    
     client.send(JSON.stringify({client_id, type: 'connection', tint: data.tint}))
-
+    
     client.on('close', () => {
         console.log(`Client ${client_id} disconnected`);
         delete client_data[client_id];
@@ -38,6 +43,9 @@ wss.on('connection', (client) => {
         if (message.type == "location") {
             client_data[client_id].x = message.x;
             client_data[client_id].y = message.y;
+        }
+        if (message.type == "switch_tint") {
+            data.tint = get_random_tint();
         }
     });
 });
