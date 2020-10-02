@@ -4,10 +4,11 @@ const { Server } = require('ws');
 const PORT = process.env.PORT || 3000;
 const INDEX = '/index.html';
 
-const server = express()
+const app = express()
 
-server.listen(PORT, () => console.log(`Listening on ${PORT}`));
-server.use(express.static('client'))
+app.use(express.static('client'));
+
+const server = app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 
 const wss = new Server({ server });
 
