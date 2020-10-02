@@ -1,0 +1,73 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Gamedev Canvas Workshop</title>
+    <style>
+    	* { padding: 0; margin: 0; }
+    	canvas { background: #eee; display: block; margin: 0 auto; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.15.1/dist/phaser-arcade-physics.min.js"></script>
+  </head>
+  <body>
+    <p id="server-time"></p>
+    <script>
+      let HOST = location.origin.replace(/^http/, 'ws')
+      let ws = new WebSocket(HOST);
+      let el;
+
+      ws.onmessage = (event) => {
+        el = document.getElementById('server-time');
+        el.innerHTML = 'Server time: ' + event.data;
+      };
+    </script>
+    <script>
+var config = {
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  physics: {
+      default: 'arcade',
+      arcade: {
+          gravity: { y: 200 }
+      }
+  },
+  scene: {
+      preload: preload,
+      create: create
+  }
+};
+
+  var game = new Phaser.Game(config);
+
+  function preload ()
+  {
+      this.load.setBaseURL('http://labs.phaser.io');
+
+      this.load.image('sky', 'assets/skies/space3.png');
+      this.load.image('logo', 'assets/sprites/phaser3-logo.png');
+      this.load.image('red', 'assets/particles/red.png');
+  }
+
+  function create ()
+  {
+      this.add.image(400, 300, 'sky');
+
+      var particles = this.add.particles('red');
+
+      var emitter = particles.createEmitter({
+          speed: 100,
+          scale: { start: 1, end: 0 },
+          blendMode: 'ADD'
+      });
+
+      var logo = this.physics.add.image(400, 100, 'logo');
+
+      logo.setVelocity(100, 200);
+      logo.setBounce(1, 1);
+      logo.setCollideWorldBounds(true);
+
+      emitter.startFollow(logo);
+  }
+  </script>
+  </body>
+</html>
