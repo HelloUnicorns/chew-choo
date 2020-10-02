@@ -1,4 +1,5 @@
 const Phaser = require('phaser');
+let emitter;
 
 function preload() {
     this.load.image('sky', 'assets/space3.png');
@@ -11,7 +12,7 @@ function create() {
 
     var particles = this.add.particles('red');
 
-    var emitter = particles.createEmitter({
+    emitter = particles.createEmitter({
         speed: 100,
         scale: { start: 1, end: 0 },
         blendMode: 'ADD'
@@ -22,11 +23,14 @@ function create() {
     logo.setVelocity(100, 200);
     logo.setBounce(1, 1);
     logo.setCollideWorldBounds(true);
-
-    emitter.startFollow(logo);
+    console.log(emitter)
 }
 
-var game = new Phaser.Game({
+function update() {
+    emitter.setPosition(game.input.mousePointer.x, game.input.mousePointer.y);
+}
+
+const game = new Phaser.Game({
     type: Phaser.AUTO,
     width: 800,
     height: 600,
@@ -37,7 +41,9 @@ var game = new Phaser.Game({
         }
     },
     scene: {
-        preload: preload,
-        create: create
-    }
+        preload,
+        create,
+        update
+    },
+    
 });
