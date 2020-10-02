@@ -32,14 +32,11 @@ function create() {
     logo.setVelocity(100, 200);
     logo.setBounce(1, 1);
     logo.setGravity(0, 100);
-    logo.body.angularVelocity = 6;
     logo.setCollideWorldBounds(true);
 
     if (emitter_tint) {
         emitter.setTint(emitter_tint);
     }
-    console.log(game.input.events);
-    console.log(game.input.mousePointer);
     this.input.on('pointerdown', click_handler);
     game_inited = true;
 }
