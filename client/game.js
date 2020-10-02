@@ -13,11 +13,13 @@ function preload() {
 }
 
 function create_trail() {
-    return particles.createEmitter({
+    let trail = particles.createEmitter({
         speed: 100,
         scale: { start: 1, end: 0 },
         blendMode: 'ADD'
     });
+    trail.setTint(Math.random() * 0xffffff);
+    return trail;
 }
 function create() {
     this.add.image(400, 300, 'sky');
@@ -35,6 +37,7 @@ function create() {
 
 function update() {
     emitter.setPosition(game.input.mousePointer.x, game.input.mousePointer.y);
+    console.log(emitter);
     send_event({type: 'location', x: game.input.mousePointer.x, y: game.input.mousePointer.y});
 }
 
@@ -49,11 +52,7 @@ event_handlers['locations'] = (event) => {
         if (info.client_id == client_id) {
             return;
         }
-        if (!(info.client_id in old_other_players_emitters)) {
-            new_other_players_emitters[info.client_id] = create_trail();
-        } else {
-            new_other_players_emitters[info.client_id] = old_other_players_emitters[info.client_id];
-        }
+        new_other_players_emitters[info.client_id] = old_other_players_emitters[info.client_id] || create_trail();
         new_other_players_emitters[info.client_id].setPosition(info.x, info.y);
         delete old_other_players_emitters[info.client_id];
     });
