@@ -81,6 +81,7 @@ function place_car(scene, origin_x, origin_y) {
 }
 
 function create() {
+    this.cameras.main.setBackgroundColor(0xf7f1da)
     draw_tracks(this, 100, 100);
     place_car(this, 100, 100);
     game_inited = true;
