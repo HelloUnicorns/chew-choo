@@ -223,7 +223,6 @@ event_handlers.connection = (event) => {
     client_id = event.client_id;
     map = event.map;
     player.route_id = event.route_id;
-    player = Object.assign(player, map[event.route_id].player);
     game_inited += 1;
     
     draw_map();
@@ -234,8 +233,9 @@ event_handlers.position = (event) => {
         return;
     }
 
-    // player.position_in_route = event.position;
-    // player.last_position_update = scene.time.now;
+    player.position_fraction = event.position_fraction;
+    player.position_in_route = event.position;
+    player.last_position_update = scene.time.now;
 };
 
 function draw_map() {
@@ -249,7 +249,6 @@ function draw_map() {
             draw_rail_tile(rail_tile, player.route_id == route_id);
         }
     }
-    player.last_position_update = scene.time.now;
 
     draw_train();
     scene.cameras.main.startFollow(player.cart_sprites[0], true);

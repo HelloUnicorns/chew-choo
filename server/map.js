@@ -112,10 +112,14 @@ function update_map() {
     new_time = new Date().getTime();
     for (const route_id in map) {
         const route = map[route_id];
-        if (new_time - route.player.last_position_update > 1000 / route.player.speed) {
-            route.player.last_position_update = new_time;
-            route.player.position_in_route++;
+            
+        route.player.position_fraction += route.player.speed * (new_time - route.player.last_position_update) / 1000;
+        route.player.last_position_update = new_time;
+        if (route.player.position_fraction >= 1) {
+            position_in_route_change = Math.floor(route.player.position_fraction);
+            route.player.position_in_route += position_in_route_change;
             route.player.position_in_route %= route.tiles.length;
+            route.player.position_fraction -= position_in_route_change;
         }
     }
 }

@@ -60,6 +60,6 @@ setInterval(() => {
     wss.clients.forEach((client) => {
         let data = client_data[client];
         let player = map[data.route_id].player;
-        client.send(JSON.stringify({ position: player.position_in_route, type: 'position'}));
+        client.send(JSON.stringify({ position: player.position_in_route, position_fraction: player.position_fraction, type: 'position'}));
     });
 }, 1000 / 60);
