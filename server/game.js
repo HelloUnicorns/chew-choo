@@ -48,8 +48,8 @@ wss.on('connection', (client) => {
     client.on('close', () => {
         console.log(`Client ${client_data[client].client_id} disconnected`);
         client_data[client].timeout = setTimeout(() => {
-            delete client_data[client];
             map.delete_player(client_data[client].client_id);
+            delete client_data[client];
         }, 10 * 1000);
         
     });
