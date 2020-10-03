@@ -12,7 +12,7 @@ let client_id;
 function preload() {
     this.load.image('track', 'assets/track.png');
     this.load.image('turn', 'assets/turn.png');
-    this.load.image('car', 'assests/car.jpg')
+    this.load.image('cart', 'assets/cart.png')
 }
 
 function draw_track_piece(scene, origin_x, origin_y, index_x, index_y, rotation_degrees) {
@@ -27,8 +27,8 @@ function draw_corner_piece(scene, origin_x, origin_y, index_x, index_y, rotation
     track.setScale(TRACK_SCALE);
 }
 
-function draw_car(scene, origin_x, origin_y, index_x, index_y) {
-    let car = scene.add.sprite(origin_x + index_x * TRACK_PIECE_WIDTH, origin_y + index_y * TRACK_PIECE_WIDTH, 'car');
+function draw_cart(scene, origin_x, origin_y, index_x, index_y) {
+    let cart = scene.add.sprite(origin_x + index_x * TRACK_PIECE_WIDTH, origin_y + index_y * TRACK_PIECE_WIDTH, 'cart');
 }
 
 function draw_tracks(scene, origin_x, origin_y) {
@@ -66,7 +66,7 @@ function place_car(scene, origin_x, origin_y) {
     }
     console.log(selected_track);
     console.log(position);
-    draw_car(scene, origin_x, origin_y, position[0], position[1]);
+    draw_cart(scene, origin_x, origin_y, position[0], position[1]);
 }
 
 function create() {
