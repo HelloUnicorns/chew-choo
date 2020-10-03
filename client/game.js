@@ -4,9 +4,8 @@ const global_data = require('./global_data.js')
 const { send_event, event_handlers } = require('./websockets.js');
 const { calculate_speed_and_position } = require('../common/position.js');
 const { GRID_PIECE_WIDTH } = require('./grid.js');
-const { set_rails, draw_rails } = require('./rails.js');
-const { draw_train, build_train, update_trains } = require('./train.js');
-const { get_rails_by_id } = require('./rails.js');
+const { set_rails, draw_rails, get_rails_by_id } = require('./rails.js');
+const { draw_all_trains, build_train, update_trains, get_train_by_id, update_train_location } = require('./train.js');
 
 const CANVAS_HEIGHT = 720;
 const CANVAS_WIDTH = 1280;
@@ -101,7 +100,10 @@ function update() {
 
 event_handlers.connection = (event) => {
     set_rails(event.map);
-    player.train = build_train(event.route_id);
+    for (const route_id in event.map) {
+        build_train(Number(route_id));
+    }
+    player.train = get_train_by_id(event.route_id);
     game_inited += 1;
     
     client_loaded();
@@ -111,10 +113,11 @@ event_handlers.position = (event) => {
     if (game_inited != game_inited_target) {
         return;
     }
-    let own_player_data = event.locations[player.train.route_id];
-    player.train.position_fraction = own_player_data.position_fraction;
-    player.train.position_in_route = own_player_data.position_in_route;
-    player.train.last_position_update = global_data.scene.time.now;
+
+    for (let route_id in event.locations) {
+        let location_info = event.locations[Number(route_id)];
+        update_train_location(route_id, location_info.position_fraction, location_info.position_in_route);
+    }
 };
 
 function start_music() {
@@ -128,7 +131,7 @@ function draw_map() {
     global_data.scene.cameras.main.setBackgroundColor(0xf7f1da);
     
     draw_rails(player.train);
-    draw_train(player.train);
+    draw_all_trains();
     global_data.scene.cameras.main.startFollow(player.train.sprites[0], true);
     up_key = global_data.scene.input.keyboard.addKey('up');
     down_key = global_data.scene.input.keyboard.addKey('down');
