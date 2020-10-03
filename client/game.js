@@ -25,13 +25,11 @@ let game_inited_target = 2;
 let client_id;
 
 let map = undefined;
+let scene = undefined;
 
 let space_key;
 
 let player = undefined;
-
-map = undefined;
-scene = undefined;
 
 function draw_rail_tile(rail_tile, is_own) {
     if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'top') {
