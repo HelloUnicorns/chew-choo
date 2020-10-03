@@ -35,7 +35,7 @@ let client_id;
 let map = undefined;
 let scene = undefined;
 
-let space_key;
+let space_key = undefined;
 
 let player = undefined;
 
@@ -121,6 +121,7 @@ function preload() {
     this.load.image('engine', 'assets/engine.png');
     this.load.image('cart', 'assets/cart.png');
     this.load.image('own_turn', 'assets/own_turn.png');
+    this.load.audio('bg_music', 'assets/bg_music.mp3');
 }
 
 function update_grid_sprite(sprite, grid_x, grid_y, rotation_degrees) {
@@ -210,7 +211,7 @@ function update_player() {
 function create() {
     scene = this;
     game_inited += 1;
-    draw_map();
+    client_loaded();
 }
 
 function update_camera() {
@@ -235,14 +236,17 @@ event_handlers.connection = (event) => {
     player.route_id = event.route.route_id;
     game_inited += 1;
     
-    draw_map();
+    client_loaded();
 };
 
-function draw_map() {
-    if (game_inited != game_inited_target) {
-        return;
-    }
+function start_music() {
+    bg_music = scene.sound.add('bg_music', { loop: true });
+    bg_music.play();
+    mute_key = scene.input.keyboard.addKey('m');
+    mute_key.on('down', function(event) { bg_music.mute = !bg_music.mute; });
+}
 
+function draw_map() {
     scene.cameras.main.setBackgroundColor(0xf7f1da);
     
     for(const route_id in map) {
@@ -254,4 +258,13 @@ function draw_map() {
     draw_train();
     scene.cameras.main.startFollow(player.cart_sprites[0], true);
     space_key = scene.input.keyboard.addKey('space');
+}
+
+function client_loaded() {
+    if (game_inited != game_inited_target) {
+        return;
+    }
+
+    start_music();
+    draw_map();
 }
