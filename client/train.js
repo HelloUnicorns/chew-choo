@@ -20,7 +20,7 @@ function build_train(route_id) {
         position_in_route: 0,
         last_position_update: 0,
         length: 3,
-        speed: constants.LOW_SPEED, /* in tiles per second */
+        speed: constants.MIN_SPEED, /* in tiles per second */
         position_fraction: 0,
         route_id,
     };
@@ -114,9 +114,10 @@ function update_trains() {
     }
 }
 
-function update_train_location(route_id, position_fraction, position_in_route) {
+function update_train_location(route_id, position_fraction, position_in_route, speed) {
     trains[route_id].position_fraction = position_fraction;
     trains[route_id].position_in_route = position_in_route;
+    trains[route_id].speed = speed;
     trains[route_id].last_position_update = global_data.scene.time.now;
 }
 
