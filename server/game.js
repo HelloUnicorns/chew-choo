@@ -40,8 +40,8 @@ wss.on('connection', (client) => {
 
     client.on('message', (json_data) => {
         const message = JSON.parse(json_data);
-        if (message.type == "speed") {
-            map.update_speed(client.route_id, message.value);
+        if (message.type == 'speed_change') {
+            map.update_speed_change(client.route_id, message.value);
         }
     });
 });

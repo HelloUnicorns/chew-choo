@@ -1,6 +1,6 @@
 const Phaser = require('phaser');
 const { send_event, event_handlers } = require('./websockets.js');
-const { calculate_position } = require('../common/position.js');
+const { calculate_speed_and_position } = require('../common/position.js');
 const constants = require('../common/constants.js');
 
 const CANVAS_HEIGHT = 720;
@@ -38,13 +38,15 @@ let player = {
     position_in_route: 0,
     last_position_update: 0,
     length: 3,
-    speed: constants.LOW_SPEED, /* in tiles per second */
-    was_space_pressed: false,
+    speed: constants.MIN_SPEED, /* in tiles per second */
+    is_speed_up: false,
+    is_speed_down: false,
     position_fraction: 0,
     route_id: 0
 }
 
-let space_key = undefined;
+let up_key = undefined;
+let down_key = undefined;
 
 function draw_rail_tile(rail_tile, is_own) {
     if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'top') {
@@ -187,15 +189,26 @@ function draw_train() {
     }
 }
 
-function update_player() {
-    let is_space_pressed = scene.input.keyboard.checkDown(space_key);
-    if (player.was_space_pressed != is_space_pressed) {
-        player.was_space_pressed = is_space_pressed;
-        send_event({type: 'speed', value: is_space_pressed});
-    }
-    player.speed = is_space_pressed ? constants.HIGH_SPEED : constants.LOW_SPEED;
+function get_speed_message_value(is_speed_up, is_speed_down) {
+    return is_speed_up * constants.SPEED_UP_FLAG + is_speed_down * constants.SPEED_DOWN_FLAG;
+}
 
-    calculate_position(player, map[player.route_id], scene.time.now);
+function update_speed_change() {
+    let is_up_pressed = scene.input.keyboard.checkDown(up_key);
+    if (player.is_speed_up != is_up_pressed) {
+        player.is_speed_up = is_up_pressed;
+        send_event({type: 'speed_change', value: get_speed_message_value(is_up_pressed, player.is_speed_down)});
+    }
+    let is_down_pressed = scene.input.keyboard.checkDown(down_key);
+    if (player.is_speed_down != is_down_pressed) {
+        player.is_speed_down = is_down_pressed;
+        send_event({type: 'speed_change', value: get_speed_message_value(player.is_speed_up, is_down_pressed)});
+    }
+}
+
+function update_player() {
+    update_speed_change();
+    calculate_speed_and_position(player, map[player.route_id], scene.time.now);
     
     for (cart_index = 0; cart_index < player.length; cart_index++) {
         tile_index = (player.position_in_route - cart_index + map[player.route_id].tiles.length) % map[player.route_id].tiles.length;
@@ -271,7 +284,8 @@ function draw_map() {
 
     draw_train();
     scene.cameras.main.startFollow(player.cart_sprites[0], true);
-    space_key = scene.input.keyboard.addKey('space');
+    up_key = scene.input.keyboard.addKey('up');
+    down_key = scene.input.keyboard.addKey('down');
 }
 
 function client_loaded() {
