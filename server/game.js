@@ -23,21 +23,14 @@ let client_data = {};
 wss.on('connection', (client) => {
     client_data[client] = {
         client_id: makeid(ID_LEN),
-        route_id: 0,
-        timeout: undefined
+        route_id: 0
     };
-
-    if (client_data[client].timeout) {
-        clearTimeout(client_data[client].timeout);
-        client_data[client].timeout = undefined;
-    }
 
     console.log(`Client ${client_data[client].client_id} connected`);
     
     let route_id = map.new_player(client_data[client].client_id);
     console.log(`Client ${client_data[client].client_id} occupies route ${route_id}`);
     
-    let route = map.map[route_id];
     client.send(JSON.stringify({
             client_id: client_data[client].client_id,
             type: 'connection',
@@ -47,11 +40,8 @@ wss.on('connection', (client) => {
     
     client.on('close', () => {
         console.log(`Client ${client_data[client].client_id} disconnected`);
-        client_data[client].timeout = setTimeout(() => {
-            map.delete_player(client_data[client].client_id);
-            delete client_data[client];
-        }, 10 * 1000);
-        
+        map.delete_player(client_data[client].client_id);
+        delete client_data[client];
     });
 
     client.on('message', (json_data) => {
@@ -72,6 +62,9 @@ setInterval(() => {
     map.update_map();
     
     wss.clients.forEach((client) => {
+        if (!(client in client_data)) {
+            return;
+        }
         let data = client_data[client];
         let player = map.map[data.route_id].player;
         client.send(JSON.stringify({ position: player.position_in_route, position_fraction: player.position_fraction, type: 'position'}));
