@@ -193,10 +193,10 @@ function draw_map() {
     
     for(const route_id in map) {
         for (const rail_tile of map[route_id]) {
-            draw_rail_tile(scene, rail_tile);
+            draw_rail_tile(rail_tile);
         }
     }
 
-    place_car(scene);
+    place_car();
     space_key = scene.input.keyboard.addKey('space');
 }
