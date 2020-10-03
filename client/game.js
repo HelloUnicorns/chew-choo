@@ -1,6 +1,10 @@
 const Phaser = require('phaser');
 const { send_event, event_handlers } = require('./websockets.js');
 
+const CANVAS_HEIGHT = 720;
+const CANVAS_WIDTH = 1280;
+
+const VERTICAL_GRID_TILES_PER_PLAYER_TRAIN_TILES = 2;
 const GRID_ORIGIN_X = 40;
 const GRID_ORIGIN_Y = 40;
 
@@ -90,8 +94,8 @@ function get_player_rotation(rail_tile) {
 const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game-container',
-    width: 1280,
-    height: 720,
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
     physics: {
         default: 'arcade',
         arcade: {
@@ -189,11 +193,21 @@ function create() {
     draw_map();
 }
 
+function update_camera() {
+    /* we want the number of grid pieces that fit in the screen to be  */
+    const vertical_tiles = player.length * VERTICAL_GRID_TILES_PER_PLAYER_TRAIN_TILES;
+    const wanted_height = vertical_tiles * GRID_PIECE_WIDTH;
+    if (wanted_height > CANVAS_HEIGHT) {
+        scene.cameras.main.setZoom(CANVAS_HEIGHT / wanted_height);
+    }
+}
+
 function update() {
     if (game_inited != game_inited_target) {
         return;
     }
     update_player();
+    update_camera();
 }
 
 event_handlers.connection = (event) => {
