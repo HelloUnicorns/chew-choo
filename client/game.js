@@ -1,6 +1,7 @@
 const Phaser = require('phaser');
 const { send_event, event_handlers } = require('./websockets.js');
 const { calculate_position } = require('../common/position.js');
+const constants = require('../common/constants.js');
 
 const CANVAS_HEIGHT = 720;
 const CANVAS_WIDTH = 1280;
@@ -21,9 +22,6 @@ const ENGINE_IMAGE_WIDTH = 100;
 const ENGINE_WIDTH = GRID_PIECE_WIDTH;
 const ENGINE_SCALE = ENGINE_WIDTH / ENGINE_IMAGE_WIDTH;
 
-const LOW_SPEED = 10;
-const HIGH_SPEED = 30;
-
 const NORMAL_TRACK_Z_INDEX = 1;
 const OWN_TRACK_Z_INEDX = 2;
 const CART_Z_INEDX = 3;
@@ -40,12 +38,13 @@ let player = {
     position_in_route: 0,
     last_position_update: 0,
     length: 3,
-    speed: LOW_SPEED, /* in tiles per second */
+    speed: constants.LOW_SPEED, /* in tiles per second */
     was_space_pressed: false,
     position_fraction: 0,
     route_id: 0
 }
-let space_key;
+
+let space_key = undefined;
 
 function draw_rail_tile(rail_tile, is_own) {
     if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'top') {
@@ -129,6 +128,7 @@ function preload() {
     this.load.image('engine', 'assets/engine.png');
     this.load.image('cart', 'assets/cart.png');
     this.load.image('own_turn', 'assets/own_turn.png');
+    this.load.audio('bg_music', 'assets/bg_music.mp3');
 }
 
 function update_grid_sprite(sprite, grid_x, grid_y, rotation_degrees) {
@@ -193,7 +193,7 @@ function update_player() {
         player.was_space_pressed = is_space_pressed;
         send_event({type: 'speed', value: is_space_pressed});
     }
-    player.speed = is_space_pressed ? HIGH_SPEED : LOW_SPEED;
+    player.speed = is_space_pressed ? constants.HIGH_SPEED : constants.LOW_SPEED;
 
     calculate_position(player, map[player.route_id], scene.time.now);
     
@@ -216,7 +216,7 @@ function update_player() {
 function create() {
     scene = this;
     game_inited += 1;
-    draw_map();
+    client_loaded();
 }
 
 function update_camera() {
@@ -240,7 +240,7 @@ event_handlers.connection = (event) => {
     player.route_id = event.route_id;
     game_inited += 1;
     
-    draw_map();
+    client_loaded();
 };
 
 event_handlers.position = (event) => {
@@ -253,10 +253,14 @@ event_handlers.position = (event) => {
     player.last_position_update = scene.time.now;
 };
 
+function start_music() {
+    bg_music = scene.sound.add('bg_music', { loop: true });
+    bg_music.play();
+    mute_key = scene.input.keyboard.addKey('m');
+    mute_key.on('down', function(event) { bg_music.mute = !bg_music.mute; });
+}
+
 function draw_map() {
-    if (game_inited != game_inited_target) {
-        return;
-    }
     scene.cameras.main.setBackgroundColor(0xf7f1da);
     
     for(const route_id in map) {
@@ -268,4 +272,13 @@ function draw_map() {
     draw_train();
     scene.cameras.main.startFollow(player.cart_sprites[0], true);
     space_key = scene.input.keyboard.addKey('space');
+}
+
+function client_loaded() {
+    if (game_inited != game_inited_target) {
+        return;
+    }
+
+    start_music();
+    draw_map();
 }

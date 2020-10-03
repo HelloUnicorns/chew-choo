@@ -18,47 +18,30 @@ function makeid(length) {
     return result;
 }
 
-let client_data = {};
-
 wss.on('connection', (client) => {
-    client_data[client] = {
-        client_id: makeid(ID_LEN),
-        route_id: 0,
-        timeout: undefined
-    };
+    client.id = makeid(ID_LEN);
+    client.route_id = map.new_player(client.id);
+    client.initialized = true;
 
-    if (client_data[client].timeout) {
-        clearTimeout(client_data[client].timeout);
-        client_data[client].timeout = undefined;
-    }
+    console.log(`Client ${client.id} connected`);
+    console.log(`Client ${client.id} occupies route ${client.route_id}`);
 
-    console.log(`Client ${client_data[client].client_id} connected`);
-    
-    let route_id = map.new_player(client_data[client].client_id);
-    client_data[client].route_id = route_id;
-    console.log(`Client ${client_data[client].client_id} occupies route ${route_id}`);
-    
-    let route = map.map[route_id];
     client.send(JSON.stringify({
-            client_id: client_data[client].client_id,
+            client_id: client.id,
             type: 'connection',
             map: map.map,
-            route_id: client_data[client].route_id
+            route_id: client.route_id
     }));
     
     client.on('close', () => {
-        console.log(`Client ${client_data[client].client_id} disconnected`);
-        client_data[client].timeout = setTimeout(() => {
-            map.delete_player(client_data[client].client_id);
-            delete client_data[client];
-        }, 10 * 1000);
-        
+        console.log(`Client ${client.id} disconnected`);
+        map.delete_player(client.id);
     });
 
     client.on('message', (json_data) => {
         const message = JSON.parse(json_data);
         if (message.type == "speed") {
-            map.update_speed(client_data[client].route_id, message.value);
+            map.update_speed(client.route_id, message.value);
         }
     });
 });
@@ -73,8 +56,10 @@ setInterval(() => {
     map.update_map();
     
     wss.clients.forEach((client) => {
-        let data = client_data[client];
-        let player = map.map[data.route_id].player;
+        if (!client.initialized) {
+            return;
+        }
+        let player = map.map[client.route_id].player;
         client.send(JSON.stringify({ position: player.position_in_route, position_fraction: player.position_fraction, type: 'position'}));
     });
 }, 1000 / 60);
