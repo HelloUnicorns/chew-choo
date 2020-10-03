@@ -43,12 +43,16 @@ wss.on('connection', (client) => {
         if (message.type == 'speed_change') {
             map.update_speed_change(client.route_id, message.value);
         }
+        if (message.type == 'latency_update') {
+            let latency = (new Date().getTime() - message.prev_server_time) / 2;
+            client.send(JSON.stringify({latency: latency, type: 'latency'}));
+        }
     });
 });
 
 setInterval(() => {
     wss.clients.forEach((client) => {
-        client.send(JSON.stringify({time: new Date().toTimeString(), type: 'time'}));
+        client.send(JSON.stringify({time_str: new Date().toTimeString(), time: new Date().getTime(), type: 'time'}));
     });
 }, 1000);
 
