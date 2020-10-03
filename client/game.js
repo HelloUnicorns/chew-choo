@@ -1,9 +1,11 @@
 const Phaser = require('phaser');
 const { send_event, event_handlers } = require('./websockets.js');
 
-const TRACK_PIECE_WIDTH = 100;
-const TRACK_WIDTH = 10;
-const TRACK_HEIGHT = 5;
+const TRACK_PIECE_IMAGE_WIDTH = 100;
+const TRACK_SCALE = 0.3;
+const TRACK_PIECE_WIDTH = TRACK_PIECE_IMAGE_WIDTH * TRACK_SCALE;
+const TRACK_WIDTH = 30;
+const TRACK_HEIGHT = 20;
 let game_inited = false;
 let client_id;
 
@@ -15,11 +17,13 @@ function preload() {
 function draw_track_piece(scene, origin_x, origin_y, index_x, index_y, rotation_degrees) {
     let track = scene.add.sprite(origin_x + index_x * TRACK_PIECE_WIDTH, origin_y + index_y * TRACK_PIECE_WIDTH, 'track');
     track.setRotation(rotation_degrees * Phaser.Math.DEG_TO_RAD);
+    track.setScale(TRACK_SCALE);
 }
 
 function draw_corner_piece(scene, origin_x, origin_y, index_x, index_y, rotation_degrees) {
     let track = scene.add.sprite(origin_x + index_x * TRACK_PIECE_WIDTH, origin_y + index_y * TRACK_PIECE_WIDTH, 'turn');
     track.setRotation(rotation_degrees * Phaser.Math.DEG_TO_RAD);
+    track.setScale(TRACK_SCALE);
 }
 
 function draw_tracks(scene, origin_x, origin_y) {
