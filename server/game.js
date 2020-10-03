@@ -21,32 +21,44 @@ function makeid(length) {
 let client_data = {};
 
 wss.on('connection', (client) => {
-    let client_id = makeid(ID_LEN);
-    let data = {
-        x: 0,
-        y: 0, 
-        tint: get_random_tint()
+    client_data[client] = {
+        client_id: makeid(ID_LEN),
+        route_id: 0,
+        timeout: undefined
     };
 
-    client_data[client_id] = data;
+    if (client_data[client].timeout) {
+        clearTimeout(client_data[client].timeout);
+        client_data[client].timeout = undefined;
+    }
 
-    console.log(`Client ${client_id} connected`);
+    console.log(`Client ${client_data[client].client_id} connected`);
     
-    let route_id = map.new_player(client_id);
-    console.log(`Client ${client_id} occupies route ${route_id}`);
+    let route_id = map.new_player(client_data[client].client_id);
+    console.log(`Client ${client_data[client].client_id} occupies route ${route_id}`);
     
     let route = map.map[route_id];
-    client.send(JSON.stringify({client_id, type: 'connection', map: map.map, route: {route_id: route_id, player: route.player}}));
+    client.send(JSON.stringify({
+            client_id: client_data[client].client_id,
+            type: 'connection',
+            map: map.map,
+            route_id: client_data[client].route_id
+    }));
     
     client.on('close', () => {
-        console.log(`Client ${client_id} disconnected`);
-        map.notify_player_disconnected(client_id);
-        delete client_data[client_id];
+        console.log(`Client ${client_data[client].client_id} disconnected`);
+        map.notify_player_disconnected(client_data[client].client_id);
+        client_data[client].timeout = setTimeout(() => {
+            delete client_data[client];
+            map.delete_player(client_data[client].client_id);
+        }, 10 * 1000);
+        
     });
 
     client.on('message', (json_data) => {
         const message = JSON.parse(json_data);
-        if (message.type == "blabla") {
+        if (message.type == "speed") {
+            map.update_speed(client_data[client].route_id, message.value);
         }
     });
 });
@@ -58,12 +70,11 @@ setInterval(() => {
 }, 1000);
 
 setInterval(() => {
-    let location_info = Object.keys(client_data).map(function(client_id) {
-        let client_info = client_data[client_id];
-        return { client_id, x: client_info.x, y: client_info.y, tint: client_info.tint };
-    });
+    map.update_map();
     
     wss.clients.forEach((client) => {
-        client.send(JSON.stringify({location_info, type: 'locations'}));
+        let data = client_data[client];
+        let player = map.map[data.route_id].player;
+        client.send(JSON.stringify({ position: player.position_in_route, position_fraction: player.position_fraction, type: 'position'}));
     });
 }, 1000 / 60);

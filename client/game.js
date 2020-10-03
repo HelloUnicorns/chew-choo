@@ -1,5 +1,6 @@
 const Phaser = require('phaser');
 const { send_event, event_handlers } = require('./websockets.js');
+const { calculate_position } = require('../common/position.js');
 
 const CANVAS_HEIGHT = 720;
 const CANVAS_WIDTH = 1280;
@@ -34,10 +35,17 @@ let client_id;
 
 let map = undefined;
 let scene = undefined;
-
+let player = {
+    cart_sprites: [],
+    position_in_route: 0,
+    last_position_update: 0,
+    length: 3,
+    speed: LOW_SPEED, /* in tiles per second */
+    was_space_pressed: false,
+    position_fraction: 0,
+    route_id: 0
+}
 let space_key;
-
-let player = undefined;
 
 function draw_rail_tile(rail_tile, is_own) {
     if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'top') {
@@ -180,17 +188,15 @@ function draw_train() {
 }
 
 function update_player() {
-    player.speed = scene.input.keyboard.checkDown(space_key) ? HIGH_SPEED : LOW_SPEED;
-
-    player.position_fraction += player.speed * (scene.time.now - player.last_position_update) / 1000;
-    player.last_position_update = scene.time.now;
-    if (player.position_fraction >= 1) {
-        position_in_route_change = Math.floor(player.position_fraction);
-        player.position_in_route += position_in_route_change;
-        player.position_in_route %= map[player.route_id].tiles.length;
-        player.position_fraction -= position_in_route_change;
+    let is_space_pressed = scene.input.keyboard.checkDown(space_key);
+    if (player.was_space_pressed != is_space_pressed) {
+        player.was_space_pressed = is_space_pressed;
+        send_event({type: 'speed', value: is_space_pressed});
     }
+    player.speed = is_space_pressed ? HIGH_SPEED : LOW_SPEED;
 
+    calculate_position(player, map[player.route_id], scene.time.now);
+    
     for (cart_index = 0; cart_index < player.length; cart_index++) {
         tile_index = (player.position_in_route - cart_index + map[player.route_id].tiles.length) % map[player.route_id].tiles.length;
         rail_tile = map[player.route_id].tiles[tile_index];
@@ -231,22 +237,30 @@ function update() {
 event_handlers.connection = (event) => {
     client_id = event.client_id;
     map = event.map;
-    player = event.route.player;
-    player.route_id = event.route.route_id;
+    player.route_id = event.route_id;
     game_inited += 1;
     
     draw_map();
+};
+
+event_handlers.position = (event) => {
+    if (game_inited != game_inited_target) {
+        return;
+    }
+
+    player.position_fraction = event.position_fraction;
+    player.position_in_route = event.position;
+    player.last_position_update = scene.time.now;
 };
 
 function draw_map() {
     if (game_inited != game_inited_target) {
         return;
     }
-
     scene.cameras.main.setBackgroundColor(0xf7f1da);
     
     for(const route_id in map) {
-        for (const rail_tile of map[Number(route_id)].tiles) {
+        for (const rail_tile of map[route_id].tiles) {
             draw_rail_tile(rail_tile, player.route_id == route_id);
         }
     }

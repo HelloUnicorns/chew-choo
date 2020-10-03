@@ -1,3 +1,4 @@
+const { calculate_position } = require('../common/position.js');
 const TRACK_WIDTH = 30;
 const TRACK_HEIGHT = 21;
 
@@ -109,11 +110,8 @@ function init_map() {
         map[i] = {
             tiles: build_rectangular_route(start_position.x, start_position.y, TRACK_WIDTH, TRACK_HEIGHT),
             player: {
-                cart_sprites: [],
-                train_route: [],
                 position_in_route: 0,
-                position_fraction: 0,
-                last_position_update: 0,
+                last_position_update: new Date().getTime(),
                 position_fraction: 0,
                 length: 3,
                 speed: LOW_SPEED /* in tiles per second */
@@ -121,7 +119,6 @@ function init_map() {
         };
     }
 }
-
 
 let entered = false;
 function new_player(player_id) {
@@ -154,19 +151,31 @@ function new_player(player_id) {
     return undefined;
 }
 
-function notify_player_disconnected(player_id) {
+function delete_player(player_id) {
     for (const [route_id, current_player_id] of Object.entries(active_players)) {
         if (player_id == current_player_id) {
-            active_players[route_id].timeout = setTimeout(() => {
-                delete active_players[route_id];
-                console.log(`Route ${route_id} is free`);
-            }, 20 * 1000);
+            delete active_players[route_id];
+            console.log(`Route ${route_id} is free`);
         }
     }
+}
+
+function update_map() {
+    new_time = new Date().getTime();
+    for (const route_id in map) {
+        const route = map[route_id];
+        calculate_position(route.player, route, new_time);
+    }
+}
+
+function update_speed(route_id, is_pressed) {
+    map[route_id].player.speed = is_pressed ? HIGH_SPEED : LOW_SPEED;
 }
 
 init_map();
 
 exports.map = map;
 exports.new_player = new_player;
-exports.notify_player_disconnected = notify_player_disconnected;
+exports.update_map = update_map;
+exports.update_speed = update_speed;
+exports.delete_player = delete_player;
