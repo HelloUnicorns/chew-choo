@@ -248,6 +248,12 @@ event_handlers.position = (event) => {
         return;
     }
 
+    if (event.killed) {
+        while(true) {
+            alert("You are DEAD");
+        }
+    }
+
     player.position_fraction = event.position_fraction;
     player.position_in_route = event.position;
     player.last_position_update = scene.time.now;

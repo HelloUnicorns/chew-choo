@@ -60,6 +60,11 @@ setInterval(() => {
             return;
         }
         let player = map.map[client.route_id].player;
-        client.send(JSON.stringify({ position: player.position_in_route, position_fraction: player.position_fraction, type: 'position'}));
+        
+        client.send(JSON.stringify({ killed: player.killed, position: player.position_in_route, position_fraction: player.position_fraction, type: 'position'}));
+        if (player.killed) {
+            map.delete_player(client.id);
+            client.initialized = false;
+        }
     });
 }, 1000 / 60);
