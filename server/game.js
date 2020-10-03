@@ -40,12 +40,7 @@ wss.on('connection', (client) => {
 
     client.on('message', (json_data) => {
         const message = JSON.parse(json_data);
-        if (message.type == "location") {
-            client_data[client_id].x = message.x;
-            client_data[client_id].y = message.y;
-        }
-        if (message.type == "switch_tint") {
-            data.tint = get_random_tint();
+        if (message.type == "blabla") {
         }
     });
 });
