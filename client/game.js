@@ -143,7 +143,7 @@ function draw_track_piece(grid_x, grid_y, rotation_degrees, is_own) {
         is_own ? 'own_track' : 'track', 
         TRACK_SCALE, 
         is_own ? OWN_TRACK_Z_INEDX : NORMAL_TRACK_Z_INDEX, 
-        is_own ? player.color : 0xffffff);
+        is_own ? 0x00ff00 : 0xffffff);
 }
 
 function draw_corner_piece(grid_x, grid_y, rotation_degrees, is_own) {
@@ -152,7 +152,7 @@ function draw_corner_piece(grid_x, grid_y, rotation_degrees, is_own) {
         is_own ? 'own_turn' : 'turn', 
         TRACK_SCALE, 
         is_own ? OWN_TRACK_Z_INEDX : NORMAL_TRACK_Z_INDEX, 
-        is_own ? player.color : 0xffffff);
+        is_own ? 0x00ff00 : 0xffffff);
 }
 
 function draw_cart(grid_x, grid_y, rotation_degrees, is_engine) {
@@ -161,7 +161,7 @@ function draw_cart(grid_x, grid_y, rotation_degrees, is_engine) {
         is_engine ? 'engine' : 'cart', 
         is_engine ? ENGINE_SCALE : CART_SCALE, 
         CART_Z_INEDX, 
-        player.color);
+        0x00ff00);
 }
 
 function draw_cart_by_index(cart_index, is_engine) {
