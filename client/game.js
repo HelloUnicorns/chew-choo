@@ -25,7 +25,7 @@ let player = {
 
 map = { 
     0: build_rectangular_route(0, 0, 30, 20), 
-    1: build_rectangular_route(10, 10, 30, 20)
+    1: build_rectangular_route(10, 10, 21, 11)
 };
 
 function build_rectangular_route(grid_x, grid_y, width, height) {
