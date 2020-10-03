@@ -12,6 +12,10 @@ const CART_IMAGE_WIDTH = 100;
 const CART_WIDTH = GRID_PIECE_WIDTH;
 const CART_SCALE = CART_WIDTH / CART_IMAGE_WIDTH;
 
+const ENGINE_IMAGE_WIDTH = 100;
+const ENGINE_WIDTH = GRID_PIECE_WIDTH;
+const ENGINE_SCALE = ENGINE_WIDTH / ENGINE_IMAGE_WIDTH;
+
 const LOW_SPEED = 10;
 const HIGH_SPEED = 30;
 
@@ -26,12 +30,14 @@ let map = {
 };
 
 let player = {
-    car_sprite: undefined,
+    engine_sprite: undefined,
+    cart_sprites: [],
     route: map[0],
     train_route: [],
     position_in_route: 0,
     last_position_update: 0,
-    speed: 10 /* in tiles per second */
+    speed: 10, /* in tiles per second */
+    length: 3
 }
 
 function build_rectangular_route(grid_x, grid_y, width, height) {
@@ -141,6 +147,7 @@ const game = new Phaser.Game({
 function preload() {
     this.load.image('track', 'assets/track.png');
     this.load.image('turn', 'assets/turn.png');
+    this.load.image('engine', 'assets/engine.png');
     this.load.image('cart', 'assets/cart.png');
 }
 
@@ -164,14 +171,28 @@ function draw_corner_piece(scene, grid_x, grid_y, rotation_degrees) {
     return draw_grid_sprite(scene, grid_x, grid_y, rotation_degrees, 'turn', TRACK_SCALE);
 }
 
+function draw_engine(scene, grid_x, grid_y, rotation_degrees) {
+    return draw_grid_sprite(scene, grid_x, grid_y, rotation_degrees, 'engine', ENGINE_SCALE);
+}
 function draw_cart(scene, grid_x, grid_y, rotation_degrees) {
     return draw_grid_sprite(scene, grid_x, grid_y, rotation_degrees, 'cart', CART_SCALE);
 }
 
-function place_car(scene) {
-    player_rail_tile = player.route[player.position_in_route];
-    angle = get_player_rotation(player_rail_tile);
-    player.cart_sprite = draw_cart(scene, player_rail_tile.x, player_rail_tile.y, angle);
+function draw_train(scene) {
+    rail_tile = player.route[player.position_in_route];
+    angle = get_player_rotation(rail_tile);
+    player.engine_sprite = draw_engine(scene, rail_tile.x, rail_tile.y, angle);
+
+    if (player.length == 1) {
+        return;
+    }
+
+    for (cart_index = 1; cart_index < player.length; cart_index++) {
+        rail_tile = player.route[player.position_in_route + cart_index];
+        angle = get_player_rotation(rail_tile);
+        cart_sprite = draw_cart(scene, rail_tile.x, rail_tile.y, angle);
+        player.cart_sprites.push(cart_sprite);
+    }
 }
 
 function create() {
@@ -183,7 +204,7 @@ function create() {
         }
     }
 
-    place_car(this);
+    draw_train(this);
     space_key = this.input.keyboard.addKey('space');
 
     game_inited = true;
@@ -197,9 +218,20 @@ function update_player(scene) {
         player.position_in_route++;
         player.position_in_route %= player.route.length;
     }
-    player_rail_tile = player.route[player.position_in_route];
-    angle = get_player_rotation(player_rail_tile);
-    update_grid_sprite(player.cart_sprite, player_rail_tile.x, player_rail_tile.y, angle);
+
+    rail_tile = player.route[player.position_in_route];
+    angle = get_player_rotation(rail_tile);
+    update_grid_sprite(player.engine_sprite, rail_tile.x, rail_tile.y, angle);
+
+    if (player.length == 1) {
+        return;
+    }
+
+    for (cart_index = 1; cart_index < player.length; cart_index++) {
+        rail_tile = player.route[(player.position_in_route - cart_index + player.route.length) % player.route.length];
+        angle = get_player_rotation(rail_tile);
+        update_grid_sprite(player.cart_sprites[cart_index - 1], rail_tile.x, rail_tile.y, angle);
+    }
 }
 
 function update() {
