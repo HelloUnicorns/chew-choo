@@ -12,7 +12,7 @@ function makeid(length) {
     var result           = '';
     var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     var charactersLength = characters.length;
-    for ( var i = 0; i < length; i++ ) {
+    for (var i = 0; i < length; i++ ) {
        result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
     return result;
@@ -54,12 +54,19 @@ setInterval(() => {
 
 setInterval(() => {
     map.update_map();
-    
+    let locations = {};
+    for (const [route_id, route] of Object.entries(map.map)) {
+        locations[route_id] = {
+            position_in_route: route.player.position_in_route,
+            position_fraction: route.player.position_fraction,
+            length: route.player.length,
+            speed: route.player.speed
+        };
+    }
     wss.clients.forEach((client) => {
         if (!client.initialized) {
             return;
         }
-        let player = map.map[client.route_id].player;
-        client.send(JSON.stringify({ position: player.position_in_route, position_fraction: player.position_fraction, type: 'position'}));
+        client.send(JSON.stringify({ locations, type: 'position'}));
     });
 }, 1000 / 60);
