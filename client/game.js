@@ -17,13 +17,17 @@ const CART_IMAGE_WIDTH = 100;
 const CART_WIDTH = GRID_PIECE_WIDTH;
 const CART_SCALE = CART_WIDTH / CART_IMAGE_WIDTH;
 
+const ENGINE_IMAGE_WIDTH = 100;
+const ENGINE_WIDTH = GRID_PIECE_WIDTH;
+const ENGINE_SCALE = ENGINE_WIDTH / ENGINE_IMAGE_WIDTH;
 
 const LOW_SPEED = 10;
 const HIGH_SPEED = 30;
 
-const ENGINE_IMAGE_WIDTH = 100;
-const ENGINE_WIDTH = GRID_PIECE_WIDTH;
-const ENGINE_SCALE = ENGINE_WIDTH / ENGINE_IMAGE_WIDTH;
+const NORMAL_TRACK_Z_INDEX = 1;
+const OWN_TRACK_Z_INEDX = 2;
+const CART_Z_INEDX = 3;
+
 
 let game_inited = 0;
 let game_inited_target = 2;
@@ -132,23 +136,40 @@ function update_grid_sprite(sprite, grid_x, grid_y, rotation_degrees) {
     sprite.setRotation(rotation_degrees * Phaser.Math.DEG_TO_RAD);
 }
 
-function draw_grid_sprite(grid_x, grid_y, rotation_degrees, sprite_name, scale) {
+function draw_grid_sprite(grid_x, grid_y, rotation_degrees, sprite_name, scale, depth, tint) {
     let grid_sprite = scene.add.sprite(0, 0, sprite_name);
     update_grid_sprite(grid_sprite, grid_x, grid_y, rotation_degrees);
     grid_sprite.setScale(scale);
+    grid_sprite.setDepth(depth);
+    grid_sprite.setTint(tint, tint, tint, tint);
     return grid_sprite;
 }
 
 function draw_track_piece(grid_x, grid_y, rotation_degrees, is_own) {
-    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, is_own ? 'own_track' : 'track', TRACK_SCALE);
+    return draw_grid_sprite(
+        grid_x, grid_y, rotation_degrees, 
+        is_own ? 'own_track' : 'track', 
+        TRACK_SCALE, 
+        is_own ? OWN_TRACK_Z_INEDX : NORMAL_TRACK_Z_INDEX, 
+        is_own ? 0x00ff00 : 0xffffff);
 }
 
 function draw_corner_piece(grid_x, grid_y, rotation_degrees, is_own) {
-    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, is_own ? 'own_turn' : 'turn', TRACK_SCALE);
+    return draw_grid_sprite(
+        grid_x, grid_y, rotation_degrees, 
+        is_own ? 'own_turn' : 'turn', 
+        TRACK_SCALE, 
+        is_own ? OWN_TRACK_Z_INEDX : NORMAL_TRACK_Z_INDEX, 
+        is_own ? 0x00ff00 : 0xffffff);
 }
 
 function draw_cart(grid_x, grid_y, rotation_degrees, is_engine) {
-    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, is_engine ? 'engine' : 'cart', CART_SCALE);
+    return draw_grid_sprite(
+        grid_x, grid_y, rotation_degrees, 
+        is_engine ? 'engine' : 'cart', 
+        is_engine ? ENGINE_SCALE : CART_SCALE, 
+        CART_Z_INEDX, 
+        0x00ff00);
 }
 
 function draw_cart_by_index(cart_index, is_engine) {
