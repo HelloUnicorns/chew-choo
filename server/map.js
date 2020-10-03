@@ -156,10 +156,12 @@ function init_map() {
         map[i] = {
             tiles: build_rectangular_route(start_position.x, start_position.y, TRACK_WIDTH, TRACK_HEIGHT),
             player: {
-                car_sprite: undefined,
+                engine_sprite: undefined,
+                cart_sprites: [],
                 train_route: [],
                 position_in_route: 0,
                 last_position_update: 0,
+                length: 3,
                 speed: LOW_SPEED /* in tiles per second */
             }
         };
