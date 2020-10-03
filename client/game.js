@@ -1,6 +1,7 @@
 const Phaser = require('phaser');
 const { send_event, event_handlers } = require('./websockets.js');
 const { calculate_position } = require('../common/position.js');
+const constants = require('../common/constants.js');
 
 const CANVAS_HEIGHT = 720;
 const CANVAS_WIDTH = 1280;
@@ -21,9 +22,6 @@ const ENGINE_IMAGE_WIDTH = 100;
 const ENGINE_WIDTH = GRID_PIECE_WIDTH;
 const ENGINE_SCALE = ENGINE_WIDTH / ENGINE_IMAGE_WIDTH;
 
-const LOW_SPEED = 10;
-const HIGH_SPEED = 30;
-
 const NORMAL_TRACK_Z_INDEX = 1;
 const OWN_TRACK_Z_INEDX = 2;
 const CART_Z_INEDX = 3;
@@ -40,7 +38,7 @@ let player = {
     position_in_route: 0,
     last_position_update: 0,
     length: 3,
-    speed: LOW_SPEED, /* in tiles per second */
+    speed: constants.LOW_SPEED, /* in tiles per second */
     was_space_pressed: false,
     position_fraction: 0,
     route_id: 0
@@ -193,7 +191,7 @@ function update_player() {
         player.was_space_pressed = is_space_pressed;
         send_event({type: 'speed', value: is_space_pressed});
     }
-    player.speed = is_space_pressed ? HIGH_SPEED : LOW_SPEED;
+    player.speed = is_space_pressed ? constants.HIGH_SPEED : constants.LOW_SPEED;
 
     calculate_position(player, map[player.route_id], scene.time.now);
     

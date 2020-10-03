@@ -1,4 +1,5 @@
 const { calculate_position } = require('../common/position.js');
+const constants = require('../common/constants.js');
 const TRACK_WIDTH = 30;
 const TRACK_HEIGHT = 21;
 
@@ -16,9 +17,6 @@ const MAX_PLAYERS = 65;
 
 let map = {};
 active_players = {};
-
-const LOW_SPEED = 10;
-const HIGH_SPEED = 30;
 
 function build_rectangular_route(grid_x, grid_y, width, height) {
     let route = [];
@@ -114,7 +112,7 @@ function init_map() {
                 last_position_update: new Date().getTime(),
                 position_fraction: 0,
                 length: 3,
-                speed: LOW_SPEED /* in tiles per second */
+                speed: constants.LOW_SPEED /* in tiles per second */
             }
         };
     }
@@ -169,7 +167,7 @@ function update_map() {
 }
 
 function update_speed(route_id, is_pressed) {
-    map[route_id].player.speed = is_pressed ? HIGH_SPEED : LOW_SPEED;
+    map[route_id].player.speed = is_pressed ? constants.HIGH_SPEED : constants.LOW_SPEED;
 }
 
 init_map();
