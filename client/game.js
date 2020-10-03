@@ -15,8 +15,13 @@ const CART_IMAGE_WIDTH = 100;
 const CART_WIDTH = GRID_PIECE_WIDTH;
 const CART_SCALE = CART_WIDTH / CART_IMAGE_WIDTH;
 
+const LOW_SPEED = 10;
+const HIGH_SPEED = 30;
+
 let game_inited = false;
 let client_id;
+
+let space_key;
 
 let map = { 
     0: build_rectangular_route(0, 0, 30, 20), 
@@ -28,8 +33,9 @@ let player = {
     route: map[0],
     train_route: [],
     position_in_route: 0,
+    last_position_update: 0,
+    speed: 10 /* in tiles per second */
 }
-
 
 function build_rectangular_route(grid_x, grid_y, width, height) {
     route = [];
@@ -147,7 +153,6 @@ function update_grid_sprite(sprite, grid_x, grid_y, rotation_degrees) {
 }
 
 function draw_grid_sprite(scene, grid_x, grid_y, rotation_degrees, sprite_name, scale) {
-    console.log('drawing', sprite_name, 'rotation', rotation_degrees, 'at', grid_x, grid_y)
     let grid_sprite = scene.add.sprite(0, 0, sprite_name);
     update_grid_sprite(grid_sprite, grid_x, grid_y, rotation_degrees);
     grid_sprite.setScale(scale);
@@ -176,18 +181,15 @@ function create() {
     this.cameras.main.setBackgroundColor(0xf7f1da);
     
     for(const route_id in map) {
-        console.log('route id ', route_id)
-        const route = map[route_id];
-        console.log(route)
-        for (const rail_tile of route) {
-            console.log(rail_tile)
+        for (const rail_tile of map[route_id]) {
             draw_rail_tile(this, rail_tile);
         }
     }
 
     place_car(this);
+    space_key = this.input.keyboard.addKey('space');
+
     game_inited = true;
-    this.time.addEvent({ delay: 1000 / 10, callback: advance_track, callbackScope: this, loop: true });
 }
 
 function advance_track() {
@@ -195,14 +197,20 @@ function advance_track() {
     player.position_in_route %= player.route.length;
 }
 
-function update_player() {
+function update_player(scene) {
+    player.speed = scene.input.keyboard.checkDown(space_key) ? HIGH_SPEED : LOW_SPEED;
+
+    if (scene.time.now - player.last_position_update > 1000 / player.speed) {
+        player.last_position_update = scene.time.now;
+        advance_track();
+    }
     player_rail_tile = player.route[player.position_in_route];
     angle = get_player_rotation(player_rail_tile);
     update_grid_sprite(player.cart_sprite, player_rail_tile.x, player_rail_tile.y, angle);
 }
 
 function update() {
-    update_player();
+    update_player(this);
 }
 
 event_handlers.connection = (event) => {
