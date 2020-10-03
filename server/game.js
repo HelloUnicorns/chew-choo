@@ -35,6 +35,7 @@ wss.on('connection', (client) => {
     console.log(`Client ${client_data[client].client_id} connected`);
     
     let route_id = map.new_player(client_data[client].client_id);
+    client_data[client].route_id = route_id;
     console.log(`Client ${client_data[client].client_id} occupies route ${route_id}`);
     
     let route = map.map[route_id];
