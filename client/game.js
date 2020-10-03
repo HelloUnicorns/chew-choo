@@ -20,7 +20,7 @@ let game_inited = 0;
 let game_inited_target = 2;
 let client_id;
 
-let map =  undefined;
+let map = undefined;
 
 const LOW_SPEED = 10;
 const HIGH_SPEED = 30;
@@ -40,31 +40,31 @@ let player = {
 map = undefined;
 scene = undefined;
 
-function draw_rail_tile(rail_tile) {
+function draw_rail_tile(rail_tile, is_own) {
     if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'top') {
-        draw_track_piece(rail_tile.x, rail_tile.y, 270);
+        draw_track_piece(rail_tile.x, rail_tile.y, 270, is_own);
     } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'left') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 0)
+        draw_corner_piece(rail_tile.x, rail_tile.y, 0, is_own);
     } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'right') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 270);
+        draw_corner_piece(rail_tile.x, rail_tile.y, 270, is_own);
     } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'bottom') {
-        draw_track_piece(rail_tile.x, rail_tile.y, 90);
+        draw_track_piece(rail_tile.x, rail_tile.y, 90, is_own);
     } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'left') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 90);
+        draw_corner_piece(rail_tile.x, rail_tile.y, 90, is_own);
     } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'right') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 180);
+        draw_corner_piece(rail_tile.x, rail_tile.y, 180, is_own);
     } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'top') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 90);
+        draw_corner_piece(rail_tile.x, rail_tile.y, 90, is_own);
     } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'bottom') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 0)
+        draw_corner_piece(rail_tile.x, rail_tile.y, 0, is_own);
     } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'right') {
-        draw_track_piece(rail_tile.x, rail_tile.y, 0);
+        draw_track_piece(rail_tile.x, rail_tile.y, 0, is_own);
     } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'left') {
-        draw_track_piece(rail_tile.x, rail_tile.y, 180);
+        draw_track_piece(rail_tile.x, rail_tile.y, 180, is_own);
     } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'top') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 180);
+        draw_corner_piece(rail_tile.x, rail_tile.y, 180, is_own);
     } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'bottom') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 270);
+        draw_corner_piece(rail_tile.x, rail_tile.y, 270, is_own);
     }
 }
 
@@ -117,9 +117,11 @@ const game = new Phaser.Game({
 
 function preload() {
     this.load.image('track', 'assets/track.png');
+    this.load.image('own_track', 'assets/own_track.png');
     this.load.image('turn', 'assets/turn.png');
     this.load.image('engine', 'assets/engine.png');
     this.load.image('cart', 'assets/cart.png');
+    this.load.image('own_turn', 'assets/own_turn.png');
 }
 
 function update_grid_sprite(sprite, grid_x, grid_y, rotation_degrees) {
@@ -134,12 +136,12 @@ function draw_grid_sprite(grid_x, grid_y, rotation_degrees, sprite_name, scale) 
     return grid_sprite;
 }
 
-function draw_track_piece(grid_x, grid_y, rotation_degrees) {
-    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, 'track', TRACK_SCALE);
+function draw_track_piece(grid_x, grid_y, rotation_degrees, is_own) {
+    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, is_own ? 'own_track' : 'track', TRACK_SCALE);
 }
 
-function draw_corner_piece(grid_x, grid_y, rotation_degrees) {
-    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, 'turn', TRACK_SCALE);
+function draw_corner_piece(grid_x, grid_y, rotation_degrees, is_own) {
+    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, is_own ? 'own_turn' : 'turn', TRACK_SCALE);
 }
 
 function draw_engine(grid_x, grid_y, rotation_degrees) {
@@ -150,16 +152,16 @@ function draw_cart(grid_x, grid_y, rotation_degrees) {
 }
 
 function draw_train() {
-    rail_tile = player.route[player.position_in_route];
-    angle = get_player_rotation(rail_tile);
-    player.engine_sprite = draw_engine(rail_tile.x, rail_tile.y, angle);
+    player_rail_tile = map[player.route_id][player.position_in_route];
+    angle = get_player_rotation(player_rail_tile);
+    player.engine_sprite = draw_engine(player_rail_tile.x, player_rail_tile.y, angle);
 
     if (player.length == 1) {
         return;
     }
 
     for (cart_index = 1; cart_index < player.length; cart_index++) {
-        rail_tile = player.route[player.position_in_route + cart_index];
+        rail_tile = map[player.route_id][player.position_in_route + cart_index];
         angle = get_player_rotation(rail_tile);
         cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle);
         player.cart_sprites.push(cart_sprite);
@@ -172,10 +174,10 @@ function update_player() {
     if (scene.time.now - player.last_position_update > 1000 / player.speed) {
         player.last_position_update = scene.time.now;
         player.position_in_route++;
-        player.position_in_route %= player.route.length;
+        player.position_in_route %= map[player.route_id].length;
     }
 
-    rail_tile = player.route[player.position_in_route];
+    rail_tile = map[player.route_id][player.position_in_route];
     angle = get_player_rotation(rail_tile);
     update_grid_sprite(player.engine_sprite, rail_tile.x, rail_tile.y, angle);
 
@@ -184,7 +186,7 @@ function update_player() {
     }
 
     for (cart_index = 1; cart_index < player.length; cart_index++) {
-        rail_tile = player.route[(player.position_in_route - cart_index + player.route.length) % player.route.length];
+        rail_tile = map[player.route_id][(player.position_in_route - cart_index + map[player.route_id].length) % map[player.route_id].length];
         angle = get_player_rotation(rail_tile);
         update_grid_sprite(player.cart_sprites[cart_index - 1], rail_tile.x, rail_tile.y, angle);
     }
@@ -206,7 +208,7 @@ function update() {
 event_handlers.connection = (event) => {
     client_id = event.client_id;
     map = event.map;
-    player.route = event.route;
+    player.route_id = event.route_id;
     game_inited += 1;
     
     draw_map();
@@ -221,7 +223,7 @@ function draw_map() {
     
     for(const route_id in map) {
         for (const rail_tile of map[route_id]) {
-            draw_rail_tile(rail_tile);
+            draw_rail_tile(rail_tile, player.route_id == route_id);
         }
     }
 
