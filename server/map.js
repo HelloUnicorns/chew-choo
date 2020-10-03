@@ -1,4 +1,4 @@
-const { calculate_position } = require('../common/position.js');
+const { calculate_speed_and_position } = require('../common/position.js');
 const constants = require('../common/constants.js');
 const TRACK_WIDTH = 30;
 const TRACK_HEIGHT = 21;
@@ -133,7 +133,9 @@ function init_map() {
                 last_position_update: new Date().getTime(),
                 position_fraction: 0,
                 length: 3,
-                speed: constants.LOW_SPEED, /* in tiles per second */
+                speed: constants.MIN_SPEED, /* in tiles per second */
+                is_speed_up: false,
+                is_speed_down: false,
                 killed: false
             }
         };
@@ -252,14 +254,23 @@ function update_map() {
     let new_time = new Date().getTime();
     for (const route_id in map) {
         const route = map[route_id];
-        calculate_position(route.player, route, new_time);
+        calculate_speed_and_position(route.player, route.player, route, new_time);
         update_occupied_tiles(route);
     }
     detect_collisions();
 }
 
-function update_speed(route_id, is_pressed) {
-    map[route_id].player.speed = is_pressed ? constants.HIGH_SPEED : constants.LOW_SPEED;
+function is_speed_up(speed_message_value) {
+    return speed_message_value & constants.SPEED_UP_FLAG;
+}
+
+function is_speed_down(speed_message_value) {
+    return speed_message_value & constants.SPEED_DOWN_FLAG;
+}
+
+function update_speed_change(route_id, speed_message_value) {
+    map[route_id].player.is_speed_up = is_speed_up(speed_message_value);
+    map[route_id].player.is_speed_down = is_speed_down(speed_message_value);
 }
 
 init_map();
@@ -267,5 +278,5 @@ init_map();
 exports.map = map;
 exports.new_player = new_player;
 exports.update_map = update_map;
-exports.update_speed = update_speed;
+exports.update_speed_change = update_speed_change;
 exports.delete_player = delete_player;
