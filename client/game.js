@@ -28,7 +28,7 @@ let player = {
     train_route: [],
     position_in_route: 0,
     last_position_update: 0,
-    speed: 10 /* in tiles per second */
+    speed: LOW_SPEED /* in tiles per second */
 }
 
 map = undefined;
