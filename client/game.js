@@ -141,7 +141,7 @@ const game = new Phaser.Game({
 function preload() {
     this.load.image('track', 'assets/track.png');
     this.load.image('turn', 'assets/turn.png');
-    this.load.image('cart', 'assets/cart.png')
+    this.load.image('cart', 'assets/cart.png');
 }
 
 function update_grid_sprite(sprite, grid_x, grid_y, rotation_degrees) {
@@ -189,17 +189,13 @@ function create() {
     game_inited = true;
 }
 
-function advance_track() {
-    player.position_in_route++;
-    player.position_in_route %= player.route.length;
-}
-
 function update_player(scene) {
     player.speed = scene.input.keyboard.checkDown(space_key) ? HIGH_SPEED : LOW_SPEED;
 
     if (scene.time.now - player.last_position_update > 1000 / player.speed) {
         player.last_position_update = scene.time.now;
-        advance_track();
+        player.position_in_route++;
+        player.position_in_route %= player.route.length;
     }
     player_rail_tile = player.route[player.position_in_route];
     angle = get_player_rotation(player_rail_tile);
