@@ -42,17 +42,17 @@ function build_rectangular_route(grid_x, grid_y, width, height) {
 
     route.push({x: grid_x + width - 1, y: grid_y + height - 1, direction_from: 'top', direction_to: 'left'});
     
-    for (let i = width - 1; i > 0; i--) {
+    for (let i = width - 2; i > 0; i--) {
         route.push({x: grid_x + i, y: grid_y + height - 1, direction_from: 'right', direction_to: 'left'});
     }
     
     route.push({x: grid_x, y: grid_y + height - 1, direction_from: 'right', direction_to: 'top'});
     
-    for (let i = height - 1; i < 0; i--) {
+    for (let i = height - 2; i > 0; i--) {
         route.push({x: grid_x, y: grid_y + i, direction_from: 'bottom', direction_to: 'top'});
     }
 
-    route.push({x: grid_x, y: grid_y, direction_from: 'bottom', direction_to: 'left'});
+    route.push({x: grid_x, y: grid_y, direction_from: 'bottom', direction_to: 'right'});
 
     return route;
 }
