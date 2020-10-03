@@ -71,7 +71,6 @@ function add_route(index) {
     return route_id;
 }
 }
-
 function build_rectangular_route(grid_x, grid_y, width, height) {
     route = [];
     for (let i = 1; i < width - 1; i++) {

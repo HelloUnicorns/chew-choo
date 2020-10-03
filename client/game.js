@@ -18,10 +18,12 @@ const CART_SCALE = CART_WIDTH / CART_IMAGE_WIDTH;
 let game_inited = 0;
 let game_inited_target = 2;
 let client_id;
+
+let map =  undefined;
 let player = {
     car_sprite: undefined,
     train_route: [],
-    car_grid_index: 0
+    position_in_route: 0,
 }
 
 map = undefined;
@@ -52,6 +54,34 @@ function draw_rail_tile(rail_tile) {
         draw_corner_piece(rail_tile.x, rail_tile.y, 180);
     } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'bottom') {
         draw_corner_piece(rail_tile.x, rail_tile.y, 270);
+    }
+}
+
+function get_player_rotation(rail_tile) {
+    if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'top') {
+        return 270;
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'left') {
+        return 225;
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'right') {
+        return 305;
+    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'bottom') {
+        return 90;
+    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'left') {
+        return 135;
+    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'right') {
+        return 45;
+    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'top') {
+        return 305;
+    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'bottom') {
+        return 45;
+    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'right') {
+        return 0;
+    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'left') {
+        return 180;
+    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'top') {
+        return 225;
+    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'bottom') {
+        return 135;
     }
 }
 
@@ -105,32 +135,10 @@ function draw_cart(grid_x, grid_y, rotation_degrees) {
     return draw_grid_sprite(grid_x, grid_y, rotation_degrees, 'cart', CART_SCALE);
 }
 
-function track_id_to_grid_index(track_id) {
-    if (track_id < TRACK_WIDTH - 1) {
-        /* top row */
-        return { x: track_id, y: 0, rotation_degrees: 0};
-    } 
-    track_id -= TRACK_WIDTH - 1;
-
-    if (track_id < TRACK_HEIGHT - 1) {
-        /* right culomn */
-        return { x: TRACK_WIDTH - 1, y: track_id, rotation_degrees: 90 };
-    }
-    track_id -= TRACK_HEIGHT - 1;
-    
-    if (track_id < TRACK_WIDTH - 1) {
-        /* bottom row */
-        return { x: TRACK_WIDTH - 1 - track_id, y: TRACK_HEIGHT - 1, rotation_degrees: 180 };
-    }
-    track_id -= TRACK_WIDTH - 1;
-
-    /* left culomn */
-    return { x: 0, y: TRACK_HEIGHT - 1 - track_id, rotation_degrees: 270 };
-}
-
 function place_car() {
-    grid_index = track_id_to_grid_index(player.car_grid_index);
-    player.cart_sprite = draw_cart(grid_index.x, grid_index.y, grid_index.rotation_degrees);
+    player_rail_tile = player.route[player.position_in_route];
+    angle = get_player_rotation(player_rail_tile);
+    player.cart_sprite = draw_cart(player_rail_tile.x, player_rail_tile.y, angle);
 }
 
 function create() {
@@ -140,21 +148,27 @@ function create() {
 }
 
 function advance_track() {
-    player.car_grid_index++;
-    player.car_grid_index %= TRACK_AMOUNT;
+    player.position_in_route++;
+    player.position_in_route %= player.route.length;
+}
+
+function update_player() {
+    player_rail_tile = player.route[player.position_in_route];
+    angle = get_player_rotation(player_rail_tile);
+    update_grid_sprite(player.cart_sprite, player_rail_tile.x, player_rail_tile.y, angle);
 }
 
 function update() {
     if (game_inited != game_inited_target) {
         return;
     }
-    grid_index = track_id_to_grid_index(player.car_grid_index);
-    update_grid_sprite(player.cart_sprite, grid_index.x, grid_index.y, grid_index.rotation_degrees);
+    update_player();
 }
 
 event_handlers.connection = (event) => {
     client_id = event.client_id;
     map = event.map;
+    player.route = event.route;
     game_inited += 1;
     
     draw_map();
