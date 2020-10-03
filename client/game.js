@@ -23,13 +23,81 @@ let player = {
     car_grid_index: 0
 }
 
-map = {};
+map = { 
+    0: build_rectangular_route(0, 0, 30, 20), 
+    1: build_rectangular_route(10, 10, 30, 20)
+};
 
-function create_map() {
+function build_rectangular_route(grid_x, grid_y, width, height) {
+    route = [];
+    for (let i = 1; i < width - 1; i++) {
+        route.push({x: grid_x + i, y: grid_y, direction_from: 'left', direction_to: 'right'});
+    }
+
+    route.push({x: grid_x + width - 1, y: grid_y, direction_from: 'left', direction_to: 'bottom'});
+    
+    for (let i = 1; i < height - 1; i++) {
+        route.push({x: grid_x + width - 1, y: grid_y + i, direction_from: 'top', direction_to: 'bottom'});
+    }
+
+    route.push({x: grid_x + width - 1, y: grid_y + height - 1, direction_from: 'top', direction_to: 'left'});
+    
+    for (let i = width - 1; i > 0; i--) {
+        route.push({x: grid_x + i, y: grid_y + height - 1, direction_from: 'right', direction_to: 'left'});
+    }
+    
+    route.push({x: grid_x, y: grid_y + height - 1, direction_from: 'right', direction_to: 'top'});
+    
+    for (let i = height - 1; i < 0; i--) {
+        route.push({x: grid_x, y: grid_y + i, direction_from: 'bottom', direction_to: 'top'});
+    }
+
+    route.push({x: grid_x, y: grid_y, direction_from: 'bottom', direction_to: 'left'});
+
+    return route;
+}
+
+function draw_rail_tile(rail_tile) {
+    if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+
+    }
+}
+
+function create_map(scene) {
     route_0_tiles = [];
 
     for (let i = 1; i < TRACK_WIDTH - 1; i++) {
-        route_0_tiles.push({'x': i, 'y': 0, 'direction_from': 'left', 'direction_to': 'right'});
+        route_0_tiles.push({x: i, y: 0, direction_from: 'left', direction_to: 'right'});
         
         draw_track_piece(scene, i, 0, 0);
         draw_track_piece(scene, i, TRACK_HEIGHT - 1, 180);
@@ -44,7 +112,7 @@ function create_map() {
     draw_corner_piece(scene, TRACK_WIDTH - 1, 0, 0);
     draw_corner_piece(scene, TRACK_WIDTH - 1, TRACK_HEIGHT - 1, 90);
 
-    let route_0 = 
+    // let route_0 = 
 }
 
 current_route_index = 0;
@@ -108,7 +176,6 @@ function draw_tracks(scene) {
         draw_track_piece(scene, 0, i, 270);
         draw_track_piece(scene, TRACK_WIDTH - 1, i, 90);
     }
-    draw_track_piece(scene, 10, 0, 90);
     draw_corner_piece(scene, 0, 0, 270);
     draw_corner_piece(scene, 0, TRACK_HEIGHT - 1, 180);
     draw_corner_piece(scene, TRACK_WIDTH - 1, 0, 0);
@@ -146,9 +213,8 @@ function place_car(scene) {
 function create() {
     this.cameras.main.setBackgroundColor(0xf7f1da);
     
-    create_map();
+    create_map(this);
 
-    draw_tracks(this);
     place_car(this);
     game_inited = true;
     this.time.addEvent({ delay: 1000 / 10, callback: advance_track, callbackScope: this, loop: true });
