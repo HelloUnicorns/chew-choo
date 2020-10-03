@@ -48,10 +48,10 @@ function draw_tracks(scene, origin_x, origin_y) {
         draw_track_piece(scene, origin_x, origin_y, 0, i, 270);
         draw_track_piece(scene, origin_x, origin_y, TRACK_WIDTH - 1, i, 90);
     }
-    draw_corner_piece(scene, origin_x, origin_y, 0, 0, 0);
-    draw_corner_piece(scene, origin_x, origin_y, 0, TRACK_HEIGHT - 1, 270);
-    draw_corner_piece(scene, origin_x, origin_y, TRACK_WIDTH - 1, 0, 90);
-    draw_corner_piece(scene, origin_x, origin_y, TRACK_WIDTH - 1, TRACK_HEIGHT - 1, 180);
+    draw_corner_piece(scene, origin_x, origin_y, 0, 0, 270);
+    draw_corner_piece(scene, origin_x, origin_y, 0, TRACK_HEIGHT - 1, 180);
+    draw_corner_piece(scene, origin_x, origin_y, TRACK_WIDTH - 1, 0, 0);
+    draw_corner_piece(scene, origin_x, origin_y, TRACK_WIDTH - 1, TRACK_HEIGHT - 1, 90);
 }
 
 function place_car(scene, origin_x, origin_y) {
