@@ -57,31 +57,31 @@ function build_rectangular_route(grid_x, grid_y, width, height) {
     return route;
 }
 
-function draw_rail_tile(rail_tile) {
+function draw_rail_tile(scene, rail_tile) {
     if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
-
+        draw_track_piece(scene, rail_tile.x, rail_tile.y, 270);
     } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'left') {
-
+        draw_corner_piece(scene, rail_tile.x, rail_tile.y, 0)
     } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'right') {
-
+        draw_corner_piece(scene, rail_tile.x, rail_tile.y, 270);
     } else if (rail_tile.direction_from == 'top' && rail_tile.direction_from == 'bottom') {
-
+        draw_track_piece(scene, rail_tile.x, rail_tile.y, 90);
     } else if (rail_tile.direction_from == 'top' && rail_tile.direction_from == 'left') {
-
+        draw_corner_piece(scene, rail_tile.x, rail_tile.y, 90);
     } else if (rail_tile.direction_from == 'top' && rail_tile.direction_from == 'right') {
-
+        draw_corner_piece(scene, rail_tile.x, rail_tile.y, 180);
     } else if (rail_tile.direction_from == 'left' && rail_tile.direction_from == 'top') {
-
+        draw_corner_piece(scene, rail_tile.x, rail_tile.y, 90);
     } else if (rail_tile.direction_from == 'left' && rail_tile.direction_from == 'bottom') {
-
+        draw_corner_piece(scene, rail_tile.x, rail_tile.y, 0)
     } else if (rail_tile.direction_from == 'left' && rail_tile.direction_from == 'right') {
-
+        draw_track_piece(scene, rail_tile.x, rail_tile.y, 0);
     } else if (rail_tile.direction_from == 'right' && rail_tile.direction_from == 'left') {
-
+        draw_track_piece(scene, rail_tile.x, rail_tile.y, 180);
     } else if (rail_tile.direction_from == 'right' && rail_tile.direction_from == 'top') {
-
+        draw_corner_piece(scene, rail_tile.x, rail_tile.y, 180);
     } else if (rail_tile.direction_from == 'right' && rail_tile.direction_from == 'bottom') {
-
+        draw_corner_piece(scene, rail_tile.x, rail_tile.y, 270);
     }
 }
 
