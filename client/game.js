@@ -21,6 +21,7 @@ let game_inited_target = 2;
 let client_id;
 
 let map = undefined;
+let scene = undefined;
 
 const LOW_SPEED = 10;
 const HIGH_SPEED = 30;
@@ -36,9 +37,6 @@ let player = {
     speed: LOW_SPEED, /* in tiles per second */
     length: 3
 }
-
-map = undefined;
-scene = undefined;
 
 function draw_rail_tile(rail_tile, is_own) {
     if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'top') {
