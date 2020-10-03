@@ -1,5 +1,5 @@
 const { wss } = require('./server.js');
-const { map } = require('./map.js');
+const { map, update_map, update_speed } = require('./map.js');
 
 function get_random_tint() {
     return Math.random() * 0xffffff;
@@ -21,28 +21,29 @@ function makeid(length) {
 let client_data = {};
 
 wss.on('connection', (client) => {
-    let client_id = makeid(ID_LEN);
-    let data = {
-        x: 0,
-        y: 0, 
-        tint: get_random_tint()
+    client_data[client] = {
+        client_id: makeid(ID_LEN),
+        route_id: 0
     };
 
-    client_data[client_id] = data;
+    console.log(`Client ${client_data[client].client_id} connected`);
 
-    console.log(`Client ${client_id} connected`);
-    
-    route = map[0];
-    client.send(JSON.stringify({client_id, type: 'connection', map, route: {route_id: 0, player: route.player}}));
+    client.send(JSON.stringify({
+        client_id: client_data[client].client_id,
+        type: 'connection',
+        map,
+        route_id: client_data[client].route_id
+    }));
     
     client.on('close', () => {
-        console.log(`Client ${client_id} disconnected`);
-        delete client_data[client_id];
+        console.log(`Client ${client_data[client].client_id} disconnected`);
+        delete client_data[client];
     });
 
     client.on('message', (json_data) => {
         const message = JSON.parse(json_data);
-        if (message.type == "blabla") {
+        if (message.type == "speed") {
+            update_speed(client_data[client].route_id, message.value);
         }
     });
 });
@@ -54,12 +55,11 @@ setInterval(() => {
 }, 1000);
 
 setInterval(() => {
-    let location_info = Object.keys(client_data).map(function(client_id) {
-        let client_info = client_data[client_id];
-        return { client_id, x: client_info.x, y: client_info.y, tint: client_info.tint };
-    });
+    update_map();
     
     wss.clients.forEach((client) => {
-        client.send(JSON.stringify({location_info, type: 'locations'}));
+        let data = client_data[client];
+        let player = map[data.route_id].player;
+        client.send(JSON.stringify({ position: player.position_in_route, type: 'position'}));
     });
 }, 1000 / 60);

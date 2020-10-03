@@ -30,10 +30,17 @@ let client_id;
 
 let map = undefined;
 let scene = undefined;
+let player = {
+    engine_sprite: undefined,
+    cart_sprites: [],
+    position_in_route: 0,
+    last_position_update: 0,
+    length: 3,
+    speed: LOW_SPEED, /* in tiles per second */
+    was_space_pressed: false
+}
 
 let space_key;
-
-let player = undefined;
 
 function draw_rail_tile(rail_tile, is_own) {
     if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'top') {
@@ -164,7 +171,12 @@ function draw_train() {
 }
 
 function update_player() {
-    player.speed = scene.input.keyboard.checkDown(space_key) ? HIGH_SPEED : LOW_SPEED;
+    let is_space_pressed = scene.input.keyboard.checkDown(space_key);
+    if (player.was_space_pressed != is_space_pressed) {
+        player.was_space_pressed = is_space_pressed;
+        send_event({type: 'speed', value: is_space_pressed});
+    }
+    player.speed = is_space_pressed ? HIGH_SPEED : LOW_SPEED;
 
     if (scene.time.now - player.last_position_update > 1000 / player.speed) {
         player.last_position_update = scene.time.now;
@@ -211,11 +223,20 @@ function update() {
 event_handlers.connection = (event) => {
     client_id = event.client_id;
     map = event.map;
-    player = event.route.player;
-    player.route_id = event.route.route_id;
+    player.route_id = event.route_id;
+    player = Object.assign(player, map[event.route_id].player);
     game_inited += 1;
     
     draw_map();
+};
+
+event_handlers.position = (event) => {
+    if (game_inited != game_inited_target) {
+        return;
+    }
+
+    player.position_in_route = event.position;
+    player.last_position_update = scene.time.now;
 };
 
 function draw_map() {
@@ -226,7 +247,7 @@ function draw_map() {
     scene.cameras.main.setBackgroundColor(0xf7f1da);
     
     for(const route_id in map) {
-        for (const rail_tile of map[Number(route_id)].tiles) {
+        for (const rail_tile of map[route_id].tiles) {
             draw_rail_tile(rail_tile, player.route_id == route_id);
         }
     }

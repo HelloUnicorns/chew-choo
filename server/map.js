@@ -98,11 +98,8 @@ function init_map() {
         map[i] = {
             tiles: build_rectangular_route(start_position.x, start_position.y, TRACK_WIDTH, TRACK_HEIGHT),
             player: {
-                engine_sprite: undefined,
-                cart_sprites: [],
-                train_route: [],
                 position_in_route: 0,
-                last_position_update: 0,
+                last_position_update: new Date().getTime(),
                 length: 3,
                 speed: LOW_SPEED /* in tiles per second */
             }
@@ -110,6 +107,23 @@ function init_map() {
     }
 }
 
+function update_map() {
+    new_time = new Date().getTime();
+    for (const route_id in map) {
+        const route = map[route_id];
+        if (new_time - route.player.last_position_update > 1000 / route.player.speed) {
+            route.player.last_position_update = new_time;
+            route.player.position_in_route++;
+            route.player.position_in_route %= route.tiles.length;
+        }
+    }
+}
+
+function update_speed(route_id, is_pressed) {
+    map[route_id].player.speed = is_pressed ? HIGH_SPEED : LOW_SPEED;
+}
 init_map();
 
 exports.map = map;
+exports.update_map = update_map;
+exports.update_speed = update_speed;
