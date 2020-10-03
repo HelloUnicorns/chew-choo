@@ -12,6 +12,10 @@ const CART_IMAGE_WIDTH = 100;
 const CART_WIDTH = GRID_PIECE_WIDTH;
 const CART_SCALE = CART_WIDTH / CART_IMAGE_WIDTH;
 
+const ENGINE_IMAGE_WIDTH = 100;
+const ENGINE_WIDTH = GRID_PIECE_WIDTH;
+const ENGINE_SCALE = ENGINE_WIDTH / ENGINE_IMAGE_WIDTH;
+
 let game_inited = 0;
 let game_inited_target = 2;
 let client_id;
@@ -24,11 +28,13 @@ const HIGH_SPEED = 30;
 let space_key;
 
 let player = {
-    car_sprite: undefined,
+    engine_sprite: undefined,
+    cart_sprites: [],
     train_route: [],
     position_in_route: 0,
     last_position_update: 0,
-    speed: LOW_SPEED /* in tiles per second */
+    speed: LOW_SPEED, /* in tiles per second */
+    length: 3
 }
 
 map = undefined;
@@ -112,7 +118,8 @@ const game = new Phaser.Game({
 function preload() {
     this.load.image('track', 'assets/track.png');
     this.load.image('turn', 'assets/turn.png');
-    this.load.image('cart', 'assets/cart.png')
+    this.load.image('engine', 'assets/engine.png');
+    this.load.image('cart', 'assets/cart.png');
 }
 
 function update_grid_sprite(sprite, grid_x, grid_y, rotation_degrees) {
@@ -135,25 +142,28 @@ function draw_corner_piece(grid_x, grid_y, rotation_degrees) {
     return draw_grid_sprite(grid_x, grid_y, rotation_degrees, 'turn', TRACK_SCALE);
 }
 
+function draw_engine(grid_x, grid_y, rotation_degrees) {
+    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, 'engine', ENGINE_SCALE);
+}
 function draw_cart(grid_x, grid_y, rotation_degrees) {
     return draw_grid_sprite(grid_x, grid_y, rotation_degrees, 'cart', CART_SCALE);
 }
 
-function place_car() {
-    player_rail_tile = player.route[player.position_in_route];
-    angle = get_player_rotation(player_rail_tile);
-    player.cart_sprite = draw_cart(player_rail_tile.x, player_rail_tile.y, angle);
-}
+function draw_train() {
+    rail_tile = player.route[player.position_in_route];
+    angle = get_player_rotation(rail_tile);
+    player.engine_sprite = draw_engine(rail_tile.x, rail_tile.y, angle);
 
-function create() {
-    scene = this;
-    game_inited += 1;
-    draw_map();
-}
+    if (player.length == 1) {
+        return;
+    }
 
-function advance_track() {
-    player.position_in_route++;
-    player.position_in_route %= player.route.length;
+    for (cart_index = 1; cart_index < player.length; cart_index++) {
+        rail_tile = player.route[player.position_in_route + cart_index];
+        angle = get_player_rotation(rail_tile);
+        cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle);
+        player.cart_sprites.push(cart_sprite);
+    }
 }
 
 function update_player() {
@@ -161,11 +171,29 @@ function update_player() {
 
     if (scene.time.now - player.last_position_update > 1000 / player.speed) {
         player.last_position_update = scene.time.now;
-        advance_track();
+        player.position_in_route++;
+        player.position_in_route %= player.route.length;
     }
-    player_rail_tile = player.route[player.position_in_route];
-    angle = get_player_rotation(player_rail_tile);
-    update_grid_sprite(player.cart_sprite, player_rail_tile.x, player_rail_tile.y, angle);
+
+    rail_tile = player.route[player.position_in_route];
+    angle = get_player_rotation(rail_tile);
+    update_grid_sprite(player.engine_sprite, rail_tile.x, rail_tile.y, angle);
+
+    if (player.length == 1) {
+        return;
+    }
+
+    for (cart_index = 1; cart_index < player.length; cart_index++) {
+        rail_tile = player.route[(player.position_in_route - cart_index + player.route.length) % player.route.length];
+        angle = get_player_rotation(rail_tile);
+        update_grid_sprite(player.cart_sprites[cart_index - 1], rail_tile.x, rail_tile.y, angle);
+    }
+}
+
+function create() {
+    scene = this;
+    game_inited += 1;
+    draw_map();
 }
 
 function update() {
@@ -197,7 +225,7 @@ function draw_map() {
         }
     }
 
-    place_car();
-    scene.cameras.main.startFollow(player.cart_sprite, true);
+    draw_train();
+    scene.cameras.main.startFollow(player.engine_sprite, true);
     space_key = scene.input.keyboard.addKey('space');
 }
