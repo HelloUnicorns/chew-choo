@@ -162,7 +162,8 @@ function init_map() {
                 position_fraction: 0,
                 last_position_update: 0,
                 length: 3,
-                speed: LOW_SPEED /* in tiles per second */
+                speed: LOW_SPEED, /* in tiles per second */
+                color: 0xff0000,
             }
         };
     }

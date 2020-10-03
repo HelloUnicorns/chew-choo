@@ -124,23 +124,24 @@ function update_grid_sprite(sprite, grid_x, grid_y, rotation_degrees) {
     sprite.setRotation(rotation_degrees * Phaser.Math.DEG_TO_RAD);
 }
 
-function draw_grid_sprite(grid_x, grid_y, rotation_degrees, sprite_name, scale) {
+function draw_grid_sprite(grid_x, grid_y, rotation_degrees, sprite_name, scale, tint) {
     let grid_sprite = scene.add.sprite(0, 0, sprite_name);
     update_grid_sprite(grid_sprite, grid_x, grid_y, rotation_degrees);
     grid_sprite.setScale(scale);
+    grid_sprite.setTint(tint, tint, tint, tint);
     return grid_sprite;
 }
 
 function draw_track_piece(grid_x, grid_y, rotation_degrees, is_own) {
-    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, is_own ? 'own_track' : 'track', TRACK_SCALE);
+    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, is_own ? 'own_track' : 'track', TRACK_SCALE, is_own ? player.color : 0xffffff);
 }
 
 function draw_corner_piece(grid_x, grid_y, rotation_degrees, is_own) {
-    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, is_own ? 'own_turn' : 'turn', TRACK_SCALE);
+    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, is_own ? 'own_turn' : 'turn', TRACK_SCALE, is_own ? player.color : 0xffffff);
 }
 
 function draw_cart(grid_x, grid_y, rotation_degrees, is_engine) {
-    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, is_engine ? 'engine' : 'cart', CART_SCALE);
+    return draw_grid_sprite(grid_x, grid_y, rotation_degrees, is_engine ? 'engine' : 'cart', CART_SCALE, player.color);
 }
 
 function draw_cart_by_index(cart_index, is_engine) {
