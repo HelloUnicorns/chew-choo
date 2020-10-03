@@ -32,7 +32,7 @@ wss.on('connection', (client) => {
 
     console.log(`Client ${client_id} connected`);
     
-    client.send(JSON.stringify({client_id, type: 'connection', map, route: map[0]}));
+    client.send(JSON.stringify({client_id, type: 'connection', map, route_id: 0}));
     
     client.on('close', () => {
         console.log(`Client ${client_id} disconnected`);
