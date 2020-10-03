@@ -6,6 +6,12 @@ const TRACK_SCALE = 0.3;
 const TRACK_PIECE_WIDTH = TRACK_PIECE_IMAGE_WIDTH * TRACK_SCALE;
 const TRACK_WIDTH = 30;
 const TRACK_HEIGHT = 20;
+
+const CART_IMAGE_WIDTH = 100;
+const CART_WIDTH = TRACK_PIECE_WIDTH;
+const CART_SCALE = CART_WIDTH / CART_IMAGE_WIDTH;
+
+
 let game_inited = false;
 let client_id;
 
@@ -27,8 +33,10 @@ function draw_corner_piece(scene, origin_x, origin_y, index_x, index_y, rotation
     track.setScale(TRACK_SCALE);
 }
 
-function draw_cart(scene, origin_x, origin_y, index_x, index_y) {
+function draw_cart(scene, origin_x, origin_y, index_x, index_y, rotation_degrees) {
     let cart = scene.add.sprite(origin_x + index_x * TRACK_PIECE_WIDTH, origin_y + index_y * TRACK_PIECE_WIDTH, 'cart');
+    cart.setRotation(rotation_degrees * Phaser.Math.DEG_TO_RAD);
+    cart.setScale(CART_SCALE);
 }
 
 function draw_tracks(scene, origin_x, origin_y) {
@@ -54,19 +62,22 @@ function place_car(scene, origin_x, origin_y) {
     if (selected_track < TRACK_WIDTH) {
         /* First row */
         position = [selected_track, 0];
+        rotation_degrees = 0;
     } else if (selected_track + TRACK_WIDTH > amount_of_tracks) {
         /* Last row */
-        position = [amount_of_tracks - selected_track, TRACK_HEIGHT - 1]; 
+        position = [amount_of_tracks - selected_track, TRACK_HEIGHT - 1];
+        rotation_degrees = 180;
     } else {
         /* Middle rows */
         position = [
             (selected_track % 2) * (TRACK_WIDTH - 1),
             Math.floor((selected_track - TRACK_WIDTH) / 2)
         ];
+        rotation_degrees = 270 - 180 * (selected_track % 2);
     }
     console.log(selected_track);
     console.log(position);
-    draw_cart(scene, origin_x, origin_y, position[0], position[1]);
+    draw_cart(scene, origin_x, origin_y, position[0], position[1], rotation_degrees);
 }
 
 function create() {
