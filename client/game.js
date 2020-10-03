@@ -156,7 +156,7 @@ function advance_track() {
     player.position_in_route %= player.route.length;
 }
 
-function update_player(scene) {
+function update_player() {
     player.speed = scene.input.keyboard.checkDown(space_key) ? HIGH_SPEED : LOW_SPEED;
 
     if (scene.time.now - player.last_position_update > 1000 / player.speed) {
@@ -189,14 +189,14 @@ function draw_map() {
         return;
     }
 
-    this.cameras.main.setBackgroundColor(0xf7f1da);
+    scene.cameras.main.setBackgroundColor(0xf7f1da);
     
     for(const route_id in map) {
         for (const rail_tile of map[route_id]) {
-            draw_rail_tile(this, rail_tile);
+            draw_rail_tile(scene, rail_tile);
         }
     }
 
-    place_car(this);
-    space_key = this.input.keyboard.addKey('space');
+    place_car(scene);
+    space_key = scene.input.keyboard.addKey('space');
 }
