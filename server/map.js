@@ -100,6 +100,7 @@ function init_map() {
             player: {
                 position_in_route: 0,
                 last_position_update: new Date().getTime(),
+                position_fraction: 0,
                 length: 3,
                 speed: LOW_SPEED /* in tiles per second */
             }
