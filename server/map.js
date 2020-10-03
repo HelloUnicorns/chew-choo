@@ -17,64 +17,6 @@ let map = {};
 const LOW_SPEED = 10;
 const HIGH_SPEED = 30;
 
-if (0) {
-
-
-
-
-
-
-
-const ID_LEN = 8;
-
-function makeid(length) {
-    /* https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript */
-    var result           = '';
-    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    var charactersLength = characters.length;
-    for ( var i = 0; i < length; i++ ) {
-       result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-    return result;
-}
-
-function add_route(index) {
-    let route_id = makeid(ID_LEN);
-    let x = undefined;
-    let y = undefined;
-
-    if (!map) {
-        x = 1000000;
-        y = 1000000;
-        direction = 'up';
-        count = 1;
-        current_count = count;
-    } else {
-        current_count -= 1;
-        switch (direction) {
-            case 'up':
-                
-        }
-        /*  
-            25      14      15      16
-                13      6       7
-            24      5       2       17
-                12      1       8
-            23      4       3       18
-                11      10      9
-            22      21      20      19                
-        */
-       
-
-    }
-
-    map[route_id] = {
-        x,
-        y
-    };
-    return route_id;
-}
-}
 function build_rectangular_route(grid_x, grid_y, width, height) {
     let route = [];
     for (let i = 1; i < width - 1; i++) {
