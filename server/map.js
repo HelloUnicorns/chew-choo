@@ -13,6 +13,10 @@ const MAX_PLAYERS = 65;
 
 let map = {};
 
+
+const LOW_SPEED = 10;
+const HIGH_SPEED = 30;
+
 if (0) {
 
 
@@ -72,7 +76,7 @@ function add_route(index) {
 }
 }
 function build_rectangular_route(grid_x, grid_y, width, height) {
-    route = [];
+    let route = [];
     for (let i = 1; i < width - 1; i++) {
         route.push({x: grid_x + i, y: grid_y, direction_from: 'left', direction_to: 'right'});
     }
@@ -96,7 +100,7 @@ function build_rectangular_route(grid_x, grid_y, width, height) {
     }
 
     route.push({x: grid_x, y: grid_y, direction_from: 'bottom', direction_to: 'right'});
-
+ 
     return route;
 }
 
@@ -149,7 +153,16 @@ function init_map() {
     compute_start_positions();
     for (let i = 0; i < MAX_PLAYERS; ++i) {
         start_position = route_start_positions[i];
-        map[i] = build_rectangular_route(start_position.x, start_position.y, TRACK_WIDTH, TRACK_HEIGHT);
+        map[i] = {
+            tiles: build_rectangular_route(start_position.x, start_position.y, TRACK_WIDTH, TRACK_HEIGHT),
+            player: {
+                car_sprite: undefined,
+                train_route: [],
+                position_in_route: 0,
+                last_position_update: 0,
+                speed: LOW_SPEED /* in tiles per second */
+            }
+        };
     }
 }
 

@@ -12,24 +12,18 @@ const CART_IMAGE_WIDTH = 100;
 const CART_WIDTH = GRID_PIECE_WIDTH;
 const CART_SCALE = CART_WIDTH / CART_IMAGE_WIDTH;
 
+const LOW_SPEED = 10;
+const HIGH_SPEED = 30;
+
 let game_inited = 0;
 let game_inited_target = 2;
 let client_id;
 
 let map =  undefined;
 
-const LOW_SPEED = 10;
-const HIGH_SPEED = 30;
-
 let space_key;
 
-let player = {
-    car_sprite: undefined,
-    train_route: [],
-    position_in_route: 0,
-    last_position_update: 0,
-    speed: LOW_SPEED /* in tiles per second */
-}
+let player = undefined;
 
 map = undefined;
 scene = undefined;
@@ -178,7 +172,8 @@ function update() {
 event_handlers.connection = (event) => {
     client_id = event.client_id;
     map = event.map;
-    player.route = event.route;
+    player = event.route.player;
+    player.route = event.route.tiles;
     game_inited += 1;
     
     draw_map();
@@ -192,7 +187,7 @@ function draw_map() {
     scene.cameras.main.setBackgroundColor(0xf7f1da);
     
     for(const route_id in map) {
-        for (const rail_tile of map[route_id]) {
+        for (const rail_tile of map[route_id].tiles) {
             draw_rail_tile(rail_tile);
         }
     }
