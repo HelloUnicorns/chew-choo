@@ -160,6 +160,7 @@ function init_map() {
                 cart_sprites: [],
                 train_route: [],
                 position_in_route: 0,
+                position_fraction: 0,
                 last_position_update: 0,
                 length: 3,
                 speed: LOW_SPEED /* in tiles per second */
