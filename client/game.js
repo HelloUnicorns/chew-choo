@@ -58,57 +58,32 @@ function build_rectangular_route(grid_x, grid_y, width, height) {
 }
 
 function draw_rail_tile(scene, rail_tile) {
-    if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+    if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'top') {
         draw_track_piece(scene, rail_tile.x, rail_tile.y, 270);
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'left') {
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'left') {
         draw_corner_piece(scene, rail_tile.x, rail_tile.y, 0)
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'right') {
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'right') {
         draw_corner_piece(scene, rail_tile.x, rail_tile.y, 270);
-    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_from == 'bottom') {
+    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'bottom') {
         draw_track_piece(scene, rail_tile.x, rail_tile.y, 90);
-    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_from == 'left') {
+    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'left') {
         draw_corner_piece(scene, rail_tile.x, rail_tile.y, 90);
-    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_from == 'right') {
+    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'right') {
         draw_corner_piece(scene, rail_tile.x, rail_tile.y, 180);
-    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_from == 'top') {
+    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'top') {
         draw_corner_piece(scene, rail_tile.x, rail_tile.y, 90);
-    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_from == 'bottom') {
+    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'bottom') {
         draw_corner_piece(scene, rail_tile.x, rail_tile.y, 0)
-    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_from == 'right') {
+    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'right') {
         draw_track_piece(scene, rail_tile.x, rail_tile.y, 0);
-    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_from == 'left') {
+    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'left') {
         draw_track_piece(scene, rail_tile.x, rail_tile.y, 180);
-    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_from == 'top') {
+    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'top') {
         draw_corner_piece(scene, rail_tile.x, rail_tile.y, 180);
-    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_from == 'bottom') {
+    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'bottom') {
         draw_corner_piece(scene, rail_tile.x, rail_tile.y, 270);
     }
 }
-
-function create_map(scene) {
-    route_0_tiles = [];
-
-    for (let i = 1; i < TRACK_WIDTH - 1; i++) {
-        route_0_tiles.push({x: i, y: 0, direction_from: 'left', direction_to: 'right'});
-        
-        draw_track_piece(scene, i, 0, 0);
-        draw_track_piece(scene, i, TRACK_HEIGHT - 1, 180);
-    }
-    for (let i = 1; i < TRACK_HEIGHT - 1; i++) {
-        draw_track_piece(scene, 0, i, 270);
-        draw_track_piece(scene, TRACK_WIDTH - 1, i, 90);
-    }
-    draw_track_piece(scene, 10, 0, 90);
-    draw_corner_piece(scene, 0, 0, 270);
-    draw_corner_piece(scene, 0, TRACK_HEIGHT - 1, 180);
-    draw_corner_piece(scene, TRACK_WIDTH - 1, 0, 0);
-    draw_corner_piece(scene, TRACK_WIDTH - 1, TRACK_HEIGHT - 1, 90);
-
-    // let route_0 = 
-}
-
-current_route_index = 0;
-
 
 const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -141,6 +116,7 @@ function update_grid_sprite(sprite, grid_x, grid_y, rotation_degrees) {
 }
 
 function draw_grid_sprite(scene, grid_x, grid_y, rotation_degrees, sprite_name, scale) {
+    console.log('drawing', sprite_name, 'rotation', rotation_degrees, 'at', grid_x, grid_y)
     let grid_sprite = scene.add.sprite(0, 0, sprite_name);
     update_grid_sprite(grid_sprite, grid_x, grid_y, rotation_degrees);
     grid_sprite.setScale(scale);
@@ -205,7 +181,15 @@ function place_car(scene) {
 function create() {
     this.cameras.main.setBackgroundColor(0xf7f1da);
     
-    create_map(this);
+    for(const route_id in map) {
+        console.log('route id ', route_id)
+        const route = map[route_id];
+        console.log(route)
+        for (const rail_tile of route) {
+            console.log(rail_tile)
+            draw_rail_tile(this, rail_tile);
+        }
+    }
 
     place_car(this);
     game_inited = true;
