@@ -1,8 +1,24 @@
 const { wss } = require('./server.js');
+const { map } = require('./map.js');
 
 function get_random_tint() {
     return Math.random() * 0xffffff;
 }
+
+const ID_LEN = 8;
+
+function makeid(length) {
+    /* https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript */
+    var result           = '';
+    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for ( var i = 0; i < length; i++ ) {
+       result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
+
+let client_data = {};
 
 wss.on('connection', (client) => {
     let client_id = makeid(ID_LEN);
@@ -16,7 +32,7 @@ wss.on('connection', (client) => {
 
     console.log(`Client ${client_id} connected`);
     
-    client.send(JSON.stringify({client_id, type: 'connection', tint: data.tint}))
+    client.send(JSON.stringify({client_id, type: 'connection', map}));
     
     client.on('close', () => {
         console.log(`Client ${client_id} disconnected`);
