@@ -197,9 +197,8 @@ function update_camera() {
     /* we want the number of grid pieces that fit in the screen to be  */
     const vertical_tiles = player.length * VERTICAL_GRID_TILES_PER_PLAYER_TRAIN_TILES;
     const wanted_height = vertical_tiles * GRID_PIECE_WIDTH;
-    if (wanted_height > CANVAS_HEIGHT) {
-        scene.cameras.main.setZoom(CANVAS_HEIGHT / wanted_height);
-    }
+    const zoom = Math.min(CANVAS_HEIGHT / wanted_height, 1);
+    scene.cameras.main.setZoom(zoom);
 }
 
 function update() {
