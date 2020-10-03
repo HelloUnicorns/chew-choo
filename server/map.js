@@ -164,7 +164,7 @@ function update_map() {
     new_time = new Date().getTime();
     for (const route_id in map) {
         const route = map[route_id];
-        calculate_speed_and_position(route.player, route, new_time);
+        calculate_speed_and_position(route.player, route.player, route, new_time);
     }
 }
 

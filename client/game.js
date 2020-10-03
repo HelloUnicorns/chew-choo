@@ -86,7 +86,7 @@ function update_speed_change() {
 
 function update_player() {
     update_speed_change();
-    calculate_speed_and_position(player, get_rails_by_id(player.train.route_id), global_data.scene.time.now);
+    // calculate_speed_and_position(player, player.train, get_rails_by_id(player.train.route_id), global_data.scene.time.now);
 }
 
 function update() {
