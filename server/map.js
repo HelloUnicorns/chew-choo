@@ -4,6 +4,8 @@ const TRACK_HEIGHT = 21;
 const START_X = 0;
 const START_Y = 0;
 
+
+
 let route_start_positions = [
 
 ];
@@ -12,69 +14,11 @@ let directions = ['right', 'down', 'left', 'up']
 const MAX_PLAYERS = 65;
 
 let map = {};
-
+active_players = {};
 
 const LOW_SPEED = 10;
 const HIGH_SPEED = 30;
 
-if (0) {
-
-
-
-
-
-
-
-const ID_LEN = 8;
-
-function makeid(length) {
-    /* https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript */
-    var result           = '';
-    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    var charactersLength = characters.length;
-    for ( var i = 0; i < length; i++ ) {
-       result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-    return result;
-}
-
-function add_route(index) {
-    let route_id = makeid(ID_LEN);
-    let x = undefined;
-    let y = undefined;
-
-    if (!map) {
-        x = 1000000;
-        y = 1000000;
-        direction = 'up';
-        count = 1;
-        current_count = count;
-    } else {
-        current_count -= 1;
-        switch (direction) {
-            case 'up':
-                
-        }
-        /*  
-            25      14      15      16
-                13      6       7
-            24      5       2       17
-                12      1       8
-            23      4       3       18
-                11      10      9
-            22      21      20      19                
-        */
-       
-
-    }
-
-    map[route_id] = {
-        x,
-        y
-    };
-    return route_id;
-}
-}
 function build_rectangular_route(grid_x, grid_y, width, height) {
     let route = [];
     for (let i = 1; i < width - 1; i++) {
@@ -105,6 +49,15 @@ function build_rectangular_route(grid_x, grid_y, width, height) {
 }
 
 function compute_start_positions() {
+    /*  
+            25      14      15      16
+                13      6       7
+            24      5       2       17
+                12      1       8
+            23      4       3       18
+                11      10      9
+            22      21      20      19                
+    */
     route_start_positions.push({x: START_X, y: START_Y});
     let direction = 'right';
     let count = 1;
@@ -161,6 +114,7 @@ function init_map() {
                 train_route: [],
                 position_in_route: 0,
                 last_position_update: 0,
+                position_fraction: 0,
                 length: 3,
                 speed: LOW_SPEED /* in tiles per second */
             }
@@ -168,6 +122,51 @@ function init_map() {
     }
 }
 
+
+let entered = false;
+function new_player(player_id) {
+    if (entered) {
+        return undefined;
+    }
+    entered = true;
+
+    let empty_route = undefined;
+    for (let i = 0; i < MAX_PLAYERS; ++i) {
+        if (empty_route === undefined  && !active_players[i]) {
+            empty_route = i;
+        }
+        if (active_players[i] == player_id) {
+            if (active_players[i].timeout) {
+                clearTimeout(active_players[i].timeout);
+            }
+            entered = false;
+            return i;
+        } 
+    }
+
+    if (empty_route != undefined) {
+        active_players[empty_route] = player_id;
+        entered = false;
+        return empty_route;
+    }
+
+    entered = false;
+    return undefined;
+}
+
+function notify_player_disconnected(player_id) {
+    for (const [route_id, current_player_id] of Object.entries(active_players)) {
+        if (player_id == current_player_id) {
+            active_players[route_id].timeout = setTimeout(() => {
+                delete active_players[route_id];
+                console.log(`Route ${route_id} is free`);
+            }, 20 * 1000);
+        }
+    }
+}
+
 init_map();
 
 exports.map = map;
+exports.new_player = new_player;
+exports.notify_player_disconnected = notify_player_disconnected;

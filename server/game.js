@@ -1,5 +1,5 @@
 const { wss } = require('./server.js');
-const { map } = require('./map.js');
+const map = require('./map.js');
 
 function get_random_tint() {
     return Math.random() * 0xffffff;
@@ -32,11 +32,15 @@ wss.on('connection', (client) => {
 
     console.log(`Client ${client_id} connected`);
     
-    route = map[0];
-    client.send(JSON.stringify({client_id, type: 'connection', map, route: {route_id: 0, player: route.player}}));
+    let route_id = map.new_player(client_id);
+    console.log(`Client ${client_id} occupies route ${route_id}`);
+    
+    let route = map.map[route_id];
+    client.send(JSON.stringify({client_id, type: 'connection', map: map.map, route: {route_id: route_id, player: route.player}}));
     
     client.on('close', () => {
         console.log(`Client ${client_id} disconnected`);
+        map.notify_player_disconnected(client_id);
         delete client_data[client_id];
     });
 
