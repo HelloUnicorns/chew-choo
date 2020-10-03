@@ -60,35 +60,27 @@ function build_rectangular_route(grid_x, grid_y, width, height) {
 function draw_rail_tile(rail_tile) {
     if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
 
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'left') {
 
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'right') {
 
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_from == 'bottom') {
 
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_from == 'left') {
 
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_from == 'right') {
 
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_from == 'top') {
 
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_from == 'bottom') {
 
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_from == 'right') {
 
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_from == 'left') {
 
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_from == 'top') {
 
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
-
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
-
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
-
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
-
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_from == 'top') {
+    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_from == 'bottom') {
 
     }
 }
