@@ -87,8 +87,8 @@ event_handlers.connection = (event) => {
 const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game-container',
-    width: 800,
-    height: 600,
+    width: 1280,
+    height: 720,
     physics: {
         default: 'arcade',
         arcade: {
