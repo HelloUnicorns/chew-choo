@@ -13,7 +13,7 @@ class SpeedMeterScene extends Phaser.Scene {
 
     update() {
         if (global_data.player.train) {
-            this.speed_meter.setText('Speed: ' + global_data.player.train.speed);
+            this.speed_meter.setText('Speed: ' + global_data.player.train.speed.toFixed(2));
         }
     }
 }

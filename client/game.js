@@ -5,7 +5,7 @@ const constants = require('../common/constants.js');
 const { GameScene } = require('./game_scene.js');
 const { SpeedMeterScene } = require('./speed_meter_scene.js');
 const { set_rails } = require('./rails.js');
-const { build_train } = require('./train.js');
+const { build_train, get_train_by_id, update_train_location } = require('./train.js');
 
 global_data.player = {
     train: undefined,
@@ -31,6 +31,16 @@ event_handlers.connection = (event) => {
     set_rails(event.map);
     global_data.player.train = build_train(event.route_id);
     global_data.scene.game_inited += 1;
+    global_data.scene.client_loaded();
+};
+
+event_handlers.connection = (event) => {
+    set_rails(event.map);
+    for (const route_id in event.map) {
+        build_train(Number(route_id));
+    }
+    global_data.player.train = get_train_by_id(event.route_id);
+    global_data.scene.game_inited += 1;
     
     global_data.scene.client_loaded();
 };
@@ -39,8 +49,9 @@ event_handlers.position = (event) => {
     if (global_data.scene.game_inited != global_data.scene.game_inited_target) {
         return;
     }
-    let own_player_data = event.locations[global_data.player.train.route_id];
-    global_data.player.train.position_fraction = own_player_data.position_fraction;
-    global_data.player.train.position_in_route = own_player_data.position_in_route;
-    global_data.player.train.last_position_update = global_data.scene.time.now;
+
+    for (let route_id in event.locations) {
+        let location_info = event.locations[Number(route_id)];
+        update_train_location(route_id, location_info.position_fraction, location_info.position_in_route, location_info.speed);
+    }
 };    

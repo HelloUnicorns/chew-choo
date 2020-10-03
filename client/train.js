@@ -1,4 +1,5 @@
 const constants = require('../common/constants.js');
+const global_data = require('./global_data.js')
 const { draw_grid_sprite, update_grid_sprite, GRID_PIECE_WIDTH, CART_Z_INEDX } = require('./grid.js');
 const { get_rails_by_id } = require('./rails.js');
 
@@ -19,10 +20,14 @@ function build_train(route_id) {
         position_in_route: 0,
         last_position_update: 0,
         length: 3,
-        speed: constants.LOW_SPEED, /* in tiles per second */
+        speed: constants.MIN_SPEED, /* in tiles per second */
         position_fraction: 0,
         route_id,
     };
+}
+
+function get_train_by_id(route_id) {
+    return trains[route_id];
 }
 
 function draw_cart_by_index(train, cart_index, is_engine) {
@@ -69,6 +74,11 @@ function draw_train(train) {
     }
 }
 
+function draw_all_trains() {
+    for (let route_id in trains) {
+        draw_train(trains[route_id]);
+    }
+}
 
 function draw_cart(grid_x, grid_y, rotation_degrees, is_engine) {
     return draw_grid_sprite(
@@ -104,6 +114,15 @@ function update_trains() {
     }
 }
 
-exports.draw_train = draw_train;
+function update_train_location(route_id, position_fraction, position_in_route, speed) {
+    trains[route_id].position_fraction = position_fraction;
+    trains[route_id].position_in_route = position_in_route;
+    trains[route_id].speed = speed;
+    trains[route_id].last_position_update = global_data.scene.time.now;
+}
+
+exports.draw_all_trains = draw_all_trains;
 exports.build_train = build_train;
 exports.update_trains = update_trains;
+exports.get_train_by_id = get_train_by_id;
+exports.update_train_location = update_train_location;
