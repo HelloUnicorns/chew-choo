@@ -7,9 +7,6 @@ const GRID_ORIGIN_Y = 40;
 const GRID_PIECE_IMAGE_WIDTH = 100;
 const TRACK_SCALE = 0.3;
 const GRID_PIECE_WIDTH = GRID_PIECE_IMAGE_WIDTH * TRACK_SCALE;
-const TRACK_WIDTH = 30;
-const TRACK_HEIGHT = 21;
-const TRACK_AMOUNT = (TRACK_HEIGHT + TRACK_WIDTH) * 2 - 4;
 
 const CART_IMAGE_WIDTH = 100;
 const CART_WIDTH = GRID_PIECE_WIDTH;
@@ -20,10 +17,18 @@ let game_inited_target = 2;
 let client_id;
 
 let map =  undefined;
+
+const LOW_SPEED = 10;
+const HIGH_SPEED = 30;
+
+let space_key;
+
 let player = {
     car_sprite: undefined,
     train_route: [],
     position_in_route: 0,
+    last_position_update: 0,
+    speed: 10 /* in tiles per second */
 }
 
 map = undefined;
@@ -116,7 +121,6 @@ function update_grid_sprite(sprite, grid_x, grid_y, rotation_degrees) {
 }
 
 function draw_grid_sprite(grid_x, grid_y, rotation_degrees, sprite_name, scale) {
-    console.log('drawing', sprite_name, 'rotation', rotation_degrees, 'at', grid_x, grid_y)
     let grid_sprite = scene.add.sprite(0, 0, sprite_name);
     update_grid_sprite(grid_sprite, grid_x, grid_y, rotation_degrees);
     grid_sprite.setScale(scale);
@@ -152,7 +156,13 @@ function advance_track() {
     player.position_in_route %= player.route.length;
 }
 
-function update_player() {
+function update_player(scene) {
+    player.speed = scene.input.keyboard.checkDown(space_key) ? HIGH_SPEED : LOW_SPEED;
+
+    if (scene.time.now - player.last_position_update > 1000 / player.speed) {
+        player.last_position_update = scene.time.now;
+        advance_track();
+    }
     player_rail_tile = player.route[player.position_in_route];
     angle = get_player_rotation(player_rail_tile);
     update_grid_sprite(player.cart_sprite, player_rail_tile.x, player_rail_tile.y, angle);
@@ -179,19 +189,14 @@ function draw_map() {
         return;
     }
 
-    scene.cameras.main.setBackgroundColor(0xf7f1da);
+    this.cameras.main.setBackgroundColor(0xf7f1da);
     
     for(const route_id in map) {
-        console.log('route id ', route_id)
-        const route = map[route_id];
-        console.log(route)
-        for (const rail_tile of route) {
-            console.log(rail_tile)
-            draw_rail_tile(rail_tile);
+        for (const rail_tile of map[route_id]) {
+            draw_rail_tile(this, rail_tile);
         }
     }
 
-    place_car();
-    
-    scene.time.addEvent({ delay: 1000 / 10, callback: advance_track, callbackScope: scene, loop: true });
+    place_car(this);
+    space_key = this.input.keyboard.addKey('space');
 }
