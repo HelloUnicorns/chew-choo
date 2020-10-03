@@ -1,5 +1,6 @@
 const Phaser = require('phaser');
 const { send_event, event_handlers } = require('./websockets.js');
+const { calculate_position } = require('../common/position.js');
 
 const CANVAS_HEIGHT = 720;
 const CANVAS_WIDTH = 1280;
@@ -173,15 +174,8 @@ function update_player() {
     }
     player.speed = is_space_pressed ? HIGH_SPEED : LOW_SPEED;
 
-    player.position_fraction += player.speed * (scene.time.now - player.last_position_update) / 1000;
-    player.last_position_update = scene.time.now;
-    if (player.position_fraction >= 1) {
-        position_in_route_change = Math.floor(player.position_fraction);
-        player.position_in_route += position_in_route_change;
-        player.position_in_route %= map[player.route_id].tiles.length;
-        player.position_fraction -= position_in_route_change;
-    }
-
+    calculate_position(player, map[player.route_id], scene.time.now);
+    
     for (cart_index = 0; cart_index < player.length; cart_index++) {
         tile_index = (player.position_in_route - cart_index + map[player.route_id].tiles.length) % map[player.route_id].tiles.length;
         rail_tile = map[player.route_id].tiles[tile_index];
