@@ -135,21 +135,6 @@ function draw_cart(scene, grid_x, grid_y, rotation_degrees) {
     return draw_grid_sprite(scene, grid_x, grid_y, rotation_degrees, 'cart', CART_SCALE);
 }
 
-function draw_tracks(scene) {
-    for (let i = 1; i < TRACK_WIDTH - 1; i++) {
-        draw_track_piece(scene, i, 0, 0);
-        draw_track_piece(scene, i, TRACK_HEIGHT - 1, 180);
-    }
-    for (let i = 1; i < TRACK_HEIGHT - 1; i++) {
-        draw_track_piece(scene, 0, i, 270);
-        draw_track_piece(scene, TRACK_WIDTH - 1, i, 90);
-    }
-    draw_corner_piece(scene, 0, 0, 270);
-    draw_corner_piece(scene, 0, TRACK_HEIGHT - 1, 180);
-    draw_corner_piece(scene, TRACK_WIDTH - 1, 0, 0);
-    draw_corner_piece(scene, TRACK_WIDTH - 1, TRACK_HEIGHT - 1, 90);
-}
-
 function track_id_to_grid_index(track_id) {
     if (track_id < TRACK_WIDTH - 1) {
         /* top row */
