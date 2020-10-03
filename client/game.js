@@ -198,5 +198,6 @@ function draw_map() {
     }
 
     place_car();
+    scene.cameras.main.startFollow(player.cart_sprite, true);
     space_key = scene.input.keyboard.addKey('space');
 }
