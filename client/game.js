@@ -19,8 +19,35 @@ let game_inited = false;
 let client_id;
 let player = {
     car_sprite: undefined,
+    train_route: [],
     car_grid_index: 0
 }
+
+map = {};
+
+function create_map() {
+    route_0_tiles = [];
+
+    for (let i = 1; i < TRACK_WIDTH - 1; i++) {
+        route_0_tiles.push({'x': i, 'y': 0, 'direction_from': 'left', 'direction_to': 'right'});
+        
+        draw_track_piece(scene, i, 0, 0);
+        draw_track_piece(scene, i, TRACK_HEIGHT - 1, 180);
+    }
+    for (let i = 1; i < TRACK_HEIGHT - 1; i++) {
+        draw_track_piece(scene, 0, i, 270);
+        draw_track_piece(scene, TRACK_WIDTH - 1, i, 90);
+    }
+    draw_track_piece(scene, 10, 0, 90);
+    draw_corner_piece(scene, 0, 0, 270);
+    draw_corner_piece(scene, 0, TRACK_HEIGHT - 1, 180);
+    draw_corner_piece(scene, TRACK_WIDTH - 1, 0, 0);
+    draw_corner_piece(scene, TRACK_WIDTH - 1, TRACK_HEIGHT - 1, 90);
+
+    let route_0 = 
+}
+
+current_route_index = 0;
 
 
 const game = new Phaser.Game({
@@ -81,6 +108,7 @@ function draw_tracks(scene) {
         draw_track_piece(scene, 0, i, 270);
         draw_track_piece(scene, TRACK_WIDTH - 1, i, 90);
     }
+    draw_track_piece(scene, 10, 0, 90);
     draw_corner_piece(scene, 0, 0, 270);
     draw_corner_piece(scene, 0, TRACK_HEIGHT - 1, 180);
     draw_corner_piece(scene, TRACK_WIDTH - 1, 0, 0);
@@ -117,6 +145,9 @@ function place_car(scene) {
 
 function create() {
     this.cameras.main.setBackgroundColor(0xf7f1da);
+    
+    create_map();
+
     draw_tracks(this);
     place_car(this);
     game_inited = true;
