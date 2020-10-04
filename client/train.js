@@ -117,7 +117,7 @@ const t1 = 0.1;
 const t2 = 0.1;
 
 function my_delta_mod(number, mod) {
-    return ((number + mod/2) % mod) - mod/2;
+    return (((number % mod) + mod + mod/2) % mod) - mod/2;
 }
 
 function update_train_acceleration_fix(train, rails) {
@@ -181,14 +181,6 @@ function update_server_train_location(route_id, server_location) {
     /* proceed client-side calculation */
     calculate_speed_and_position(train, rails, cur_time);
 
-    if (train.server_shadow_train && route_id == global_data.player.train.route_id) {
-        console.log(
-            `acceleration: ${train.acceleration.toFixed(2)} ` +
-            `our diff: ${(cur_time - train.server_shadow_train.last_position_update).toFixed(2)} ` +
-            `server diff: ${(server_location.server_time - train.server_shadow_train.server_time).toFixed(2)} ` +
-            `position diff: ${my_delta_mod((server_location.position_in_route + server_location.position_fraction) - (train.position_in_route + train.position_fraction), rails.tiles.length).toFixed(2)}.`
-        )
-    }
     if (global_data.latency != 0) {
         train.server_shadow_train = server_shadow_train;
     }
