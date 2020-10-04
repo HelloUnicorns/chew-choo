@@ -1,3 +1,4 @@
+const { performance } = require('perf_hooks');
 const { calculate_speed_and_position } = require('../common/position.js');
 const constants = require('../common/constants.js');
 const TRACK_WIDTH = 30;
@@ -109,7 +110,7 @@ function init_map() {
             tiles: build_rectangular_route(start_position.x, start_position.y, TRACK_WIDTH, TRACK_HEIGHT),
             player: {
                 position_in_route: 0,
-                last_position_update: new Date().getTime(),
+                last_position_update: performance.now(),
                 position_fraction: 0,
                 length: 3,
                 speed: constants.MIN_SPEED, /* in tiles per second */
@@ -161,10 +162,10 @@ function delete_player(player_id) {
 }
 
 function update_map() {
-    new_time = new Date().getTime();
+    new_time = performance.now();
     for (const route_id in map) {
         const route = map[route_id];
-        calculate_speed_and_position(route.player, route.player, route, new_time);
+        calculate_speed_and_position(route.player, route, new_time);
     }
 }
 

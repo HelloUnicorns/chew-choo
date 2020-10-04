@@ -5,13 +5,8 @@ const constants = require('../common/constants.js');
 const { GameScene } = require('./game_scene.js');
 const { SpeedMeterScene } = require('./speed_meter_scene.js');
 const { set_rails } = require('./rails.js');
-const { build_train, get_train_by_id, update_train_location } = require('./train.js');
+const { build_train, get_train_by_id, update_server_train_location } = require('./train.js');
 
-global_data.player = {
-    train: undefined,
-    is_speed_up: false,
-    is_speed_down: false,
-}
 
 const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -51,7 +46,6 @@ event_handlers.position = (event) => {
     }
 
     for (let route_id in event.locations) {
-        let location_info = event.locations[Number(route_id)];
-        update_train_location(route_id, location_info.position_fraction, location_info.position_in_route, location_info.speed);
+        update_server_train_location(route_id, event.locations[route_id]);
     }
 };    

@@ -1,5 +1,6 @@
 const { wss } = require('./server.js');
 const map = require('./map.js');
+const { performance } = require('perf_hooks');
 
 function get_random_tint() {
     return Math.random() * 0xffffff;
@@ -7,8 +8,10 @@ function get_random_tint() {
 
 const ID_LEN = 8;
 
-function get_random_latency() {
-    return (Math.floor(Math.random() * 100) + 200 * 2);
+function get_random_round_trip() {
+    // return (Math.floor(Math.random() * 50) + 50) * 2;
+    // return 100;
+    return 0;
 }
 
 function makeid(length) {
@@ -43,36 +46,47 @@ wss.on('connection', (client) => {
     });
 
     client.on('message', (json_data) => {
+        let fake_latency = get_random_round_trip() / 2;
         setTimeout(() => {
             const message = JSON.parse(json_data);
             if (message.type == 'speed_change') {
                 map.update_speed_change(client.route_id, message.value);
             }
             if (message.type == 'latency_update') {
-                let latency = (new Date().getTime() - message.prev_server_time) / 2;
-                client.send(JSON.stringify({latency: latency, type: 'latency'}));
+                let latency = (performance.now() - message.prev_server_time) / 2;
+                setTimeout(() => {
+                    client.send(JSON.stringify({latency: latency, type: 'latency'}));
+                }, fake_latency);
             }
-        }, get_random_latency());
+        }, fake_latency);
     });
 });
 
 setInterval(() => {
-    setTimeout(() => {
-        wss.clients.forEach((client) => {
-            client.send(JSON.stringify({time: new Date().getTime(), type: 'time'}));
-        });
-    }, get_random_latency());
+    let fake_latency = get_random_round_trip() / 2;
+    let current_time = performance.now();
+    wss.clients.forEach((client) => {
+        setTimeout(() => {
+            client.send(JSON.stringify({time: current_time, type: 'time'}));
+        }, fake_latency);
+    });
 }, 1000 / 10);
 
 setInterval(() => {
+    let fake_latency = get_random_round_trip() / 2;
     map.update_map();
     let locations = {};
+    let server_time = performance.now();
+    
     for (const [route_id, route] of Object.entries(map.map)) {
         locations[route_id] = {
             position_in_route: route.player.position_in_route,
             position_fraction: route.player.position_fraction,
             length: route.player.length,
-            speed: route.player.speed
+            speed: route.player.speed,
+            is_speed_up: route.player.is_speed_up,
+            is_speed_down: route.player.is_speed_down,
+            server_time
         };
     }
     setTimeout(() => {
@@ -82,5 +96,5 @@ setInterval(() => {
             }
             client.send(JSON.stringify({ locations, type: 'position'}));
         });
-    }, get_random_latency());
+    }, fake_latency);
 }, 1000 / 60);

@@ -1,5 +1,8 @@
+let global_data = require('./global_data.js');
+
 let HOST = location.origin.replace(/^http/, 'ws')
 let ws = new WebSocket(HOST);
+
 export let event_handlers = {
     'time': handle_time_message,
     'latency': handle_latency_message
@@ -11,6 +14,7 @@ function handle_time_message(event) {
 
 function handle_latency_message(event) {
     document.getElementById('server-latency').innerHTML = 'Latency: ' + event.latency + ' ms';
+    global_data.latency = event.latency;
 }
 
 export function send_event(event) {
