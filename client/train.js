@@ -113,8 +113,8 @@ function draw_cart(grid_x, grid_y, angle, is_engine, is_own) {
         is_own ? PLAYER_TRAIN_COLOR: ENEMY_TRAIN_COLOR);
 }
 
-const t1 = 1
-const t2 = 1
+const t1 = 0.1;
+const t2 = 0.1;
 
 function my_delta_mod(number, mod) {
     return ((number + mod/2) % mod) - mod/2;

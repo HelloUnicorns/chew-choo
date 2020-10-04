@@ -19,16 +19,11 @@ function calculate_speed_and_position(train, route, new_time) {
     acceleration_time *= acceleration_time < 0 ? -1: 1;
     average_speed = (old_speed + new_speed) * acceleration_time / time_passed_in_seconds / 2 + 
                     new_speed * (time_passed_in_seconds - acceleration_time) / time_passed_in_seconds;
-
-    train.position_fraction += average_speed * time_passed_in_seconds;
     train.last_position_update = new_time;
-    if (train.position_fraction >= 1) {
-        position_in_route_change = Math.floor(train.position_fraction);
-        train.position_in_route += position_in_route_change;
-        train.position_in_route %= route.tiles.length;
-        train.position_fraction -= position_in_route_change;
-    }
-
+    let tiles_len = route.tiles.length;
+    let position = (train.position_in_route + train.position_fraction + average_speed * time_passed_in_seconds) % tiles_len;
+    train.position_in_route = Math.floor(position);
+    train.position_fraction = position - train.position_in_route;
     train.speed = new_speed;
 }
 
