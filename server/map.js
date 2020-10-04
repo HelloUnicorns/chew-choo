@@ -11,7 +11,6 @@ const MAX_PLAYERS = 65;
 
 let map = {};
 let x_map = {};
-active_players = {};
 
 function mark_tile_occupied(tile, entering=false) {
     x_map[tile.x] = x_map[tile.x] || {};
@@ -247,33 +246,28 @@ function init_map() {
                 acceleration: 0, /* in tiles per second squared */
                 is_speed_up: false,
                 is_speed_down: false,
-                killed: false
+                killed: false,
+                killer: -1,
+                kill_notified: false,
+                free: true
             }
         };
     }
 }
 
-let entered = false;
-function new_player(player_id) {
-    if (entered) {
-        return undefined;
-    }
-    entered = true;
-
+function new_player() {
     for (let i = 0; i < MAX_PLAYERS; ++i) {
-        if (active_players[i]) {
+        if (!map[i].player.free) {
             continue;
         }
-        active_players[i] = player_id;
+        map[i].player.free = false;
+        map[i].player.position_in_route = 0;
+        map[i].player.position_fraction = 0;
         map[i].player.killed = false;
         map[i].player.kill_notified = false;
         map[i].player.speed = constants.MIN_SPEED;
-        entered = false;
         return i;
     }
-
-    entered = false;
-    return undefined;
 }
 
 function unload_player_from_x_map(route_id) {
@@ -285,14 +279,10 @@ function unload_player_from_x_map(route_id) {
     }
 }
 
-function delete_player(player_id) {
-    for (const [route_id, current_player_id] of Object.entries(active_players)) {
-        if (player_id == current_player_id) {
-            delete active_players[route_id];
-            console.log(`Route ${route_id} is free`);
-            break;
-        }
-    }
+function delete_player(route_id) {
+    map[route_id].player.free = true;
+    map[route_id].player.killed = false;
+    map[route_id].player.killed_notified = false;
 }
 
 function update_occupied_tiles(route) {
@@ -353,10 +343,12 @@ function handle_collision(tiles) {
     }
 
     if (killed.length == 1) {
-        let killed_id = killed.route_id;
-        let killer_id = tiles.filter(tile => tile.route_id != killed_id)[0];
+        let killed_player = killed[0];
+        let killed_id = killed_player.route_id;
+        let killer_id = tiles.filter(tile => tile.route_id != killed_id)[0].route_id;
 
-        map[killed.route_id].player.killer = killer_id;
+        map[killed_player.route_id].player.killer = killer_id;
+        killed_player.killed = true;
         merge_routes(killer_id, killed_id);
     }
 }
@@ -376,7 +368,7 @@ function update_map() {
     let new_time = performance.now();
     for (const route_id in map) {
         const route = map[route_id];
-        if (route.player.killed) {
+        if (route.player.killed || route.player.free) {
             continue;
         }
         calculate_speed_and_position(route.player, route, new_time);
@@ -386,6 +378,7 @@ function update_map() {
 }
 
 function is_speed_up(speed_message_value) {
+    return speed_message_value & constants.SPEED_UP_FLAG;
     return speed_message_value & constants.SPEED_UP_FLAG;
 }
 

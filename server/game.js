@@ -21,7 +21,7 @@ function makeid(length) {
 
 wss.on('connection', (client) => {
     client.id = makeid(ID_LEN);
-    route_id = map.new_player(client.id);
+    route_id = map.new_player();
     if (route_id == undefined) {
         console.log('Error');
         return;
@@ -42,7 +42,7 @@ wss.on('connection', (client) => {
     
     client.on('close', () => {
         console.log(`Client ${client.id} disconnected`);
-        map.delete_player(client.id);
+        map.delete_player(client.route_id);
     });
 
     client.on('message', (json_data) => {
@@ -71,7 +71,7 @@ setInterval(() => {
     let server_time = performance.now();
     
     for (const [route_id, route] of Object.entries(map.map)) {
-        if (!route.player.killed) {
+        if (!route.player.killed && !route.player.free) {
             locations[route_id] = {
                 position_in_route: route.player.position_in_route,
                 position_fraction: route.player.position_fraction,
@@ -96,6 +96,7 @@ setInterval(() => {
 setInterval(() => {
     map.detect_collisions();
     let kills = [];
+    
     for (const [route_id, route] of Object.entries(map.map)) {
         if (route.player.killed && !route.player.kill_notified) {
             route.player.kill_notified = true;
@@ -107,12 +108,17 @@ setInterval(() => {
         return;
     }
 
+    console.log(`Printing kill list`);
+    kills.forEach(kill => {
+        console.log(`killed: ${kill.killed_route_id}, killer: ${kill.killer_route_id}`);
+    });
+
     /* Update tile changes */
     let routes = [];
     kills.forEach((kill) => {
         routes.push({
             route_id: kill.killer_route_id,
-            tiles: map.map[kill.killer_route_id].tiles
+            tiles: (kill.killer_route_id == -1) ? undefined : map.map[kill.killer_route_id].tiles
         });
         routes.push({
             route_id: kill.killed_route_id,
@@ -128,7 +134,7 @@ setInterval(() => {
         /* Update kills */
         let player = map.map[client.route_id].player;
         if (player.killed && !player.kill_notified) {
-            map.delete_player(client.id);
+            map.delete_player(client.route_id);
         }
 
         client.send(JSON.stringify({routes, kills, type: 'kill'}));

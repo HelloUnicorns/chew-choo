@@ -54,6 +54,10 @@ event_handlers.position = (event) => {
 };
 
 event_handlers.kill = (event) => {
+    if (global_data.game_scene.game_inited != global_data.game_scene.game_inited_target) {
+        return;
+    }
+
     for (let route of event.routes) {
         update_rail(route.route_id, route.tiles, global_data.player.train.route_id);
     }
@@ -64,7 +68,9 @@ event_handlers.kill = (event) => {
     }));
     let killed = kills.map(kill => kill.killed);
     if (killed.includes(global_data.player.train.route_id)) {
-        global_data.game_scene.bg_music.mute = true;
+        if (global_data.game_scene.bg_music) {
+            global_data.game_scene.bg_music.mute = true;
+        }
         game.scene.start('GameoverScene');
         game.scene.stop('GameOverlayScene');
         game.scene.stop('GameScene');    
