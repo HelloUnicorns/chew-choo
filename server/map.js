@@ -114,6 +114,7 @@ function init_map() {
                 position_fraction: 0,
                 length: 3,
                 speed: constants.MIN_SPEED, /* in tiles per second */
+                acceleration: 0, /* in tiles per second squared */
                 is_speed_up: false,
                 is_speed_down: false
             }

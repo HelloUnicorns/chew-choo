@@ -26,6 +26,7 @@ function build_train(route_id) {
         speed: constants.MIN_SPEED, /* in tiles per second */
         position_fraction: 0,
         server_shadow_train: undefined,
+        acceleration: 0,
         route_id,
     };
 }
@@ -93,20 +94,30 @@ function draw_cart(grid_x, grid_y, rotation_degrees, is_engine) {
         0x00ff00);
 }
 
-function update_train(train) {
-    let rails = get_rails_by_id(train.route_id);
-    calculate_speed_and_position(train, rails, window.performance.now());
-    let position_in_route = train.position_in_route;
-    let position_fraction = train.position_fraction;
-    if (train.server_shadow_train) {
-        // calculate_speed_and_position(train.server_shadow_train, rails, window.performance.now());
-        // position_in_route = train.server_shadow_train.position_in_route;
-        // position_fraction = train.server_shadow_train.position_fraction;
-    }
+const t1 = 0.1
+const t2 = 0.1
 
+function my_delta_mod(number, mod) {
+    return (((number % mod) + mod/2) % mod) - mod/2;
+}
+
+function update_train_acceleration_fix(train, rails) {
+    x_server = train.server_shadow_train.position_in_route + train.server_shadow_train.position_fraction;
+    x_0 = train.position_in_route + train.position_fraction;
+    delta_x = my_delta_mod(x_server + (train.server_shadow_train.speed * global_data.latency / 1000) - x_0, rails.tiles.length)
+    train.acceleration = (train.server_shadow_train.speed + delta_x / t1 - train.speed) / t2;
+}
+
+function update_train(train) {
+    let current_time = window.performance.now();
+    let rails = get_rails_by_id(train.route_id);
+    if (train.server_shadow_train) {
+        update_train_acceleration_fix(train, rails);
+    }
+    calculate_speed_and_position(train, rails, current_time);
 
     for (cart_index = 0; cart_index < train.length; cart_index++) {
-        tile_index = (position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
+        tile_index = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
         rail_tile = rails.tiles[tile_index];
         next_rail_tile = rails.tiles[(tile_index + 1) % rails.tiles.length];
         rail_angle = get_rotation_by_tile(rail_tile);
@@ -114,9 +125,9 @@ function update_train(train) {
         if (rail_angle > next_rail_angle) {
             next_rail_angle += 360;
         }
-        position_x = rail_tile.x * (1 - position_fraction) + next_rail_tile.x * position_fraction;
-        position_y = rail_tile.y * (1 - position_fraction) + next_rail_tile.y * position_fraction;
-        angle = rail_angle * (1 - position_fraction) + next_rail_angle * position_fraction;
+        position_x = rail_tile.x * (1 - train.position_fraction) + next_rail_tile.x * train.position_fraction;
+        position_y = rail_tile.y * (1 - train.position_fraction) + next_rail_tile.y * train.position_fraction;
+        angle = rail_angle * (1 - train.position_fraction) + next_rail_angle * train.position_fraction;
         update_grid_sprite(train.sprites[cart_index], position_x, position_y, angle);
     }
 }
@@ -148,7 +159,7 @@ function update_server_train_location(route_id, server_location) {
         train.position_in_route = server_shadow_train.position_in_route;
         train.last_position_update = cur_time;
     }
-    
+
     /* proceed client-side calculation */
     calculate_speed_and_position(train, rails, cur_time);
 
@@ -156,7 +167,7 @@ function update_server_train_location(route_id, server_location) {
         console.log(
             `our diff: ${(cur_time - train.server_shadow_train.last_position_update).toFixed(2)} ` +
             `server diff: ${(server_location.server_time - train.server_shadow_train.server_time).toFixed(2)} ` +
-            `position diff: ${(((((server_location.position_in_route + server_location.position_fraction) - (train.position_in_route + train.position_fraction)) % rails.tiles.length) + rails.tiles.length) % rails.tiles.length).toFixed(2)}.`
+            `position diff: ${my_delta_mod((server_location.position_in_route + server_location.position_fraction) - (train.position_in_route + train.position_fraction), rails.tiles.length).toFixed(2)}.`
         )
     }
     if (global_data.latency != 0) {

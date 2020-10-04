@@ -40,15 +40,18 @@ event_handlers.connection = (event) => {
     global_data.scene.client_loaded();
 };
 
-var last_time = 0;
-var count = 0;
+let last_server_time = 0;
+
 event_handlers.position = (event) => {
     if (global_data.scene.game_inited != global_data.scene.game_inited_target) {
         return;
     }
-    count++;
-    new_time = performance.now();
-    last_time = new_time;
+    if (event.server_time < last_server_time) {
+        /* a newer update has already arrived */
+        console.log('got an out-of-order positions update')
+        return;
+    }
+    last_server_time = event.server_time;
     for (let route_id in event.locations) {
         update_server_train_location(route_id, event.locations[route_id]);
     }
