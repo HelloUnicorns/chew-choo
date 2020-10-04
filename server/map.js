@@ -94,12 +94,20 @@ const ROTATION = (constants.TRACK_HEIGHT / 3 - 1);
 function merge_routes(killer_route_id, killee_route_id) {
     function indexOf(arr, coor) {
         for (let [index, item] of arr.entries()) {
-            console.log(coor);
             if (item[0] == coor[0] && item[1] == coor[1]) {
                 return index;
             }
         }
 
+        return -1;
+    }
+
+    function indexOf2(arr, coor) {
+        for (let [index, item] of arr.entries()) {
+            if (item.x == coor[0] && item.y == coor[1]) {
+                return index;
+            }
+        }
         return -1;
     }
 
@@ -109,8 +117,10 @@ function merge_routes(killer_route_id, killee_route_id) {
     killer_tiles.rotate(ROTATION);
     killee_tiles.rotate(ROTATION);
 
+    
     let killer_coors = killer_tiles.map(tile => [tile.x, tile.y]);
     let killee_coors = killee_tiles.map(tile => [tile.x, tile.y]);
+    let first_killer_coordinates = killer_coors[0];
 
     let crossings = [];
     for (let coor_killer of killer_coors) {
@@ -143,19 +153,29 @@ function merge_routes(killer_route_id, killee_route_id) {
     killer_tiles[killer_end_position].direction_from = killee_tiles[killee_end_position].direction_from;
 
     /* Get tiles from killee */
+    let crossing_length = Math.min(
+        Math.abs(killer_start_position - killer_end_position),
+        Math.abs(killee_start_position - killee_end_position),
+    );
     killee_tiles.rotate(-killee_start_position - 1);
-    killee_tiles.pop(Math.abs(killee_start_position - killee_end_position) + 1);
+    for (let i = 0; i < crossing_length + 1; ++i) {
+        killee_tiles.pop();
+    }
 
     /* Prepare killer tiles */
     killer_tiles.rotate(-killer_end_position);
-    killer_tiles.pop(Math.abs(killer_start_position - killer_end_position) - 1);
-    killer_tiles.push(...killee_tiles);
-    killer_tiles.rotate(killer_end_position);
+    for (let i = 0; i < crossing_length - 1; ++i) {
+        killer_tiles.pop();
+    }
+    
+    killer_tiles = [].concat(killer_tiles, killee_tiles);
 
     killer_tiles.forEach(tile => {
         tile.entering = false;
+        tile.route_id = killer_route_id;
     });
 
+    killer_tiles.rotate(-indexOf2(killer_tiles, first_killer_coordinates));
     killer_tiles.rotate(-ROTATION);
     map[killer_route_id].tiles = killer_tiles; 
     /* Delete tiles of killee */
@@ -335,7 +355,7 @@ function handle_collision(tiles) {
         console.log(`Player in route ${tile.route_id} got killed`);
     }
 
-    if (killed == 1) {
+    if (killed.length == 1) {
         let killed_id = killed.route_id;
         let killer_id = tiles.filter(tile => tile.route_id != killed_id)[0];
 
