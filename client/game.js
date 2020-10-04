@@ -50,14 +50,14 @@ event_handlers.position = (event) => {
         return;
     }
 
-    if (event.killed) {
-        while(true) {
-            alert("You are DEAD");
-        }
-    }
-
     for (let route_id in event.locations) {
         let location_info = event.locations[Number(route_id)];
         update_train_location(route_id, location_info.position_fraction, location_info.position_in_route, location_info.speed);
     }
-};    
+};
+
+event_handlers.kill = (event) => {
+    while(true) {
+        alert("You are DEAD");
+    }
+};

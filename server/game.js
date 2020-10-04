@@ -20,8 +20,14 @@ function makeid(length) {
 
 wss.on('connection', (client) => {
     client.id = makeid(ID_LEN);
-    client.route_id = map.new_player(client.id);
+    route_id = map.new_player(client.id);
+    if (route_id == undefined) {
+        console.log('Error');
+        return;
+    }
+    client.route_id = route_id;
     client.initialized = true;
+    
 
     console.log(`Client ${client.id} connected`);
     console.log(`Client ${client.id} occupies route ${client.route_id}`);
@@ -52,27 +58,42 @@ setInterval(() => {
     });
 }, 1000);
 
+/* Position */
 setInterval(() => {
     map.update_map();
     let locations = {};
     for (const [route_id, route] of Object.entries(map.map)) {
-        locations[route_id] = {
-            position_in_route: route.player.position_in_route,
-            position_fraction: route.player.position_fraction,
-            length: route.player.length,
-            speed: route.player.speed
-        };
+        if (!route.player.killed) {
+            locations[route_id] = {
+                position_in_route: route.player.position_in_route,
+                position_fraction: route.player.position_fraction,
+                length: route.player.length,
+                speed: route.player.speed
+            };
+        }
     }
     wss.clients.forEach((client) => {
         if (!client.initialized) {
             return;
         }
 
+        client.send(JSON.stringify({ locations, type: 'position'}));
+    });
+}, 1000 / 60);
+
+/* Kills */
+setInterval(() => {
+    map.detect_collisions();
+    wss.clients.forEach((client) => {
+        if (!client.initialized) {
+            return;
+        }
+
         let player = map.map[client.route_id].player;
-        client.send(JSON.stringify({ locations, killed: player.killed, type: 'position'}));
-        if (player.killed) {
+        if (player.killed && !player.kill_notified) {
+            client.send(JSON.stringify({killed: player.killed, type: 'kill'}));
+            player.kill_notified = true;
             map.delete_player(client.id);
-            client.initialized = false;
         }
     });
 }, 1000 / 60);

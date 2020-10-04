@@ -20,10 +20,14 @@ let x_map = {};
 active_players = {};
 
 function mark_tile_occupied(tile, entering=false) {
-    x_map[tile.x] = x_map[tile.x] || [];
+    x_map[tile.x] = x_map[tile.x] || {};
     x_map[tile.x][tile.y] = x_map[tile.x][tile.y] || [];
 
-    if (x_map[tile.x][tile.y].filter(t => t.route_id == tile.route_id)) {
+    let matching_tiles = x_map[tile.x][tile.y].filter(t => t.route_id == tile.route_id);
+    if (matching_tiles.length > 0) {
+        for (let tile in matching_tiles) {
+            tile.entering = entering;
+        }
         return;
     }
     tile.entering = entering;
@@ -36,6 +40,13 @@ function clear_tile_occupied(tile) {
     }
 
     x_map[tile.x][tile.y] = x_map[tile.x][tile.y].filter(t => t.route_id != tile.route_id);
+    if(x_map[tile.x][tile.y].length == 0) {
+        delete x_map[tile.x][tile.y];
+    }
+
+    if (Object.keys(x_map[tile.x]).length == 0) {
+        delete x_map[tile.x];
+    }
 }
 
 
@@ -149,28 +160,29 @@ function new_player(player_id) {
     }
     entered = true;
 
-    let empty_route = undefined;
     for (let i = 0; i < MAX_PLAYERS; ++i) {
-        if (empty_route === undefined  && !active_players[i]) {
-            empty_route = i;
+        if (active_players[i]) {
+            continue;
         }
-        if (active_players[i] == player_id) {
-            if (active_players[i].timeout) {
-                clearTimeout(active_players[i].timeout);
-            }
-            entered = false;
-            return i;
-        } 
-    }
-
-    if (empty_route != undefined) {
-        active_players[empty_route] = player_id;
+        active_players[i] = player_id;
+        map[i].player.killed = false;
+        map[i].player.kill_notified = false;
+        map[i].player.speed = constants.MIN_SPEED;
         entered = false;
-        return empty_route;
+        return i;
     }
 
     entered = false;
     return undefined;
+}
+
+function unload_player_from_x_map(route_id) {
+    /* Delete player from x_map */
+    for (const x in x_map) {
+        for (const y in x_map[x]) {
+            x_map[x][y] = x_map[x][y].filter(tile => tile.route_id != route_id);
+        }
+    }
 }
 
 function delete_player(player_id) {
@@ -178,23 +190,6 @@ function delete_player(player_id) {
         if (player_id == current_player_id) {
             delete active_players[route_id];
             console.log(`Route ${route_id} is free`);
-
-            /* Delete player from x_map */
-            for (const y_map in x_map) {
-                for (const tiles in y_map) {
-                    let indexes = [];
-                    for (const [index, tile] in tiles.entries()) {
-                        if (tile.route_id == route_id) {
-                            indexes.push(index);
-                        }
-                    }
-
-                    for (const index in indexes) {
-                        delete tiles[index];
-                    }
-                }
-            }
-
             break;
         }
     }
@@ -207,45 +202,59 @@ function update_occupied_tiles(route) {
 
     /* Locomotive */
     mark_tile_occupied(route.tiles[player_position]);
+
     /* Last cart */
     mark_tile_occupied(route.tiles[(player_position - route.player.length + 1 + route.tiles.length) % route.tiles.length]);
+
     /* Tile ahead of locomotive */
     if (route.player.position_fraction) {
-        mark_tile_occupied(route.tiles[player_position], entering=true);
+        mark_tile_occupied(route.tiles[(player_position + 1) % route.tiles.length], entering=true);
     }
+
     /* Tile behind last cart */
-    clear_tile_occupied(route.tiles[(player_position - 1 + route.tiles.length) % route.tiles.length]);
+    clear_tile_occupied(route.tiles[(player_position - route.player.length + route.tiles.length) % route.tiles.length]);
+
 }
 
 function handle_collision(tiles) {
     if (tiles > 2) {
         throw new Error('More than 2 trains collided');
-    } else if ( tiles < 2) {
+    } else if ( tiles.length < 2) {
         return;
     }
 
     let player_0 = map[tiles[0].route_id].player;
-    let player_1 = map[tiles[0].route_id].player;
+    let player_1 = map[tiles[1].route_id].player;
     if (player_0.killed || player_1.killed) {
         return;
     }
 
     let killed = tiles.filter(tile => !tile.entering);
-    if (!killed) {
+    if (killed.length == 0) {
         if (player_0.position_fraction >= player_1.position_fraction) {
-            killed.push(tiles[0]);
+            player_0.killed = true;
+            unload_player_from_x_map(tiles[0].route_id);
         } else {
-            killed.push(tiles[1]);
+            player_1.killed = true;
+            unload_player_from_x_map(tiles[1].route_id);
         }
+        return;
+    }
+
+    for (let tile of killed) {
+        map[tile.route_id].player.killed = true;
+        unload_player_from_x_map(tile.route_id);
+        console.log(`Player in route ${tile.route_id} got killed`);
     }
 }
 
 function detect_collisions() {
-    for (const y_map in x_map) {
-        for (const tiles in y_map) {
+    for (const x in x_map) {
+        for (const y in x_map[x]) {
+            let tiles = x_map[x][y];
             if (tiles.length > 1) {
                 handle_collision(tiles);
-            }
+            } 
         }
     }
 }
@@ -254,10 +263,13 @@ function update_map() {
     let new_time = new Date().getTime();
     for (const route_id in map) {
         const route = map[route_id];
+        if (route.player.killed) {
+            continue;
+        }
         calculate_speed_and_position(route.player, route.player, route, new_time);
         update_occupied_tiles(route);
     }
-    detect_collisions();
+    
 }
 
 function is_speed_up(speed_message_value) {
@@ -280,3 +292,4 @@ exports.new_player = new_player;
 exports.update_map = update_map;
 exports.update_speed_change = update_speed_change;
 exports.delete_player = delete_player;
+exports.detect_collisions = detect_collisions;
