@@ -17,33 +17,65 @@ let directions = ['right', 'down', 'left', 'up']
 const MAX_PLAYERS = 65;
 
 let map = {};
+let x_map = {};
 active_players = {};
 
-function build_rectangular_route(grid_x, grid_y, width, height) {
+function mark_tile_occupied(tile, entering=false) {
+    x_map[tile.x] = x_map[tile.x] || {};
+    x_map[tile.x][tile.y] = x_map[tile.x][tile.y] || [];
+
+    let matching_tiles = x_map[tile.x][tile.y].filter(t => t.route_id == tile.route_id);
+    if (matching_tiles.length > 0) {
+        for (let tile in matching_tiles) {
+            tile.entering = entering;
+        }
+        return;
+    }
+    tile.entering = entering;
+    x_map[tile.x][tile.y].push(tile);
+}
+
+function clear_tile_occupied(tile) {
+    if (!x_map[tile.x] || !x_map[tile.x][tile.y]) {
+        return;
+    }
+
+    x_map[tile.x][tile.y] = x_map[tile.x][tile.y].filter(t => t.route_id != tile.route_id);
+    if(x_map[tile.x][tile.y].length == 0) {
+        delete x_map[tile.x][tile.y];
+    }
+
+    if (Object.keys(x_map[tile.x]).length == 0) {
+        delete x_map[tile.x];
+    }
+}
+
+
+function build_rectangular_route(grid_x, grid_y, width, height, route_id) {
     let route = [];
     for (let i = 1; i < width - 1; i++) {
-        route.push({x: grid_x + i, y: grid_y, direction_from: 'left', direction_to: 'right'});
+        route.push({x: grid_x + i, y: grid_y, direction_from: 'left', direction_to: 'right', index: route.length, route_id});
     }
 
-    route.push({x: grid_x + width - 1, y: grid_y, direction_from: 'left', direction_to: 'bottom'});
+    route.push({x: grid_x + width - 1, y: grid_y, direction_from: 'left', direction_to: 'bottom', index: route.length, route_id});
     
     for (let i = 1; i < height - 1; i++) {
-        route.push({x: grid_x + width - 1, y: grid_y + i, direction_from: 'top', direction_to: 'bottom'});
+        route.push({x: grid_x + width - 1, y: grid_y + i, direction_from: 'top', direction_to: 'bottom', index: route.length, route_id});
     }
 
-    route.push({x: grid_x + width - 1, y: grid_y + height - 1, direction_from: 'top', direction_to: 'left'});
+    route.push({x: grid_x + width - 1, y: grid_y + height - 1, direction_from: 'top', direction_to: 'left', index: route.length, route_id});
     
     for (let i = width - 2; i > 0; i--) {
-        route.push({x: grid_x + i, y: grid_y + height - 1, direction_from: 'right', direction_to: 'left'});
+        route.push({x: grid_x + i, y: grid_y + height - 1, direction_from: 'right', direction_to: 'left', index: route.length, route_id});
     }
     
-    route.push({x: grid_x, y: grid_y + height - 1, direction_from: 'right', direction_to: 'top'});
+    route.push({x: grid_x, y: grid_y + height - 1, direction_from: 'right', direction_to: 'top', index: route.length, route_id});
     
     for (let i = height - 2; i > 0; i--) {
-        route.push({x: grid_x, y: grid_y + i, direction_from: 'bottom', direction_to: 'top'});
+        route.push({x: grid_x, y: grid_y + i, direction_from: 'bottom', direction_to: 'top', index: route.length, route_id});
     }
 
-    route.push({x: grid_x, y: grid_y, direction_from: 'bottom', direction_to: 'right'});
+    route.push({x: grid_x, y: grid_y, direction_from: 'bottom', direction_to: 'right', index: route.length, route_id});
  
     return route;
 }
@@ -107,7 +139,7 @@ function init_map() {
     for (let i = 0; i < MAX_PLAYERS; ++i) {
         start_position = route_start_positions[i];
         map[i] = {
-            tiles: build_rectangular_route(start_position.x, start_position.y, TRACK_WIDTH, TRACK_HEIGHT),
+            tiles: build_rectangular_route(start_position.x, start_position.y, TRACK_WIDTH, TRACK_HEIGHT, i),
             player: {
                 position_in_route: 0,
                 last_position_update: performance.now(),
@@ -116,7 +148,8 @@ function init_map() {
                 speed: constants.MIN_SPEED, /* in tiles per second */
                 acceleration: 0, /* in tiles per second squared */
                 is_speed_up: false,
-                is_speed_down: false
+                is_speed_down: false,
+                killed: false
             }
         };
     }
@@ -129,28 +162,29 @@ function new_player(player_id) {
     }
     entered = true;
 
-    let empty_route = undefined;
     for (let i = 0; i < MAX_PLAYERS; ++i) {
-        if (empty_route === undefined  && !active_players[i]) {
-            empty_route = i;
+        if (active_players[i]) {
+            continue;
         }
-        if (active_players[i] == player_id) {
-            if (active_players[i].timeout) {
-                clearTimeout(active_players[i].timeout);
-            }
-            entered = false;
-            return i;
-        } 
-    }
-
-    if (empty_route != undefined) {
-        active_players[empty_route] = player_id;
+        active_players[i] = player_id;
+        map[i].player.killed = false;
+        map[i].player.kill_notified = false;
+        map[i].player.speed = constants.MIN_SPEED;
         entered = false;
-        return empty_route;
+        return i;
     }
 
     entered = false;
     return undefined;
+}
+
+function unload_player_from_x_map(route_id) {
+    /* Delete player from x_map */
+    for (const x in x_map) {
+        for (const y in x_map[x]) {
+            x_map[x][y] = x_map[x][y].filter(tile => tile.route_id != route_id);
+        }
+    }
 }
 
 function delete_player(player_id) {
@@ -158,16 +192,86 @@ function delete_player(player_id) {
         if (player_id == current_player_id) {
             delete active_players[route_id];
             console.log(`Route ${route_id} is free`);
+            break;
+        }
+    }
+}
+
+function update_occupied_tiles(route) {
+    let occupied_tiles = [];
+    let free_tiles = [];
+    let player_position = route.player.position_in_route;
+
+    /* Locomotive */
+    mark_tile_occupied(route.tiles[player_position]);
+
+    /* Last cart */
+    mark_tile_occupied(route.tiles[(player_position - route.player.length + 1 + route.tiles.length) % route.tiles.length]);
+
+    /* Tile ahead of locomotive */
+    if (route.player.position_fraction) {
+        mark_tile_occupied(route.tiles[(player_position + 1) % route.tiles.length], entering=true);
+    }
+
+    /* Tile behind last cart */
+    clear_tile_occupied(route.tiles[(player_position - route.player.length + route.tiles.length) % route.tiles.length]);
+
+}
+
+function handle_collision(tiles) {
+    if (tiles.length > 2) {
+        throw new Error('More than 2 trains collided');
+    } else if ( tiles.length < 2) {
+        return;
+    }
+
+    let player_0 = map[tiles[0].route_id].player;
+    let player_1 = map[tiles[1].route_id].player;
+    if (player_0.killed || player_1.killed) {
+        return;
+    }
+
+    let killed = tiles.filter(tile => !tile.entering);
+    if (killed.length == 0) {
+        if (player_0.position_fraction >= player_1.position_fraction) {
+            player_0.killed = true;
+            unload_player_from_x_map(tiles[0].route_id);
+        } else {
+            player_1.killed = true;
+            unload_player_from_x_map(tiles[1].route_id);
+        }
+        return;
+    }
+
+    for (let tile of killed) {
+        map[tile.route_id].player.killed = true;
+        unload_player_from_x_map(tile.route_id);
+        console.log(`Player in route ${tile.route_id} got killed`);
+    }
+}
+
+function detect_collisions() {
+    for (const x in x_map) {
+        for (const y in x_map[x]) {
+            let tiles = x_map[x][y];
+            if (tiles.length > 1) {
+                handle_collision(tiles);
+            } 
         }
     }
 }
 
 function update_map() {
-    new_time = performance.now();
+    let new_time = performance.now();
     for (const route_id in map) {
         const route = map[route_id];
-        calculate_speed_and_position(route.player, route, new_time);
+        if (route.player.killed) {
+            continue;
+        }
+        calculate_speed_and_position(route.player, route.player, route, new_time);
+        update_occupied_tiles(route);
     }
+    
 }
 
 function is_speed_up(speed_message_value) {
@@ -190,3 +294,4 @@ exports.new_player = new_player;
 exports.update_map = update_map;
 exports.update_speed_change = update_speed_change;
 exports.delete_player = delete_player;
+exports.detect_collisions = detect_collisions;

@@ -1,6 +1,5 @@
 const { wss } = require('./server.js');
 const map = require('./map.js');
-const { performance } = require('perf_hooks');
 
 function get_random_tint() {
     return Math.random() * 0xffffff;
@@ -25,8 +24,14 @@ function makeid(length) {
 
 wss.on('connection', (client) => {
     client.id = makeid(ID_LEN);
-    client.route_id = map.new_player(client.id);
+    route_id = map.new_player(client.id);
+    if (route_id == undefined) {
+        console.log('Error');
+        return;
+    }
+    client.route_id = route_id;
     client.initialized = true;
+    
 
     console.log(`Client ${client.id} connected`);
     console.log(`Client ${client.id} occupies route ${client.route_id}`);
@@ -70,31 +75,62 @@ setInterval(() => {
     });
 }, 1000 / 10);
 
-let counter = 0;
+/* Position */
 setInterval(() => {
-    counter++;
     let fake_latency = get_random_round_trip() / 2;
     map.update_map();
     let locations = {};
     let server_time = performance.now();
     
     for (const [route_id, route] of Object.entries(map.map)) {
-        locations[route_id] = {
-            position_in_route: route.player.position_in_route,
-            position_fraction: route.player.position_fraction,
-            length: route.player.length,
-            speed: route.player.speed,
-            is_speed_up: route.player.is_speed_up,
-            is_speed_down: route.player.is_speed_down,
-            server_time
-        };
+        if (!route.player.killed) {
+            locations[route_id] = {
+                position_in_route: route.player.position_in_route,
+                position_fraction: route.player.position_fraction,
+                length: route.player.length,
+                speed: route.player.speed,
+                is_speed_up: route.player.is_speed_up,
+                is_speed_down: route.player.is_speed_down,
+                server_time
+            };
+        }
     }
-    setTimeout(() => {
-        wss.clients.forEach((client) => {
-            if (!client.initialized) {
-                return;
-            }
-            client.send(JSON.stringify({ locations, counter, server_time, type: 'position'}));
-        });
-    }, fake_latency);
+    wss.clients.forEach((client) => {
+        if (!client.initialized) {
+            return;
+        }
+
+        client.send(JSON.stringify({ locations, type: 'position'}));
+    });
+}, 1000 / 60);
+
+/* Kills */
+setInterval(() => {
+    map.detect_collisions();
+    let killed = [];
+    for (const [route_id, route] of Object.entries(map.map)) {
+        if (route.player.killed && !route.player.kill_notified) {
+            killed.push(route_id);
+        }
+    }
+
+    if (killed.length == 0) {
+        return;
+    }
+
+    wss.clients.forEach((client) => {
+        if (!client.initialized) {
+            return;
+        }
+        
+        client.send(JSON.stringify({killed, type: 'kill'}));
+        let player = map.map[client.route_id].player;
+        if (player.killed && !player.kill_notified) {
+            map.delete_player(client.id);
+        }
+    });
+
+    for (let route_id of killed) {
+        map.map[route_id].player.kill_notified = true;
+    }
 }, 1000 / 60);

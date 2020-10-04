@@ -1,4 +1,4 @@
-const global_data = require('./global_data.js')
+const global_data = require('./global_data.js');
 const { send_event } = require('./websockets.js');
 const constants = require('../common/constants.js');
 const { GRID_PIECE_WIDTH } = require('./grid.js');
@@ -11,7 +11,7 @@ class GameScene extends Phaser.Scene {
     constructor() {
         super('GameScene');
         
-        global_data.scene = this;
+        global_data.game_scene = this;
 
         this.game_inited = 0;
         this.game_inited_target = 2;
@@ -31,17 +31,17 @@ class GameScene extends Phaser.Scene {
     }
 
     start_music() {
-        let bg_music = this.sound.add('bg_music', { loop: true });
-        bg_music.play();
+        this.bg_music = this.sound.add('bg_music', { loop: true });
+        this.bg_music.play();
         let mute_key = this.input.keyboard.addKey('m');
-        mute_key.on('down', function(event) { bg_music.mute = !bg_music.mute; });
+        mute_key.on('down', function(event) { global_data.game_scene.bg_music.mute = !global_data.game_scene.bg_music.mute; });
     }
 
     draw_map() {
         this.cameras.main.setBackgroundColor(0xf7f1da);
         
-        draw_rails(global_data.player.train);
-        draw_all_trains();
+        draw_rails(global_data.player.train.route_id);
+        draw_all_trains(global_data.player.train.route_id);
         this.cameras.main.startFollow(global_data.player.train.sprites[0], true);
         this.up_key = this.input.keyboard.addKey('up');
         this.down_key = this.input.keyboard.addKey('down');
