@@ -217,7 +217,7 @@ function update_occupied_tiles(route) {
 }
 
 function handle_collision(tiles) {
-    if (tiles > 2) {
+    if (tiles.length > 2) {
         throw new Error('More than 2 trains collided');
     } else if ( tiles.length < 2) {
         return;
