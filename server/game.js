@@ -98,7 +98,7 @@ setInterval(() => {
     let kills = [];
     for (const [route_id, route] of Object.entries(map.map)) {
         if (route.player.killed && !route.player.kill_notified) {
-            kills.push({killed: route.player.killed, killer: route.player.killer});
+            kills.push({route_id, killer_route_id: route.player.killer});
         }
     }
 
@@ -122,11 +122,11 @@ setInterval(() => {
         let routes = [];
         kills.forEach((kill) => {
             routes.push({
-                route_id: kill.killer,
-                tiles: map.map[kill.killer].tiles
+                route_id: kill.killer_route_id,
+                tiles: map.map[kill.killer_route_id].tiles
             });
             routes.push({
-                route_id: kill.killed,
+                route_id: kill.route_id,
                 tiles: [] // Empty list
             });
         });

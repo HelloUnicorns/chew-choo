@@ -5,7 +5,7 @@ const constants = require('../common/constants.js');
 const { GameScene } = require('./game_scene.js');
 const { GameOverlayScene } = require('./game_overlay_scene.js');
 const { GameoverScene } = require('./gameover_scene.js');
-const { set_rails } = require('./rails.js');
+const { set_rails, update_rail } = require('./rails.js');
 const { build_train, get_train_by_id, update_server_train_location, remove_train } = require('./train.js');
 
 
