@@ -1,6 +1,6 @@
-class GameOverScene extends Phaser.Scene {
+class GameoverScene extends Phaser.Scene {
     constructor() {
-        super('GameOverScene');
+        super('GameoverScene');
     }
 
     preload() {}
@@ -13,5 +13,5 @@ class GameOverScene extends Phaser.Scene {
 }
 
 module.exports = {
-    GameOverScene: GameOverScene
+    GameoverScene: GameoverScene
 }

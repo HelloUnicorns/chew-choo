@@ -4,7 +4,7 @@ const { event_handlers } = require('./websockets.js');
 const constants = require('../common/constants.js');
 const { GameScene } = require('./game_scene.js');
 const { SpeedMeterScene } = require('./speed_meter_scene.js');
-const { GameOverScene } = require('./game_over_scene.js');
+const { GameoverScene } = require('./gameover_scene.js');
 const { set_rails } = require('./rails.js');
 const { build_train, get_train_by_id, update_train_location, remove_train } = require('./train.js');
 
@@ -25,7 +25,7 @@ const game = new Phaser.Game({
             gravity: { y: 200 }
         }
     },
-    scene: [ GameScene, SpeedMeterScene, GameOverScene ]
+    scene: [ GameScene, SpeedMeterScene, GameoverScene ]
 });
 
 event_handlers.connection = (event) => {
@@ -58,7 +58,7 @@ event_handlers.kill = (event) => {
     console.log(`Killed routes: ${route_ids}`);
     if (route_ids.includes(global_data.player.train.route_id)) {
         global_data.game_scene.bg_music.mute = true;
-        game.scene.start('GameOverScene');
+        game.scene.start('GameoverScene');
         game.scene.stop('SpeedMeterScene');
         game.scene.stop('GameScene');    
         return;
