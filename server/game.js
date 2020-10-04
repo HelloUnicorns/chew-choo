@@ -100,6 +100,7 @@ setInterval(() => {
     for (const [route_id, route] of Object.entries(map.map)) {
         if (route.player.killed && !route.player.kill_notified) {
             route.player.kill_notified = true;
+            map.delete_player(route_id);
             kills.push({killed_route_id: route_id, killer_route_id: route.player.killer});
         }
     }
@@ -126,15 +127,10 @@ setInterval(() => {
         });
     });
 
+    /* Update kills */
     wss.clients.forEach((client) => {
         if (!client.initialized) {
             return;
-        }
-        
-        /* Update kills */
-        let player = map.map[client.route_id].player;
-        if (player.killed && !player.kill_notified) {
-            map.delete_player(client.route_id);
         }
 
         client.send(JSON.stringify({routes, kills, type: 'kill'}));

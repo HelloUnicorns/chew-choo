@@ -114,6 +114,11 @@ function merge_routes(killer_route_id, killee_route_id) {
     let killer_tiles = map[killer_route_id].tiles;
     let killee_tiles = map[killee_route_id].tiles;
 
+    map[killer_route_id].player.assignable = false;
+    map[killee_route_id].player.assignable = false;
+    console.log(`route ${killer_route_id} unassignable anymore`)
+    console.log(`route ${killee_route_id} unassignable anymore`)
+
     killer_tiles.rotate(ROTATION);
     killee_tiles.rotate(ROTATION);
 
@@ -249,7 +254,9 @@ function init_map() {
                 killed: false,
                 killer: -1,
                 kill_notified: false,
-                free: true
+                free: false,
+                assignable: true,
+                bot: true,
             }
         };
     }
@@ -257,13 +264,16 @@ function init_map() {
 
 function new_player() {
     for (let i = 0; i < MAX_PLAYERS; ++i) {
-        if (!map[i].player.free) {
+        if ((!(map[i].player.free || map[i].player.bot)) || !map[i].player.assignable) {
             continue;
         }
+        console.log('assigning player', i);
         map[i].player.free = false;
         map[i].player.position_in_route = 0;
         map[i].player.position_fraction = 0;
         map[i].player.killed = false;
+        map[i].player.killer = -1;
+        map[i].player.bot = false;
         map[i].player.kill_notified = false;
         map[i].player.speed = constants.MIN_SPEED;
         return i;
@@ -324,11 +334,13 @@ function handle_collision(tiles) {
         if (player_0.position_fraction >= player_1.position_fraction) {
             player_0.killed = true;
             player_0.killer = tiles[1].route_id;
+            console.log('killed', tiles[0].route_id)
             unload_player_from_x_map(tiles[0].route_id);
             merge_routes(tiles[1].route_id, tiles[0].route_id);
         } else {
             player_1.killed = true;
             player_1.killer = tiles[0].route_id;
+            console.log('killed', tiles[1].route_id)
             unload_player_from_x_map(tiles[1].route_id);
             merge_routes(tiles[0].route_id, tiles[1].route_id);
         }
@@ -349,6 +361,7 @@ function handle_collision(tiles) {
 
         map[killed_player.route_id].player.killer = killer_id;
         killed_player.killed = true;
+        console.log('killed', killed_player.route_id)
         merge_routes(killer_id, killed_id);
     }
 }
