@@ -30,7 +30,9 @@ const game = new Phaser.Game({
 event_handlers.connection = (event) => {
     set_rails(event.map);
     for (const route_id in event.map) {
-        build_train(Number(route_id));
+        if (!event.map[route_id].player.killed) {
+            build_train(Number(route_id));
+        }
     }
     global_data.player.train = get_train_by_id(event.route_id);
     global_data.scene.game_inited += 1;
