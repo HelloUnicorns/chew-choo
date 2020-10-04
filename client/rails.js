@@ -51,15 +51,16 @@ function draw_corner_piece(grid_x, grid_y, angle, is_own) {
 /*  route_id: Route id of the currently drawn route,
     player_route_id: Route id of the client */
 function draw_rail(route_id, player_route_id) {
-    if (map[route_id].sprites && map[route_id].sprites.length > 0) {
-        map[route_id].sprites.forEach((sprite) => {
-            sprite.destroy();
-        });
-    }
-    map[route_id].sprites = [];
     for (const rail_tile of map[route_id].tiles) {
-        map[route_id].sprites.push(draw_rail_tile(rail_tile, player_route_id == route_id));
+        rail_tile.sprite = draw_rail_tile(rail_tile, player_route_id == route_id);
     }
+}
+
+function remove_rail(route_id) {
+    map[route_id].tiles.forEach((tile) => {
+        tile.sprite.destroy();
+    });
+    delete map[route_id];
 }
 
 function draw_rails(player_route_id) {
@@ -69,7 +70,25 @@ function draw_rails(player_route_id) {
 }
 
 function set_rails(outside_map) {
-    map = outside_map;
+    map = {};
+    for (const [route_id, route] of Object.entries(outside_map)) {
+        let tiles = route.tiles.map((server_tile) => {
+            return {
+                direction_from: server_tile.direction_from,
+                direction_to: server_tile.direction_to,
+                entering: server_tile.entering,
+                index: server_tile.index,
+                route_id: server_tile.route_id,
+                x: server_tile.x,
+                y: server_tile.y,
+                sprite: undefined,
+            };
+        });
+        map[route_id] = {
+            player: route.player,
+            tiles: tiles,
+        }
+    }
 }
 
 function get_rails_by_id(route_id) {
@@ -77,8 +96,13 @@ function get_rails_by_id(route_id) {
 }
 
 function update_rail(route_id, tiles, player_route_id) {
-    map[route_id].tiles = tiles;
-    draw_rail(route_id, player_route_id);
+    if (!tiles) {
+        console.log(`removing route ${route_id}`)
+        remove_rail(route_id);
+    } else {
+        map[route_id].tiles = tiles;
+        draw_rail(route_id, player_route_id);
+    }
 }
 
 exports.draw_rails = draw_rails;

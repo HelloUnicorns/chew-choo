@@ -1,9 +1,8 @@
 const global_data = require('./global_data.js');
 const { send_event } = require('./websockets.js');
 const constants = require('../common/constants.js');
-const { calculate_speed_and_position } = require('../common/position.js');
 const { GRID_PIECE_WIDTH } = require('./grid.js');
-const { draw_rails, get_rails_by_id } = require('./rails.js');
+const { draw_rails } = require('./rails.js');
 const { update_trains, draw_all_trains } = require('./train.js');
 
 const VERTICAL_GRID_TILES_PER_PLAYER_TRAIN_TILES = 2;
@@ -12,7 +11,7 @@ class GameScene extends Phaser.Scene {
     constructor() {
         super('GameScene');
         
-        global_data.scene = this;
+        global_data.game_scene = this;
 
         this.game_inited = 0;
         this.game_inited_target = 2;
@@ -32,10 +31,10 @@ class GameScene extends Phaser.Scene {
     }
 
     start_music() {
-        let bg_music = this.sound.add('bg_music', { loop: true });
-        bg_music.play();
+        this.bg_music = this.sound.add('bg_music', { loop: true });
+        this.bg_music.play();
         let mute_key = this.input.keyboard.addKey('m');
-        mute_key.on('down', function(event) { bg_music.mute = !bg_music.mute; });
+        mute_key.on('down', function(event) { global_data.game_scene.bg_music.mute = !global_data.game_scene.bg_music.mute; });
     }
 
     draw_map() {
@@ -68,20 +67,19 @@ class GameScene extends Phaser.Scene {
 
     update_speed_change() {
         let is_up_pressed = this.input.keyboard.checkDown(this.up_key);
-        if (global_data.player.is_speed_up != is_up_pressed) {
-            global_data.player.is_speed_up = is_up_pressed;
-            send_event({type: 'speed_change', value: this.get_speed_message_value(is_up_pressed, global_data.player.is_speed_down)});
+        if (global_data.player.train.is_speed_up != is_up_pressed) {
+            global_data.player.train.is_speed_up = is_up_pressed;
+            send_event({type: 'speed_change', value: this.get_speed_message_value(is_up_pressed, global_data.player.train.is_speed_down)});
         }
         let is_down_pressed = this.input.keyboard.checkDown(this.down_key);
-        if (global_data.player.is_speed_down != is_down_pressed) {
-            global_data.player.is_speed_down = is_down_pressed;
-            send_event({type: 'speed_change', value: this.get_speed_message_value(global_data.player.is_speed_up, is_down_pressed)});
+        if (global_data.player.train.is_speed_down != is_down_pressed) {
+            global_data.player.train.is_speed_down = is_down_pressed;
+            send_event({type: 'speed_change', value: this.get_speed_message_value(global_data.player.train.is_speed_up, is_down_pressed)});
         }
     }
 
     update_player() {
         this.update_speed_change();
-        calculate_speed_and_position(global_data.player, global_data.player.train, get_rails_by_id(global_data.player.train.route_id), this.time.now);
     }
 
     update_camera() {

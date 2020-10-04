@@ -3,15 +3,11 @@ const global_data = require('./global_data.js');
 const { event_handlers } = require('./websockets.js');
 const constants = require('../common/constants.js');
 const { GameScene } = require('./game_scene.js');
-const { SpeedMeterScene } = require('./speed_meter_scene.js');
-const { update_rail, set_rails } = require('./rails.js');
-const { build_train, get_train_by_id, update_train_location, remove_train } = require('./train.js');
+const { GameOverlayScene } = require('./game_overlay_scene.js');
+const { GameoverScene } = require('./gameover_scene.js');
+const { set_rails, update_rail } = require('./rails.js');
+const { build_train, get_train_by_id, update_server_train_location, remove_train } = require('./train.js');
 
-global_data.player = {
-    train: undefined,
-    is_speed_up: false,
-    is_speed_down: false,
-}
 
 const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -24,51 +20,58 @@ const game = new Phaser.Game({
             gravity: { y: 200 }
         }
     },
-    scene: [ GameScene, SpeedMeterScene ]
+    scene: [ GameScene, GameOverlayScene, GameoverScene ]
 });
 
 event_handlers.connection = (event) => {
     set_rails(event.map);
     for (const route_id in event.map) {
-        build_train(Number(route_id));
+        if (!event.map[route_id].player.killed) {
+            build_train(Number(route_id));
+        }
     }
     global_data.player.train = get_train_by_id(event.route_id);
-    global_data.scene.game_inited += 1;
+    global_data.game_scene.game_inited += 1;
     
-    global_data.scene.client_loaded();
+    global_data.game_scene.client_loaded();
 };
 
+let last_server_time = 0;
+
 event_handlers.position = (event) => {
-    if (global_data.scene.game_inited != global_data.scene.game_inited_target) {
+    if (global_data.game_scene.game_inited != global_data.game_scene.game_inited_target) {
         return;
     }
-
+    if (event.server_time < last_server_time) {
+        /* a newer update has already arrived */
+        console.log('got an out-of-order positions update')
+        return;
+    }
+    last_server_time = event.server_time;
     for (let route_id in event.locations) {
-        let location_info = event.locations[Number(route_id)];
-        update_train_location(route_id, location_info.position_fraction, location_info.position_in_route, location_info.speed);
+        update_server_train_location(route_id, event.locations[route_id]);
     }
 };
 
 event_handlers.kill = (event) => {
-    let kills = event.kills.map(kill =>  ({
-        killed: Number(kill.killed),
-        killer: Number(kill.killer)
+    for (let route of event.routes) {
+        update_rail(route.route_id, route.tiles, global_data.player.train.route_id);
+    }
+
+    let kills = event.kills.map(kill => ({
+        killed: Number(kill.killed_route_id),
+        killer: Number(kill.killer_route_id)
     }));
     let killed = kills.map(kill => kill.killed);
     if (killed.includes(global_data.player.train.route_id)) {
-        while(true) {
-            alert("You are DEAD");
-        }
+        global_data.game_scene.bg_music.mute = true;
+        game.scene.start('GameoverScene');
+        game.scene.stop('GameOverlayScene');
+        game.scene.stop('GameScene');    
         return;
     }
 
     for (let route_id of killed) {
         remove_train(route_id);
-    }
-};
-
-event_handlers.route_update = (event) => {
-    for (let route of event.routes) {
-        update_rail(route.route_id, route.tiles, global_data.player.train.route_id);
     }
 };
