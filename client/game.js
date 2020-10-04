@@ -6,13 +6,8 @@ const { GameScene } = require('./game_scene.js');
 const { GameOverlayScene } = require('./game_overlay_scene.js');
 const { GameoverScene } = require('./gameover_scene.js');
 const { set_rails } = require('./rails.js');
-const { build_train, get_train_by_id, update_train_location, remove_train } = require('./train.js');
+const { build_train, get_train_by_id, update_server_train_location, remove_train } = require('./train.js');
 
-global_data.player = {
-    train: undefined,
-    is_speed_up: false,
-    is_speed_down: false,
-}
 
 const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -41,14 +36,20 @@ event_handlers.connection = (event) => {
     global_data.game_scene.client_loaded();
 };
 
+let last_server_time = 0;
+
 event_handlers.position = (event) => {
     if (global_data.game_scene.game_inited != global_data.game_scene.game_inited_target) {
         return;
     }
-
+    if (event.server_time < last_server_time) {
+        /* a newer update has already arrived */
+        console.log('got an out-of-order positions update')
+        return;
+    }
+    last_server_time = event.server_time;
     for (let route_id in event.locations) {
-        let location_info = event.locations[Number(route_id)];
-        update_train_location(route_id, location_info.position_fraction, location_info.position_in_route, location_info.speed);
+        update_server_train_location(route_id, event.locations[route_id]);
     }
 };
 

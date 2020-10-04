@@ -1,12 +1,17 @@
 const constants = require('../common/constants.js');
 
-function calculate_speed_and_position(player, train, route, new_time) {
+function calculate_speed_and_position(train, route, new_time) {
     let time_passed_in_seconds = (new_time - train.last_position_update) / 1000;
 
+    if (time_passed_in_seconds == 0) {
+        return;
+    }
+
+    train.speed += train.acceleration * time_passed_in_seconds;
     let old_speed = train.speed;
     let new_speed = train.speed;
-    new_speed += player.is_speed_up ? constants.ACCELERATION * time_passed_in_seconds : 0;
-    new_speed -= player.is_speed_down ? constants.ACCELERATION * time_passed_in_seconds : 0;
+    new_speed += train.is_speed_up ? constants.ACCELERATION * time_passed_in_seconds : 0;
+    new_speed -= train.is_speed_down ? constants.ACCELERATION * time_passed_in_seconds : 0;
     new_speed = new_speed > constants.MAX_SPEED ? constants.MAX_SPEED : new_speed;
     new_speed = new_speed < constants.MIN_SPEED ? constants.MIN_SPEED : new_speed;
 
