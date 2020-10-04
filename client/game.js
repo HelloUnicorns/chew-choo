@@ -29,13 +29,6 @@ const game = new Phaser.Game({
 
 event_handlers.connection = (event) => {
     set_rails(event.map);
-    global_data.player.train = build_train(event.route_id);
-    global_data.scene.game_inited += 1;
-    global_data.scene.client_loaded();
-};
-
-event_handlers.connection = (event) => {
-    set_rails(event.map);
     for (const route_id in event.map) {
         build_train(Number(route_id));
     }
