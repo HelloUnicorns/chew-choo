@@ -1,4 +1,5 @@
 const { wss } = require('./server.js');
+const { performance } = require('perf_hooks');
 const map = require('./map.js');
 
 function get_random_tint() {
@@ -6,10 +7,6 @@ function get_random_tint() {
 }
 
 const ID_LEN = 8;
-
-function get_random_round_trip() {
-    return (Math.floor(Math.random() * 50) + 50) * 2;
-}
 
 function makeid(length) {
     /* https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript */
@@ -49,35 +46,26 @@ wss.on('connection', (client) => {
     });
 
     client.on('message', (json_data) => {
-        let fake_latency = get_random_round_trip() / 2;
-        setTimeout(() => {
-            const message = JSON.parse(json_data);
-            if (message.type == 'speed_change') {
-                map.update_speed_change(client.route_id, message.value);
-            }
-            if (message.type == 'latency_update') {
-                let latency = (performance.now() - message.prev_server_time) / 2;
-                setTimeout(() => {
-                    client.send(JSON.stringify({latency: latency, type: 'latency'}));
-                }, fake_latency);
-            }
-        }, fake_latency);
+        const message = JSON.parse(json_data);
+        if (message.type == 'speed_change') {
+            map.update_speed_change(client.route_id, message.value);
+        }
+        if (message.type == 'latency_update') {
+            let latency = (performance.now() - message.prev_server_time) / 2;
+            client.send(JSON.stringify({latency: latency, type: 'latency'}));
+        }
     });
 });
 
 setInterval(() => {
-    let fake_latency = get_random_round_trip() / 2;
     let current_time = performance.now();
     wss.clients.forEach((client) => {
-        setTimeout(() => {
-            client.send(JSON.stringify({time: current_time, type: 'time'}));
-        }, fake_latency);
+        client.send(JSON.stringify({time: current_time, type: 'time'}));
     });
 }, 1000 / 10);
 
 /* Position */
 setInterval(() => {
-    let fake_latency = get_random_round_trip() / 2;
     map.update_map();
     let locations = {};
     let server_time = performance.now();

@@ -268,7 +268,7 @@ function update_map() {
         if (route.player.killed) {
             continue;
         }
-        calculate_speed_and_position(route.player, route.player, route, new_time);
+        calculate_speed_and_position(route.player, route, new_time);
         update_occupied_tiles(route);
     }
     
