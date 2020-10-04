@@ -18,19 +18,20 @@ const ENEMY_TRAIN_COLOR = 0xff0000;
 
 let trains = {}; /* trains by route ids */
 
-function build_train(route_id) {
+function build_train(route_id, server_player) {
     return trains[route_id] = {
         sprites: [],
-        position_in_route: 0,
-        last_position_update: 0,
-        length: 3,
-        is_speed_up: false,
-        is_speed_down: false,
-        speed: constants.MIN_SPEED, /* in tiles per second */
-        position_fraction: 0,
+        position_in_route: server_player.position_in_route,
+        last_position_update: performance.now(),
+        length: server_player.length,
+        is_speed_up: server_player.is_speed_up,
+        is_speed_down: server_player.is_speed_down,
+        speed: server_player.speed,
+        position_fraction: server_player.position_fraction,
         server_shadow_train: undefined,
-        acceleration: 0,
-        route_id,
+        acceleration: server_player.acceleration,
+        is_stopped: server_player.is_stopped,
+        route_id: route_id
     };
 }
 
@@ -128,6 +129,10 @@ function update_train_acceleration_fix(train, rails) {
 }
 
 function update_train(train) {
+    if (train.is_stopped) {
+        return;
+    }
+
     let current_time = window.performance.now();
     let rails = get_rails_by_id(train.route_id);
     if (train.server_shadow_train) {

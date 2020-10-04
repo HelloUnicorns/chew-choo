@@ -28,7 +28,8 @@ wss.on('connection', (client) => {
     }
     client.route_id = route_id;
     client.initialized = true;
-    
+
+    map.map[client.route_id].player.is_stopped = true;
 
     console.log(`Client ${client.id} connected`);
     console.log(`Client ${client.id} occupies route ${client.route_id}`);
@@ -50,9 +51,12 @@ wss.on('connection', (client) => {
         if (message.type == 'speed_change') {
             map.update_speed_change(client.route_id, message.value);
         }
-        if (message.type == 'latency_update') {
+        else if (message.type == 'latency_update') {
             let latency = (performance.now() - message.prev_server_time) / 2;
             client.send(JSON.stringify({latency: latency, type: 'latency'}));
+        }
+        else if (message.type == 'resume_player') {
+            map.map[client.route_id].player.is_stopped = false;
         }
     });
 });
@@ -79,7 +83,7 @@ setInterval(() => {
                 speed: route.player.speed,
                 is_speed_up: route.player.is_speed_up,
                 is_speed_down: route.player.is_speed_down,
-                server_time
+                server_time: server_time
             };
         }
     }
