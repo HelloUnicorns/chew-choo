@@ -34,12 +34,12 @@ function draw_cart_by_index(train, cart_index, is_engine) {
     let rails = get_rails_by_id(train.route_id);
     position_in_route = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
     rail_tile = rails.tiles[position_in_route];
-    angle = get_rotation_by_tile(rail_tile);
+    angle = get_cart_angle_by_tile(rail_tile);
     cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle, is_engine);
     train.sprites.push(cart_sprite);
 }
 
-function get_rotation_by_tile(rail_tile) {
+function get_cart_angle_by_tile(rail_tile) {
     if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'top') {
         return 270;
     } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'left') {
@@ -80,9 +80,9 @@ function draw_all_trains() {
     }
 }
 
-function draw_cart(grid_x, grid_y, rotation_degrees, is_engine) {
+function draw_cart(grid_x, grid_y, angle, is_engine) {
     return draw_grid_sprite(
-        grid_x, grid_y, rotation_degrees, 
+        grid_x, grid_y, angle, 
         is_engine ? 'engine' : 'cart', 
         is_engine ? ENGINE_SCALE : CART_SCALE, 
         CART_Z_INEDX, 
@@ -96,8 +96,8 @@ function update_train(train) {
         tile_index = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
         rail_tile = rails.tiles[tile_index];
         next_rail_tile = rails.tiles[(tile_index + 1) % rails.tiles.length];
-        rail_angle = get_rotation_by_tile(rail_tile);
-        next_rail_angle = get_rotation_by_tile(next_rail_tile);
+        rail_angle = get_cart_angle_by_tile(rail_tile);
+        next_rail_angle = get_cart_angle_by_tile(next_rail_tile);
         if (rail_angle > next_rail_angle) {
             next_rail_angle += 360;
         }

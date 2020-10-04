@@ -29,18 +29,18 @@ function draw_rail_tile(rail_tile, is_own) {
     }
 }
 
-function draw_track_piece(grid_x, grid_y, rotation_degrees, is_own) {
+function draw_track_piece(grid_x, grid_y, angle, is_own) {
     return draw_grid_sprite(
-        grid_x, grid_y, rotation_degrees, 
+        grid_x, grid_y, angle, 
         is_own ? 'own_track' : 'track', 
         TRACK_SCALE, 
         is_own ? OWN_TRACK_Z_INEDX : NORMAL_TRACK_Z_INDEX, 
         is_own ? 0x00ff00 : 0xffffff);
 }
 
-function draw_corner_piece(grid_x, grid_y, rotation_degrees, is_own) {
+function draw_corner_piece(grid_x, grid_y, angle, is_own) {
     return draw_grid_sprite(
-        grid_x, grid_y, rotation_degrees, 
+        grid_x, grid_y, angle, 
         is_own ? 'own_turn' : 'turn', 
         TRACK_SCALE, 
         is_own ? OWN_TRACK_Z_INEDX : NORMAL_TRACK_Z_INDEX, 
