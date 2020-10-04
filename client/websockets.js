@@ -6,7 +6,6 @@ export let event_handlers = {
 };
 
 function handle_time_message(event) {
-    document.getElementById('server-time').innerHTML = 'Server time: ' + event.time_str;
     send_event({type: 'latency_update', prev_server_time: event.time});
 }
 

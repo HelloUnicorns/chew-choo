@@ -7,6 +7,10 @@ function get_random_tint() {
 
 const ID_LEN = 8;
 
+function get_random_latency() {
+    return (Math.floor(Math.random() * 100) + 200 * 2);
+}
+
 function makeid(length) {
     /* https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript */
     var result           = '';
@@ -39,22 +43,26 @@ wss.on('connection', (client) => {
     });
 
     client.on('message', (json_data) => {
-        const message = JSON.parse(json_data);
-        if (message.type == 'speed_change') {
-            map.update_speed_change(client.route_id, message.value);
-        }
-        if (message.type == 'latency_update') {
-            let latency = (new Date().getTime() - message.prev_server_time) / 2;
-            client.send(JSON.stringify({latency: latency, type: 'latency'}));
-        }
+        setTimeout(() => {
+            const message = JSON.parse(json_data);
+            if (message.type == 'speed_change') {
+                map.update_speed_change(client.route_id, message.value);
+            }
+            if (message.type == 'latency_update') {
+                let latency = (new Date().getTime() - message.prev_server_time) / 2;
+                client.send(JSON.stringify({latency: latency, type: 'latency'}));
+            }
+        }, get_random_latency());
     });
 });
 
 setInterval(() => {
-    wss.clients.forEach((client) => {
-        client.send(JSON.stringify({time_str: new Date().toTimeString(), time: new Date().getTime(), type: 'time'}));
-    });
-}, 1000);
+    setTimeout(() => {
+        wss.clients.forEach((client) => {
+            client.send(JSON.stringify({time: new Date().getTime(), type: 'time'}));
+        });
+    }, get_random_latency());
+}, 1000 / 10);
 
 setInterval(() => {
     map.update_map();
@@ -67,10 +75,12 @@ setInterval(() => {
             speed: route.player.speed
         };
     }
-    wss.clients.forEach((client) => {
-        if (!client.initialized) {
-            return;
-        }
-        client.send(JSON.stringify({ locations, type: 'position'}));
-    });
+    setTimeout(() => {
+        wss.clients.forEach((client) => {
+            if (!client.initialized) {
+                return;
+            }
+            client.send(JSON.stringify({ locations, type: 'position'}));
+        });
+    }, get_random_latency());
 }, 1000 / 60);
