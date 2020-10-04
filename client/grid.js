@@ -16,7 +16,7 @@ function update_grid_sprite(sprite, grid_x, grid_y, angle) {
 }
 
 function draw_grid_sprite(grid_x, grid_y, angle, sprite_name, scale, depth, tint) {
-    let grid_sprite = global_data.scene.add.sprite(0, 0, sprite_name);
+    let grid_sprite = global_data.game_scene.add.sprite(0, 0, sprite_name);
     update_grid_sprite(grid_sprite, grid_x, grid_y, angle);
     grid_sprite.setScale(scale);
     grid_sprite.setDepth(depth);

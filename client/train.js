@@ -134,7 +134,7 @@ function update_train_location(route_id, position_fraction, position_in_route, s
     trains[route_id].position_fraction = position_fraction;
     trains[route_id].position_in_route = position_in_route;
     trains[route_id].speed = speed;
-    trains[route_id].last_position_update = global_data.scene.time.now;
+    trains[route_id].last_position_update = global_data.game_scene.time.now;
 }
 
 exports.draw_all_trains = draw_all_trains;
