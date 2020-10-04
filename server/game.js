@@ -1,5 +1,6 @@
 const { wss } = require('./server.js');
 const map = require('./map.js');
+const { player } = require('../client/global_data.js');
 
 function get_random_tint() {
     return Math.random() * 0xffffff;
@@ -88,16 +89,30 @@ setInterval(() => {
 /* Kills */
 setInterval(() => {
     map.detect_collisions();
+    let killed = [];
+    for (const [route_id, route] of Object.entries(map.map)) {
+        if (route.player.killed && !route.player.kill_notified) {
+            killed.push(route_id);
+        }
+    }
+
+    if (killed.length == 0) {
+        return;
+    }
+
     wss.clients.forEach((client) => {
         if (!client.initialized) {
             return;
         }
-
+        
+        client.send(JSON.stringify({killed, type: 'kill'}));
         let player = map.map[client.route_id].player;
         if (player.killed && !player.kill_notified) {
-            client.send(JSON.stringify({killed: player.killed, type: 'kill'}));
-            player.kill_notified = true;
             map.delete_player(client.id);
         }
     });
+
+    for (let route_id of killed) {
+        map.map[route_id].player.kill_notified = true;
+    }
 }, 1000 / 60);

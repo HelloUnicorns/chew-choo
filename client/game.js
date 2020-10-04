@@ -5,7 +5,7 @@ const constants = require('../common/constants.js');
 const { GameScene } = require('./game_scene.js');
 const { SpeedMeterScene } = require('./speed_meter_scene.js');
 const { set_rails } = require('./rails.js');
-const { build_train, get_train_by_id, update_train_location } = require('./train.js');
+const { build_train, get_train_by_id, update_train_location, remove_train } = require('./train.js');
 
 global_data.player = {
     train: undefined,
@@ -50,7 +50,17 @@ event_handlers.position = (event) => {
 };
 
 event_handlers.kill = (event) => {
-    while(true) {
-        alert("You are DEAD");
+    let route_ids = event.killed.map(route_id => Number(route_id));
+    console.log(`Your ID: ${global_data.player.train.route_id}`);
+    console.log(`Killed routes: ${route_ids}`);
+    if (route_ids.includes(global_data.player.train.route_id)) {
+        while(true) {
+            alert("You are DEAD");
+        }
+        return;
     }
+
+    for (let route_id of route_ids) {
+        remove_train(route_id);
+    }    
 };

@@ -77,6 +77,19 @@ function draw_train(train, is_own) {
     }
 }
 
+function remove_train(route_id) {
+    let train = get_train_by_id(route_id);
+    if (!train) {
+        return;
+    }
+
+    delete trains[route_id];
+    for (let sprite of train.sprites) {
+        sprite.destroy();
+    }
+}
+
+
 function draw_all_trains(player_route_id) {
     for (let route_id in trains) {
         draw_train(trains[route_id], route_id == player_route_id);
@@ -129,3 +142,4 @@ exports.build_train = build_train;
 exports.update_trains = update_trains;
 exports.get_train_by_id = get_train_by_id;
 exports.update_train_location = update_train_location;
+exports.remove_train = remove_train;
