@@ -9,9 +9,7 @@ function get_random_tint() {
 const ID_LEN = 8;
 
 function get_random_round_trip() {
-    // return (Math.floor(Math.random() * 50) + 50) * 2;
-    // return 100;
-    return 0;
+    return (Math.floor(Math.random() * 50) + 50) * 2;
 }
 
 function makeid(length) {
@@ -72,7 +70,9 @@ setInterval(() => {
     });
 }, 1000 / 10);
 
+let counter = 0;
 setInterval(() => {
+    counter++;
     let fake_latency = get_random_round_trip() / 2;
     map.update_map();
     let locations = {};
@@ -94,7 +94,7 @@ setInterval(() => {
             if (!client.initialized) {
                 return;
             }
-            client.send(JSON.stringify({ locations, type: 'position'}));
+            client.send(JSON.stringify({ locations, counter, server_time, type: 'position'}));
         });
     }, fake_latency);
 }, 1000 / 60);

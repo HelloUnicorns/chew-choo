@@ -153,23 +153,11 @@ function update_server_train_location(route_id, server_location) {
     calculate_speed_and_position(train, rails, cur_time);
 
     if (train.server_shadow_train && route_id == global_data.player.train.route_id) {
-        if (count > 0) {
-            count--;
-            console.log('\n\n')
-            console.log(`scene time ${cur_time}. last update ${train.server_shadow_train.last_position_update}. diff:  ${cur_time - train.server_shadow_train.last_position_update}`)
-            console.log(`Server time ${server_location.server_time}. last server time ${train.server_shadow_train.server_time}. diff: ${server_location.server_time - train.server_shadow_train.server_time}`)
-            console.log(`Previous server calculation: ${train.server_shadow_train.position_in_route + train.server_shadow_train.position_fraction}.\n`)
-            calculate_speed_and_position(train.server_shadow_train, rails, cur_time);
-            console.log(`Our calculation: ${train.position_in_route + train.position_fraction}.\n`)
-            console.log(`Previous server calculation extrapolation: ${train.server_shadow_train.position_in_route + train.server_shadow_train.position_fraction}.\n`)
-            console.log(`New server calculation: ${server_location.position_in_route + server_location.position_fraction}.\n`)
-            console.log(`New server calculation adjusted: ${server_shadow_train.position_in_route + server_shadow_train.position_fraction}.\n`)
-            console.log('\n\n')
-        }
-        let diff = Math.abs((train.position_in_route + train.position_fraction) - (train.server_shadow_train.position_in_route + train.server_shadow_train.position_fraction));
-        if (diff >= 1.5 && diff < 30) {
-            debugger;
-        }
+        console.log(
+            `our diff: ${(cur_time - train.server_shadow_train.last_position_update).toFixed(2)} ` +
+            `server diff: ${(server_location.server_time - train.server_shadow_train.server_time).toFixed(2)} ` +
+            `position diff: ${(((((server_location.position_in_route + server_location.position_fraction) - (train.position_in_route + train.position_fraction)) % rails.tiles.length) + rails.tiles.length) % rails.tiles.length).toFixed(2)}.`
+        )
     }
     if (global_data.latency != 0) {
         train.server_shadow_train = server_shadow_train;
