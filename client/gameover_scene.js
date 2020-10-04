@@ -6,7 +6,7 @@ class GameoverScene extends Phaser.Scene {
     preload() {}
 
     create() {
-        this.speed_meter = this.add.text(0, 0, 'Game Over', { font: '120px Arial', fill: '#ffffff' });
+        this.game_over_text = this.add.text(0, 0, 'Game Over', { font: '120px Arial', fill: '#ffffff' });
     }
 
     update() {}
