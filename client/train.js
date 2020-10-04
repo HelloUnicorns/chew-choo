@@ -14,6 +14,8 @@ const ENGINE_SCALE = ENGINE_WIDTH / ENGINE_IMAGE_WIDTH;
 
 const PLAYER_TRAIN_COLOR = 0x00ff00;
 const ENEMY_TRAIN_COLOR = 0xff0000;
+const INVINCIBLE_TRAIN_ALPHA = 0.25;
+const NORMAL_TRAIN_ALPHA = 1;
 
 
 let trains = {}; /* trains by route ids */
@@ -48,7 +50,7 @@ function draw_cart_by_index(train, cart_index, is_engine, is_own) {
     position_in_route = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
     rail_tile = rails.tiles[position_in_route];
     angle = get_cart_angle_by_tile(rail_tile);
-    cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle, is_engine, is_own);
+    cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle, is_engine, is_own, train.is_stopped);
     train.sprites.push(cart_sprite);
 }
 
@@ -105,13 +107,14 @@ function draw_all_trains(player_route_id) {
     }
 }
 
-function draw_cart(grid_x, grid_y, angle, is_engine, is_own) {
+function draw_cart(grid_x, grid_y, angle, is_engine, is_own, is_invincible) {
     return draw_grid_sprite(
         grid_x, grid_y, angle, 
         is_engine ? 'engine' : 'cart', 
         is_engine ? ENGINE_SCALE : CART_SCALE, 
         CART_Z_INEDX, 
-        is_own ? PLAYER_TRAIN_COLOR: ENEMY_TRAIN_COLOR);
+        is_own ? PLAYER_TRAIN_COLOR: ENEMY_TRAIN_COLOR,
+        is_invincible ? INVINCIBLE_TRAIN_ALPHA : NORMAL_TRAIN_ALPHA);
 }
 
 const t1 = 0.1;
@@ -140,6 +143,8 @@ function update_train(train) {
     }
     calculate_speed_and_position(train, rails, current_time);
 
+    let train_alpha = train.is_stopped ? INVINCIBLE_TRAIN_ALPHA : NORMAL_TRAIN_ALPHA;
+
     for (cart_index = 0; cart_index < train.length; cart_index++) {
         tile_index = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
         rail_tile = rails.tiles[tile_index];
@@ -152,7 +157,7 @@ function update_train(train) {
         position_x = rail_tile.x * (1 - train.position_fraction) + next_rail_tile.x * train.position_fraction;
         position_y = rail_tile.y * (1 - train.position_fraction) + next_rail_tile.y * train.position_fraction;
         angle = rail_angle * (1 - train.position_fraction) + next_rail_angle * train.position_fraction;
-        update_grid_sprite(train.sprites[cart_index], position_x, position_y, angle);
+        update_grid_sprite(train.sprites[cart_index], position_x, position_y, angle, train_alpha);
     }
 }
 
