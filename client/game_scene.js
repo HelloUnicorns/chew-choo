@@ -4,7 +4,7 @@ const constants = require('../common/constants.js');
 const { calculate_speed_and_position } = require('../common/position.js');
 const { GRID_PIECE_WIDTH } = require('./grid.js');
 const { draw_rails, get_rails_by_id } = require('./rails.js');
-const { draw_train, update_trains, draw_all_trains } = require('./train.js');
+const { update_trains, draw_all_trains } = require('./train.js');
 
 const VERTICAL_GRID_TILES_PER_PLAYER_TRAIN_TILES = 2;
 
@@ -41,8 +41,8 @@ class GameScene extends Phaser.Scene {
     draw_map() {
         this.cameras.main.setBackgroundColor(0xf7f1da);
         
-        draw_rails(global_data.player.train);
-        draw_all_trains();
+        draw_rails(global_data.player.train.route_id);
+        draw_all_trains(global_data.player.train.route_id);
         this.cameras.main.startFollow(global_data.player.train.sprites[0], true);
         this.up_key = this.input.keyboard.addKey('up');
         this.down_key = this.input.keyboard.addKey('down');

@@ -11,6 +11,9 @@ const ENGINE_IMAGE_WIDTH = 100;
 const ENGINE_WIDTH = GRID_PIECE_WIDTH;
 const ENGINE_SCALE = ENGINE_WIDTH / ENGINE_IMAGE_WIDTH;
 
+const PLAYER_TRAIN_COLOR = 0x00ff00;
+const ENEMY_TRAIN_COLOR = 0xff0000;
+
 
 let trains = {}; /* trains by route ids */
 
@@ -30,12 +33,12 @@ function get_train_by_id(route_id) {
     return trains[route_id];
 }
 
-function draw_cart_by_index(train, cart_index, is_engine) {
+function draw_cart_by_index(train, cart_index, is_engine, is_own) {
     let rails = get_rails_by_id(train.route_id);
     position_in_route = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
     rail_tile = rails.tiles[position_in_route];
     angle = get_cart_angle_by_tile(rail_tile);
-    cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle, is_engine);
+    cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle, is_engine, is_own);
     train.sprites.push(cart_sprite);
 }
 
@@ -67,26 +70,26 @@ function get_cart_angle_by_tile(rail_tile) {
     }
 }
 
-function draw_train(train) {
-    draw_cart_by_index(train, 0, true);
+function draw_train(train, is_own) {
+    draw_cart_by_index(train, 0, true, is_own);
     for (cart_index = 1; cart_index < train.length; cart_index++) {
-        draw_cart_by_index(train, cart_index, false);
+        draw_cart_by_index(train, cart_index, false, is_own);
     }
 }
 
-function draw_all_trains() {
+function draw_all_trains(player_route_id) {
     for (let route_id in trains) {
-        draw_train(trains[route_id]);
+        draw_train(trains[route_id], route_id == player_route_id);
     }
 }
 
-function draw_cart(grid_x, grid_y, angle, is_engine) {
+function draw_cart(grid_x, grid_y, angle, is_engine, is_own) {
     return draw_grid_sprite(
         grid_x, grid_y, angle, 
         is_engine ? 'engine' : 'cart', 
         is_engine ? ENGINE_SCALE : CART_SCALE, 
         CART_Z_INEDX, 
-        0x00ff00);
+        is_own ? PLAYER_TRAIN_COLOR: ENEMY_TRAIN_COLOR);
 }
 
 function update_train(train) {

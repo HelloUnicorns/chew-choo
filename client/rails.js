@@ -47,10 +47,10 @@ function draw_corner_piece(grid_x, grid_y, angle, is_own) {
         is_own ? 0x00ff00 : 0xffffff);
 }
 
-function draw_rails(player_train) {
+function draw_rails(player_route_id) {
     for(const route_id in map) {
         for (const rail_tile of map[route_id].tiles) {
-            draw_rail_tile(rail_tile, player_train.route_id == route_id);
+            draw_rail_tile(rail_tile, player_route_id == route_id);
         }
     }
 }
