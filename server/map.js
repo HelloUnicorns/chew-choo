@@ -91,7 +91,7 @@ Array.prototype.rotate = (function() {
     };
 })();
 
-const ROTATION = (constants.TRACK_HEIGHT / 3 - 1);
+const ROTATION = constants.TRACK_HEIGHT / 3;
 function merge_routes(killer_route_id, killee_route_id) {
     function indexOf(arr, coor) {
         for (let [index, item] of arr.entries()) {
