@@ -1,4 +1,4 @@
-const global_data = require('./global_data.js')
+const global_data = require('./global_data.js');
 const { send_event } = require('./websockets.js');
 const constants = require('../common/constants.js');
 const { calculate_speed_and_position } = require('../common/position.js');
