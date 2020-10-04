@@ -98,6 +98,7 @@ setInterval(() => {
     let kills = [];
     for (const [route_id, route] of Object.entries(map.map)) {
         if (route.player.killed && !route.player.kill_notified) {
+            route.player.kill_notified = true;
             kills.push({killed_route_id: route_id, killer_route_id: route.player.killer});
         }
     }
@@ -131,10 +132,4 @@ setInterval(() => {
         }
         client.send(JSON.stringify({routes, kills, type: 'kill'}));
     });
-
-    /*for (let kill of kills) {
-        map.map[kill.killed].player.kill_notified = true;
-    }*/
-
-
 }, 1000 / 60);
