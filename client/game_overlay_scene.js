@@ -1,5 +1,6 @@
 const global_data = require('./global_data.js');
 const constants = require('../common/constants.js');
+const { get_number_of_trains } = require('./train.js');
 
 const SPEED_METER_SCALE = 0.5;
 
@@ -14,9 +15,11 @@ const SPEED_METER_ARROWS_X_OFFSET = SPEED_METER_ARROWS_IMAGE_X_OFFSET * SPEED_ME
 const SPEED_METER_ARROW_MIN_ANGLE = -85;
 const SPEED_METER_ARROW_MAX_ANGLE = 85;
 
-class SpeedMeterScene extends Phaser.Scene {
+const REMAINING_PLAYERS_POSITION_X = constants.CANVAS_WIDTH - 480;
+
+class GameOverlayScene extends Phaser.Scene {
     constructor() {
-        super({ key: 'SpeedMeterScene', active: true });
+        super({ key: 'GameOverlayScene', active: true });
     }
 
     preload() {
@@ -40,6 +43,8 @@ class SpeedMeterScene extends Phaser.Scene {
         );
         this.speed_meter_arrow.setScale(SPEED_METER_SCALE);
         this.speed_meter_arrow.setOrigin(0.5, 0.92);
+
+        this.remaining_players = this.add.text(REMAINING_PLAYERS_POSITION_X, 0, 'Remaining players: 0', { font: '48px Arial', fill: '#000000' });
     }
 
     update() {
@@ -48,9 +53,11 @@ class SpeedMeterScene extends Phaser.Scene {
             let angle = SPEED_METER_ARROW_MIN_ANGLE + (SPEED_METER_ARROW_MAX_ANGLE - SPEED_METER_ARROW_MIN_ANGLE) * (global_data.player.train.speed - constants.MIN_SPEED) / (constants.MAX_SPEED - constants.MIN_SPEED);
             this.speed_meter_arrow.setAngle(angle);
         }
+
+        this.remaining_players.setText(`Remaining players: ${get_number_of_trains()}`);
     }
 }
 
 module.exports = {
-    SpeedMeterScene: SpeedMeterScene
+    GameOverlayScene: GameOverlayScene
 }

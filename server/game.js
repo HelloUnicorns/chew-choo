@@ -1,4 +1,5 @@
 const { wss } = require('./server.js');
+const { performance } = require('perf_hooks');
 const map = require('./map.js');
 
 function get_random_tint() {
@@ -50,29 +51,35 @@ wss.on('connection', (client) => {
             map.update_speed_change(client.route_id, message.value);
         }
         if (message.type == 'latency_update') {
-            let latency = (new Date().getTime() - message.prev_server_time) / 2;
+            let latency = (performance.now() - message.prev_server_time) / 2;
             client.send(JSON.stringify({latency: latency, type: 'latency'}));
         }
     });
 });
 
 setInterval(() => {
+    let current_time = performance.now();
     wss.clients.forEach((client) => {
-        client.send(JSON.stringify({time_str: new Date().toTimeString(), time: new Date().getTime(), type: 'time'}));
+        client.send(JSON.stringify({time: current_time, type: 'time'}));
     });
-}, 1000);
+}, 1000 / 10);
 
 /* Position */
 setInterval(() => {
     map.update_map();
     let locations = {};
+    let server_time = performance.now();
+    
     for (const [route_id, route] of Object.entries(map.map)) {
         if (!route.player.killed) {
             locations[route_id] = {
                 position_in_route: route.player.position_in_route,
                 position_fraction: route.player.position_fraction,
                 length: route.player.length,
-                speed: route.player.speed
+                speed: route.player.speed,
+                is_speed_up: route.player.is_speed_up,
+                is_speed_down: route.player.is_speed_down,
+                server_time
             };
         }
     }

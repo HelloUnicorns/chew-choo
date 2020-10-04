@@ -1,3 +1,4 @@
+const { performance } = require('perf_hooks');
 const { calculate_speed_and_position } = require('../common/position.js');
 const constants = require('../common/constants.js');
 
@@ -224,10 +225,11 @@ function init_map() {
             tiles: build_rectangular_route(start_position.x, start_position.y, constants.TRACK_WIDTH, constants.TRACK_HEIGHT, i),
             player: {
                 position_in_route: 0,
-                last_position_update: new Date().getTime(),
+                last_position_update: performance.now(),
                 position_fraction: 0,
                 length: 3,
                 speed: constants.MIN_SPEED, /* in tiles per second */
+                acceleration: 0, /* in tiles per second squared */
                 is_speed_up: false,
                 is_speed_down: false,
                 killed: false
@@ -356,13 +358,13 @@ function detect_collisions() {
 }
 
 function update_map() {
-    let new_time = new Date().getTime();
+    let new_time = performance.now();
     for (const route_id in map) {
         const route = map[route_id];
         if (route.player.killed) {
             continue;
         }
-        calculate_speed_and_position(route.player, route.player, route, new_time);
+        calculate_speed_and_position(route.player, route, new_time);
         update_occupied_tiles(route);
     }
     

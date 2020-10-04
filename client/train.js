@@ -1,6 +1,7 @@
 const constants = require('../common/constants.js');
 const global_data = require('./global_data.js')
 const { draw_grid_sprite, update_grid_sprite, GRID_PIECE_WIDTH, CART_Z_INEDX } = require('./grid.js');
+const { calculate_speed_and_position } = require('../common/position.js');
 const { get_rails_by_id } = require('./rails.js');
 
 const CART_IMAGE_WIDTH = 100;
@@ -23,10 +24,18 @@ function build_train(route_id) {
         position_in_route: 0,
         last_position_update: 0,
         length: 3,
+        is_speed_up: false,
+        is_speed_down: false,
         speed: constants.MIN_SPEED, /* in tiles per second */
         position_fraction: 0,
+        server_shadow_train: undefined,
+        acceleration: 0,
         route_id,
     };
+}
+
+function get_number_of_trains() {
+    return Object.keys(trains).length;
 }
 
 function get_train_by_id(route_id) {
@@ -89,7 +98,6 @@ function remove_train(route_id) {
     }
 }
 
-
 function draw_all_trains(player_route_id) {
     for (let route_id in trains) {
         draw_train(trains[route_id], route_id == player_route_id);
@@ -105,9 +113,28 @@ function draw_cart(grid_x, grid_y, angle, is_engine, is_own) {
         is_own ? PLAYER_TRAIN_COLOR: ENEMY_TRAIN_COLOR);
 }
 
+const t1 = 0.1;
+const t2 = 0.1;
+
+function my_delta_mod(number, mod) {
+    return (((number % mod) + mod + mod/2) % mod) - mod/2;
+}
+
+function update_train_acceleration_fix(train, rails) {
+    x_server = train.server_shadow_train.position_in_route + train.server_shadow_train.position_fraction;
+    x_0 = train.position_in_route + train.position_fraction;
+    delta_x = my_delta_mod(x_server + (train.server_shadow_train.speed * global_data.latency / 1000) - x_0, rails.tiles.length)
+    train.acceleration = (train.server_shadow_train.speed + delta_x / t1 - train.speed) / t2;
+}
+
 function update_train(train) {
+    let current_time = window.performance.now();
     let rails = get_rails_by_id(train.route_id);
-    
+    if (train.server_shadow_train) {
+        update_train_acceleration_fix(train, rails);
+    }
+    calculate_speed_and_position(train, rails, current_time);
+
     for (cart_index = 0; cart_index < train.length; cart_index++) {
         tile_index = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
         rail_tile = rails.tiles[tile_index];
@@ -130,16 +157,39 @@ function update_trains() {
     }
 }
 
-function update_train_location(route_id, position_fraction, position_in_route, speed) {
-    trains[route_id].position_fraction = position_fraction;
-    trains[route_id].position_in_route = position_in_route;
-    trains[route_id].speed = speed;
-    trains[route_id].last_position_update = global_data.scene.time.now;
+
+function update_server_train_location(route_id, server_location) {
+    let cur_time = window.performance.now();
+    let train = trains[route_id];
+    let rails = get_rails_by_id(train.route_id);
+    let server_shadow_train = {
+        position_fraction: server_location.position_fraction,
+        position_in_route: server_location.position_in_route,
+        speed: server_location.speed,
+        is_speed_up: server_location.is_speed_up,
+        is_speed_down: server_location.is_speed_down,
+        last_position_update: cur_time,
+        server_time: server_location.server_time,
+    }
+        
+    if (!train.server_shadow_train && global_data.latency != 0) {
+        train.position_fraction = server_shadow_train.position_fraction;
+        train.position_in_route = server_shadow_train.position_in_route;
+        train.last_position_update = cur_time;
+    }
+
+    /* proceed client-side calculation */
+    calculate_speed_and_position(train, rails, cur_time);
+
+    if (global_data.latency != 0) {
+        train.server_shadow_train = server_shadow_train;
+    }
 }
 
 exports.draw_all_trains = draw_all_trains;
 exports.build_train = build_train;
 exports.update_trains = update_trains;
 exports.get_train_by_id = get_train_by_id;
-exports.update_train_location = update_train_location;
+exports.update_server_train_location = update_server_train_location;
 exports.remove_train = remove_train;
+exports.get_number_of_trains = get_number_of_trains;
