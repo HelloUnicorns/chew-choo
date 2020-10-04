@@ -3,8 +3,8 @@ const constants = require('../common/constants.js');
 
 const SPEED_METER_SCALE = 0.5;
 
-const SPEED_METER_COLORS_IMAGE_HEIGHT = 253;
-const SPEED_METER_COLORS_IMAGE_WIDTH = 482;
+const SPEED_METER_COLORS_IMAGE_HEIGHT = 258;
+const SPEED_METER_COLORS_IMAGE_WIDTH = 492;
 const SPEED_METER_COLORS_HEIGHT = SPEED_METER_COLORS_IMAGE_HEIGHT * SPEED_METER_SCALE;
 const SPEED_METER_COLORS_WIDTH = SPEED_METER_COLORS_IMAGE_WIDTH * SPEED_METER_SCALE;
 
@@ -14,6 +14,9 @@ const SPEED_METER_ARROWS_IMAGE_Y_OFFSET = 20;
 const SPEED_METER_ARROWS_HEIGHT = SPEED_METER_ARROWS_IMAGE_HEIGHT * SPEED_METER_SCALE;
 const SPEED_METER_ARROWS_X_OFFSET = SPEED_METER_ARROWS_IMAGE_X_OFFSET * SPEED_METER_SCALE;
 const SPEED_METER_ARROWS_Y_OFFSET = SPEED_METER_ARROWS_IMAGE_Y_OFFSET * SPEED_METER_SCALE;
+
+const SPEED_METER_ARROW_MIN_ANGLE = -85;
+const SPEED_METER_ARROW_MAX_ANGLE = 85;
 
 class SpeedMeterScene extends Phaser.Scene {
     constructor() {
@@ -36,16 +39,19 @@ class SpeedMeterScene extends Phaser.Scene {
         
         this.speed_meter_arrow = this.add.sprite(
             constants.CANVAS_WIDTH - SPEED_METER_COLORS_WIDTH / 2 + SPEED_METER_ARROWS_X_OFFSET,
-            constants.CANVAS_HEIGHT - SPEED_METER_ARROWS_HEIGHT /2 + SPEED_METER_ARROWS_Y_OFFSET,
+            constants.CANVAS_HEIGHT,
             'speed_meter_arrow'
         );
         this.speed_meter_arrow.setScale(SPEED_METER_SCALE);
+        this.speed_meter_arrow.setOrigin(0.5, 0.92);
     }
 
     update() {
         if (global_data.player.train) {
             this.speed_meter.setText('Speed: ' + global_data.player.train.speed.toFixed(2));
         }
+        let angle = SPEED_METER_ARROW_MIN_ANGLE + (SPEED_METER_ARROW_MAX_ANGLE - SPEED_METER_ARROW_MIN_ANGLE) * (global_data.player.train.speed - constants.MIN_SPEED) / (constants.MAX_SPEED - constants.MIN_SPEED);
+        this.speed_meter_arrow.setAngle(angle);
     }
 }
 
