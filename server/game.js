@@ -1,6 +1,5 @@
 const { wss } = require('./server.js');
 const map = require('./map.js');
-const { player } = require('../client/global_data.js');
 
 function get_random_tint() {
     return Math.random() * 0xffffff;
@@ -89,14 +88,14 @@ setInterval(() => {
 /* Kills */
 setInterval(() => {
     map.detect_collisions();
-    let killed = [];
+    let kills = [];
     for (const [route_id, route] of Object.entries(map.map)) {
         if (route.player.killed && !route.player.kill_notified) {
-            killed.push(route_id);
+            kills.push({killed: route.player.killed, killer: route.player.killer});
         }
     }
 
-    if (killed.length == 0) {
+    if (kills.length == 0) {
         return;
     }
 
@@ -105,14 +104,31 @@ setInterval(() => {
             return;
         }
         
-        client.send(JSON.stringify({killed, type: 'kill'}));
+        /* Update kills */
+        client.send(JSON.stringify({kills, type: 'kill'}));
         let player = map.map[client.route_id].player;
         if (player.killed && !player.kill_notified) {
             map.delete_player(client.id);
         }
+
+        /* Update tile changes */
+        let routes = [];
+        kills.forEach((kill) => {
+            routes.push({
+                route_id: kill.killer,
+                tiles: map.map[kill.killer].tiles
+            });
+            routes.push({
+                route_id: kill.killed,
+                tiles: [] // Empty list
+            });
+        });
+        client.send(JSON.stringify({routes, type: 'route_update'}));
     });
 
-    for (let route_id of killed) {
-        map.map[route_id].player.kill_notified = true;
-    }
+    /*for (let kill of kills) {
+        map.map[kill.killed].player.kill_notified = true;
+    }*/
+
+
 }, 1000 / 60);
