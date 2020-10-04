@@ -35,7 +35,7 @@ class GameScene extends Phaser.Scene {
         this.bg_music = this.sound.add('bg_music', { loop: true });
         this.bg_music.play();
         let mute_key = this.input.keyboard.addKey('m');
-        mute_key.on('down', function(event) { bg_music.mute = !bg_music.mute; });
+        mute_key.on('down', function(event) { global_data.game_scene.bg_music.mute = !global_data.game_scene.bg_music.mute; });
     }
 
     draw_map() {
