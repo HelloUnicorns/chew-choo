@@ -95,7 +95,6 @@ const ROTATION = (constants.TRACK_HEIGHT / 3 - 1);
 function merge_routes(killer_route_id, killee_route_id) {
     function indexOf(arr, coor) {
         for (let [index, item] of arr.entries()) {
-            console.log(coor);
             if (item[0] == coor[0] && item[1] == coor[1]) {
                 return index;
             }
@@ -123,8 +122,6 @@ function merge_routes(killer_route_id, killee_route_id) {
     }
 
     if (crossings.length != 2) {
-        console.log(killer_coors);
-        console.log(killee_coors);
         throw new Error(`Routes have ${crossings.length} crossings`);
     }
 
@@ -135,9 +132,6 @@ function merge_routes(killer_route_id, killee_route_id) {
 
     let killee_start_position =  indexOf(killee_coors, killer_coors[killer_start_position]);
     let killee_end_position =  indexOf(killee_coors, killer_coors[killer_end_position]);
-
-    console.log("PASSED 3");
-    console.log(killer_start_position, killer_end_position, killee_start_position, killee_end_position);
 
     /* Set directions */
     killer_tiles[killer_start_position].direction_to = killee_tiles[killee_start_position].direction_to;

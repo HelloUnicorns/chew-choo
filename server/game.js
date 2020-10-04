@@ -98,7 +98,7 @@ setInterval(() => {
     let kills = [];
     for (const [route_id, route] of Object.entries(map.map)) {
         if (route.player.killed && !route.player.kill_notified) {
-            kills.push({route_id, killer_route_id: route.player.killer});
+            kills.push({killed_route_id: route_id, killer_route_id: route.player.killer});
         }
     }
 
@@ -106,31 +106,30 @@ setInterval(() => {
         return;
     }
 
+    /* Update tile changes */
+    let routes = [];
+    kills.forEach((kill) => {
+        routes.push({
+            route_id: kill.killer_route_id,
+            tiles: map.map[kill.killer_route_id].tiles
+        });
+        routes.push({
+            route_id: kill.killed_route_id,
+            tiles: [] // Empty list
+        });
+    });
+
     wss.clients.forEach((client) => {
         if (!client.initialized) {
             return;
         }
         
         /* Update kills */
-        client.send(JSON.stringify({kills, type: 'kill'}));
         let player = map.map[client.route_id].player;
         if (player.killed && !player.kill_notified) {
             map.delete_player(client.id);
         }
-
-        /* Update tile changes */
-        let routes = [];
-        kills.forEach((kill) => {
-            routes.push({
-                route_id: kill.killer_route_id,
-                tiles: map.map[kill.killer_route_id].tiles
-            });
-            routes.push({
-                route_id: kill.route_id,
-                tiles: [] // Empty list
-            });
-        });
-        client.send(JSON.stringify({routes, type: 'route_update'}));
+        client.send(JSON.stringify({routes, kills, type: 'kill'}));
     });
 
     /*for (let kill of kills) {

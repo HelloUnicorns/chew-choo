@@ -8,6 +8,9 @@ function calculate_speed_and_position(train, route, new_time) {
     }
 
     train.speed += train.acceleration * time_passed_in_seconds;
+    if (Number.isNaN(train.speed)) {
+        debugger;
+    }
     let old_speed = train.speed;
     let new_speed = train.speed;
     new_speed += train.is_speed_up ? constants.ACCELERATION * time_passed_in_seconds : 0;

@@ -54,9 +54,13 @@ event_handlers.position = (event) => {
 };
 
 event_handlers.kill = (event) => {
-    let kills = event.kills.map(kill =>  ({
-        killed: Number(kill.killed),
-        killer: Number(kill.killer)
+    for (let route of event.routes) {
+        update_rail(route.route_id, route.tiles, global_data.player.train.route_id);
+    }
+
+    let kills = event.kills.map(kill => ({
+        killed: Number(kill.killed_route_id),
+        killer: Number(kill.killer_route_id)
     }));
     let killed = kills.map(kill => kill.killed);
     if (killed.includes(global_data.player.train.route_id)) {
@@ -69,11 +73,5 @@ event_handlers.kill = (event) => {
 
     for (let route_id of killed) {
         remove_train(route_id);
-    }
-};
-
-event_handlers.route_update = (event) => {
-    for (let route of event.routes) {
-        update_rail(route.route_id, route.tiles, global_data.player.train.route_id);
     }
 };
