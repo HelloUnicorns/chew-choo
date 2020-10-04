@@ -14,9 +14,9 @@ const SPEED_METER_ARROWS_X_OFFSET = SPEED_METER_ARROWS_IMAGE_X_OFFSET * SPEED_ME
 const SPEED_METER_ARROW_MIN_ANGLE = -85;
 const SPEED_METER_ARROW_MAX_ANGLE = 85;
 
-class SpeedMeterScene extends Phaser.Scene {
+class GameOverlayScene extends Phaser.Scene {
     constructor() {
-        super({ key: 'SpeedMeterScene', active: true });
+        super({ key: 'GameOverlayScene', active: true });
     }
 
     preload() {
@@ -52,5 +52,5 @@ class SpeedMeterScene extends Phaser.Scene {
 }
 
 module.exports = {
-    SpeedMeterScene: SpeedMeterScene
+    GameOverlayScene: GameOverlayScene
 }
