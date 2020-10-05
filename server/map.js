@@ -163,9 +163,12 @@ function union_routes(killer_route_id, killee_route_id) {
     do {
         current_tiles_array_index = 1 - current_tiles_array_index;
         external_crossings.push(current_crossing);
-        const { crossing, path } = walk_tiles_to_next_crossing(tiles_arrays[current_tiles_array_index],
-                                                               current_crossing.tile_indices[current_tiles_array_index],
-                                                               crossings);
+        const { crossing, path } = walk_tiles_to_next_crossing(
+            tiles_arrays[current_tiles_array_index],
+            current_crossing.tile_indices[current_tiles_array_index],
+            crossings);
+        path[0].direction_from = tiles_arrays[1 - current_tiles_array_index][current_crossing.tile_indices[1 - current_tiles_array_index]].direction_from;
+        path[0].direction_to = tiles_arrays[current_tiles_array_index][current_crossing.tile_indices[current_tiles_array_index]].direction_to;
         current_crossing = crossing;
         new_route_parts.push(path);
         if (crossing.x == killer_tile.x && crossing.y == killer_tile.y) {

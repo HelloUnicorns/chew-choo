@@ -27,7 +27,7 @@ function draw_rail_tile(rail_tile, is_own) {
     } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'bottom') {
         return draw_corner_piece(rail_tile.x, rail_tile.y, 270, is_own);
     }
-    throw new Exception('Unknown rail type');
+    throw new Error(`Unknown rail type: ${rail_tile.direction_from}->${rail_tile.direction_to}`);
 }
 
 function draw_track_piece(grid_x, grid_y, angle, is_own) {
