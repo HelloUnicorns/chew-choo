@@ -5,7 +5,7 @@ const constants = require('../common/constants.js');
 const { GameScene } = require('./game_scene.js');
 const { GameOverlayScene } = require('./game_overlay_scene.js');
 const { GameoverScene } = require('./gameover_scene.js');
-const { set_rails } = require('./rails.js');
+const { set_rails, update_rail } = require('./rails.js');
 const { build_train, get_train_by_id, update_server_train_location, remove_train } = require('./train.js');
 
 
@@ -26,8 +26,8 @@ const game = new Phaser.Game({
 event_handlers.connection = (event) => {
     set_rails(event.map);
     for (const route_id in event.map) {
-        if (!event.map[route_id].player.killed) {
-            build_train(Number(route_id), event.map[route_id].player);
+        if ((!event.map[route_id].player.free && !event.map[route_id].player.killed)) {
+            build_train(Number(route_id));
         }
     }
     global_data.player.train = get_train_by_id(event.route_id);
@@ -54,18 +54,30 @@ event_handlers.position = (event) => {
 };
 
 event_handlers.kill = (event) => {
-    let route_ids = event.killed.map(route_id => Number(route_id));
-    console.log(`Your ID: ${global_data.player.train.route_id}`);
-    console.log(`Killed routes: ${route_ids}`);
-    if (route_ids.includes(global_data.player.train.route_id)) {
-        global_data.game_scene.bg_music.mute = true;
+    if (global_data.game_scene.game_inited != global_data.game_scene.game_inited_target) {
+        return;
+    }
+
+    for (let route of event.routes) {
+        update_rail(route.route_id, route.tiles, global_data.player.train.route_id);
+    }
+
+    let kills = event.kills.map(kill => ({
+        killed: Number(kill.killed_route_id),
+        killer: Number(kill.killer_route_id)
+    }));
+    let killed = kills.map(kill => kill.killed);
+    if (killed.includes(global_data.player.train.route_id)) {
+        if (global_data.game_scene.bg_music) {
+            global_data.game_scene.bg_music.mute = true;
+        }
         game.scene.start('GameoverScene');
         game.scene.stop('GameOverlayScene');
         game.scene.stop('GameScene');    
         return;
     }
 
-    for (let route_id of route_ids) {
+    for (let route_id of killed) {
         remove_train(route_id);
-    }    
+    }
 };

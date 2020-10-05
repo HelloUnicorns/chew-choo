@@ -129,6 +129,9 @@ function update_train_acceleration_fix(train, rails) {
     x_0 = train.position_in_route + train.position_fraction;
     delta_x = my_delta_mod(x_server + (train.server_shadow_train.speed * global_data.latency / 1000) - x_0, rails.tiles.length)
     train.acceleration = (train.server_shadow_train.speed + delta_x / t1 - train.speed) / t2;
+    if (Number.isNaN(train.acceleration)) {
+        debugger;
+    }
 }
 
 function update_train(train) {
@@ -149,6 +152,9 @@ function update_train(train) {
         tile_index = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
         rail_tile = rails.tiles[tile_index];
         next_rail_tile = rails.tiles[(tile_index + 1) % rails.tiles.length];
+        if (!next_rail_tile || !rail_tile) {        
+            debugger;
+        }
         rail_angle = get_cart_angle_by_tile(rail_tile);
         next_rail_angle = get_cart_angle_by_tile(next_rail_tile);
         if (rail_angle > next_rail_angle) {

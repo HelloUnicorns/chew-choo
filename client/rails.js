@@ -3,30 +3,31 @@ let map = undefined;
 
 function draw_rail_tile(rail_tile, is_own) {
     if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'top') {
-        draw_track_piece(rail_tile.x, rail_tile.y, 270, is_own);
+        return draw_track_piece(rail_tile.x, rail_tile.y, 270, is_own);
     } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'left') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 0, is_own);
+        return draw_corner_piece(rail_tile.x, rail_tile.y, 0, is_own);
     } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'right') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 270, is_own);
+        return draw_corner_piece(rail_tile.x, rail_tile.y, 270, is_own);
     } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'bottom') {
-        draw_track_piece(rail_tile.x, rail_tile.y, 90, is_own);
+        return draw_track_piece(rail_tile.x, rail_tile.y, 90, is_own);
     } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'left') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 90, is_own);
+        return draw_corner_piece(rail_tile.x, rail_tile.y, 90, is_own);
     } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'right') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 180, is_own);
+        return draw_corner_piece(rail_tile.x, rail_tile.y, 180, is_own);
     } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'top') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 90, is_own);
+        return draw_corner_piece(rail_tile.x, rail_tile.y, 90, is_own);
     } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'bottom') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 0, is_own);
+        return draw_corner_piece(rail_tile.x, rail_tile.y, 0, is_own);
     } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'right') {
-        draw_track_piece(rail_tile.x, rail_tile.y, 0, is_own);
+        return draw_track_piece(rail_tile.x, rail_tile.y, 0, is_own);
     } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'left') {
-        draw_track_piece(rail_tile.x, rail_tile.y, 180, is_own);
+        return draw_track_piece(rail_tile.x, rail_tile.y, 180, is_own);
     } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'top') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 180, is_own);
+        return draw_corner_piece(rail_tile.x, rail_tile.y, 180, is_own);
     } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'bottom') {
-        draw_corner_piece(rail_tile.x, rail_tile.y, 270, is_own);
+        return draw_corner_piece(rail_tile.x, rail_tile.y, 270, is_own);
     }
+    throw new Exception('Unknown rail type');
 }
 
 function draw_track_piece(grid_x, grid_y, angle, is_own) {
@@ -49,22 +50,64 @@ function draw_corner_piece(grid_x, grid_y, angle, is_own) {
         1);
 }
 
+/*  route_id: Route id of the currently drawn route,
+    player_route_id: Route id of the client */
+function draw_rail(route_id, player_route_id) {
+    for (const rail_tile of map[route_id].tiles) {
+        rail_tile.sprite = draw_rail_tile(rail_tile, player_route_id == route_id);
+    }
+}
+
+function remove_rail(route_id, delete_route=false) {
+    map[route_id].tiles.forEach((tile) => {
+        tile.sprite.destroy();
+    });
+    if (delete_route) {
+        delete map[route_id];
+    }   
+}
+
 function draw_rails(player_route_id) {
     for(const route_id in map) {
-        for (const rail_tile of map[route_id].tiles) {
-            draw_rail_tile(rail_tile, player_route_id == route_id);
-        }
+        draw_rail(route_id, player_route_id);
     }
 }
 
 function set_rails(outside_map) {
-    map = outside_map;
+    map = {};
+    for (const [route_id, route] of Object.entries(outside_map)) {
+        let tiles = route.tiles.map((server_tile) => {
+            return {
+                direction_from: server_tile.direction_from,
+                direction_to: server_tile.direction_to,
+                entering: server_tile.entering,
+                index: server_tile.index,
+                route_id: server_tile.route_id,
+                x: server_tile.x,
+                y: server_tile.y,
+                sprite: undefined,
+            };
+        });
+        map[route_id] = {
+            player: route.player,
+            tiles: tiles,
+        }
+    }
 }
 
 function get_rails_by_id(route_id) {
     return map[route_id];
 }
 
+function update_rail(route_id, tiles, player_route_id) {
+    remove_rail(route_id, tiles.length == 0);
+    if (tiles.length > 0) {
+        map[route_id].tiles = tiles;
+        draw_rail(route_id, player_route_id);
+    }
+}
+
 exports.draw_rails = draw_rails;
 exports.set_rails = set_rails;
 exports.get_rails_by_id = get_rails_by_id;
+exports.update_rail = update_rail;
