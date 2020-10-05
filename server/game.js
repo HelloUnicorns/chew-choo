@@ -99,7 +99,9 @@ setInterval(() => {
                 speed: route.player.speed,
                 is_speed_up: route.player.is_speed_up,
                 is_speed_down: route.player.is_speed_down,
-                server_time: server_time
+                server_time: server_time,
+                is_stopped: route.player.is_stopped,
+                is_invincible: route.player.is_invincible
             };
         }
     }

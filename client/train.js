@@ -182,6 +182,9 @@ function update_server_train_location(route_id, server_location) {
         last_position_update: cur_time,
         server_time: server_location.server_time,
     }
+
+    train.is_stopped = server_location.is_stopped;
+    train.is_invincible = server_location.is_invincible;
         
     if (!train.server_shadow_train && global_data.latency != 0) {
         train.position_fraction = server_shadow_train.position_fraction;
