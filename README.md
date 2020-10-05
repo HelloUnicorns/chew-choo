@@ -8,19 +8,27 @@ The player's route will expand and merge with the routes of the trains it runs o
 
 This game was created for the Ludum Dare #47 Jam competition.  
 The theme of the competition: 'Stuck in a loop'.  
-  
+
   
 ## Play Online
-  
-_TODO: Add links_  
-  
-  
-## Build
-First install node.js, then run:
 
-    npm install .
-    npm run build
-    npm run start
+EU Server: https://chew-choo-eu.herokuapp.com/  
+US Server: https://chew-choo-us.herokuapp.com/  
+  
+## Build and run locally
+The server was tested on Windows & Linux.
+1. Install git (see https://git-scm.com/downloads)
+2. Install node.js (see https://nodejs.org/)
+3. Run the following in a terminal or command prompt:
 
-The server will start at port 3000 unless a PORT environment variable is specified.
+        git clone https://github.com/HelloUnicorns/LD47.git
+        cd LD47
+        npm install .
+        npm run build
+        npm run start
+
+The server will start at port 3000 unless a PORT environment variable is specified.  
 Connect with http://localhost:3000/  
+
+
+
