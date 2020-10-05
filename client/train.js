@@ -158,8 +158,11 @@ function update_train(train) {
         }
         rail_angle = get_cart_angle_by_tile(rail_tile);
         next_rail_angle = get_cart_angle_by_tile(next_rail_tile);
-        if (rail_angle > next_rail_angle) {
-            next_rail_angle += 360;
+        if (rail_angle == 305 && next_rail_angle == 0) {
+            next_rail_angle = 360;
+        }
+        else if (rail_angle == 0 && next_rail_angle == 305) {
+            rail_angle = 360;
         }
         position_x = rail_tile.x * (1 - train.position_fraction) + next_rail_tile.x * train.position_fraction;
         position_y = rail_tile.y * (1 - train.position_fraction) + next_rail_tile.y * train.position_fraction;
