@@ -196,7 +196,7 @@ function compute_start_positions() {
     let direction = 'right';
     let count = 1;
     let current_count = 1;
-    for (let i =1; i < MAX_PLAYERS; i++) {
+    for (let i = 1; i < MAX_PLAYERS; i++) {
         last = route_start_positions[i - 1];
         switch (direction) {
             case 'right':
@@ -264,13 +264,13 @@ function init_map() {
 }
 
 function new_player() {
-    for (let i = 0; i < MAX_PLAYERS; ++i) {
-        if (!map[i].player.is_bot || !map[i].player.assignable) {
+    for (const route_id in map) {
+        if (!map[route_id].player.is_bot || !map[route_id].player.assignable) {
             continue;
         }
-        console.log('assigning player', i);
-        map[i].player.is_bot = false;
-        return i;
+        console.log('assigning player', route_id);
+        map[route_id].player.is_bot = false;
+        return route_id;
     }
 }
 
@@ -284,7 +284,7 @@ function unload_player_from_x_map(route_id) {
 }
 
 function replace_player_with_bot(route_id) {
-    if (map[route_id].player) {
+    if (map[route_id]) {
         map[route_id].player.is_bot = true;
     }
 }
@@ -356,7 +356,7 @@ function handle_collision(tiles) {
         console.log('killed', killed_player.route_id)
         merge_routes(killer_id, killed_id);
     }
-}5
+}
 
 function detect_collisions() {
     for (const x in x_map) {
