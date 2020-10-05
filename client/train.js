@@ -16,6 +16,7 @@ const PLAYER_TRAIN_COLOR = 0x00ff00;
 const ENEMY_TRAIN_COLOR = 0xff0000;
 const BOT_TRAIN_COLOR = 0xffff00;
 
+const MINIMUM_BLINKING_ALPHA = 0.1;
 const INVINCIBLE_TRAIN_ALPHA = 0.25;
 const NORMAL_TRAIN_ALPHA = 1;
 
@@ -127,7 +128,7 @@ function draw_cart(grid_x, grid_y, angle, is_engine, is_own, is_bot, invincibili
         invincibility_state == constants.PLAYER_NOT_INVINCIBLE ? NORMAL_TRAIN_ALPHA : INVINCIBLE_TRAIN_ALPHA);
 
     if (invincibility_state == constants.PLAYER_BLINKING) {
-        sprite.start_blinking();
+        sprite.start_blinking(MINIMUM_BLINKING_ALPHA);
     }
     return sprite;
 }
@@ -196,7 +197,7 @@ function update_train(train) {
         angle = rail_angle * (1 - train.position_fraction) + next_rail_angle * train.position_fraction;
         update_grid_sprite(train.sprites[cart_index], position_x, position_y, angle, train_tint, train_alpha);
         if (train.invincibility_state == constants.PLAYER_BLINKING) {
-            train.sprites[cart_index].start_blinking(INVINCIBLE_TRAIN_ALPHA);
+            train.sprites[cart_index].start_blinking(MINIMUM_BLINKING_ALPHA);
         }
     }
 }
