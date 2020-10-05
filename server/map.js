@@ -15,9 +15,6 @@ let x_map = {};
 
 
 function tile_to_player(tile) {
-    if (map[tile.route_id] == undefined) {
-        asdasdas;
-    }
     return map[tile.route_id].player;
 }
 
