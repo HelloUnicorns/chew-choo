@@ -103,10 +103,10 @@ event_handlers.win = (event) => {
     }
     game.scene.start('WinScene');
     game.scene.stop('GameOverlayScene');
-    game.scene.stop('GameScene');    
 };
 
 event_handlers.error = (event) => {
     game.scene.start('ErrorScene', event.message);
     game.scene.stop('GameOverlayScene');
+    game.scene.stop('GameScene');
 };
