@@ -108,8 +108,13 @@ class GameOverlayScene extends Phaser.Scene {
             }
         }
         if (!player_found_in_top) {
-            this.leaderboard_player_row.y = LEADERBOARD_DEFAULT_PLAYER_ROW_Y;
-            this.leaderboard_player_row.setText(`${player_rank + 1}. Player ${leaderboard_info[player_rank][0]}: ${leaderboard_info[player_rank][1]}`);
+            if (leaderboard_info[player_rank]) {
+                this.leaderboard_player_row.y = LEADERBOARD_DEFAULT_PLAYER_ROW_Y;
+                this.leaderboard_player_row.setText(`${player_rank + 1}. Player ${leaderboard_info[player_rank][0]}: ${leaderboard_info[player_rank][1]}`);
+            }
+            else {
+                this.leaderboard_player_row.setText('');
+            }
         }
     }
 }
