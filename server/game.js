@@ -3,6 +3,9 @@ const constants = require('../common/constants.js');
 const { performance } = require('perf_hooks');
 const map = require('./map.js');
 
+WAIT_FOR_RESUME_PLAYER_TIMEOUT = 60;
+
+let resume_player_timeouts = {}; /* by client id */
 let invincibility_timeouts = {}; /* by route id */
 
 const ID_LEN = 8;
@@ -27,8 +30,19 @@ wss.on('connection', (client) => {
     }
     client.route_id = route_id;
     client.initialized = true;
+    client.removed = false;
 
     map.map[client.route_id].player.is_stopped = true;
+    resume_player_timeouts[client.id] = setTimeout(
+        () => {
+            delete resume_player_timeouts[client.id];
+            console.log(`Client ${client.id} removed`);
+            client.removed = true;
+            route_id = client.route_id;
+            client.route_id = undefined;
+            map.replace_player_with_bot(route_id);
+        }, WAIT_FOR_RESUME_PLAYER_TIMEOUT * 1000);
+
     if (invincibility_timeouts[client.route_id]) {
         clearTimeout(invincibility_timeouts[client.route_id]);
         delete invincibility_timeouts[client.route_id];
@@ -46,11 +60,25 @@ wss.on('connection', (client) => {
     }));
 
     client.on('close', () => {
+        if (client.removed) {
+            console.log(`Removed client ${client.id} disconnected`)
+            return;
+        }
+
         console.log(`Client ${client.id} disconnected`);
+        if (resume_player_timeouts[client.id]) {
+            clearTimeout(resume_player_timeouts[client.id]);
+            delete resume_player_timeouts[client.id];
+        }
         map.replace_player_with_bot(client.route_id);
     });
 
     client.on('message', (json_data) => {
+        if (client.removed) {
+            console.log(`Removed client ${client.id} sent message`)
+            return;
+        }
+
         const message = JSON.parse(json_data);
         if (message.type == 'speed_change') {
             map.update_speed_change(client.route_id, message.value);
@@ -60,7 +88,12 @@ wss.on('connection', (client) => {
             client.send(JSON.stringify({ latency: latency, type: 'latency' }));
         }
         else if (message.type == 'resume_player') {
+            if (resume_player_timeouts[client.id]) {
+                clearTimeout(resume_player_timeouts[client.id]);
+                delete resume_player_timeouts[client.id];
+            }
             map.map[client.route_id].player.is_stopped = false;
+
             if (invincibility_timeouts[client.route_id]) {
                 clearTimeout(invincibility_timeouts[client.route_id]);
             }
@@ -115,11 +148,11 @@ setInterval(() => {
 setInterval(() => {
     map.detect_collisions();
     let kills = [];
-    
+
     for (const [route_id, route] of Object.entries(map.map)) {
         if (route.player.killed && !route.player.kill_notified) {
             route.player.kill_notified = true;
-            kills.push({killed_route_id: route_id, killer_route_id: route.player.killer});
+            kills.push({ killed_route_id: route_id, killer_route_id: route.player.killer });
         }
     }
 
@@ -152,6 +185,6 @@ setInterval(() => {
             return;
         }
 
-        client.send(JSON.stringify({routes, kills, type: 'kill'}));
+        client.send(JSON.stringify({ routes, kills, type: 'kill' }));
     });
 }, 1000 / 60);
