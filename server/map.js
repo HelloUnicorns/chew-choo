@@ -207,6 +207,9 @@ function union_routes(killer_route_id, killee_route_id) {
     map[killer_route_id].tiles = new_route;
     map[killer_route_id].player.position_in_route = 0;
     map[killer_route_id].leftover_tiles = leftover_tiles;
+    if (leftover_tiles.length > 0) {
+        map[killer_route_id].player.is_in_leftover = true;
+    }
     map[killee_route_id].tiles = [];
 
 
@@ -395,11 +398,13 @@ function detect_collisions() {
 
 function update_map() {
     let new_time = performance.now();
+    let routes_removed_leftover = [];
     for (const route_id in map) {
         const route = map[route_id];
         if (route.player.killed) {
             continue;
         }
+
         if (route.player.is_in_leftover) {
             calculate_speed_and_position(route.player, Infinity, new_time);
             if (route.player.position_in_route >= route.leftover_tiles.length) {
@@ -407,12 +412,14 @@ function update_map() {
                 set_train_position(route.player, route.player.position_in_route - route.leftover_tiles.length, route.tiles.length);
                 route.leftover_tiles = [];
                 route.player.is_in_leftover = false;
+                routes_removed_leftover.push({ route_id, tiles: route.tiles });
             }
         } else {
             calculate_speed_and_position(route.player, route.tiles.length, new_time);
         }
         update_occupied_tiles(route);
-    }    
+    }
+    return routes_removed_leftover;
 }
 
 function is_speed_up(speed_message_value) {

@@ -1,6 +1,9 @@
 const constants = require('../common/constants.js');
 
 function my_mod(num, mod) {
+    if (mod == Infinity) {
+        return num;
+    }
     return (mod + (num % mod)) % mod;
 }
 
