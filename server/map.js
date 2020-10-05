@@ -258,7 +258,7 @@ function init_map() {
                 kill_notified: false,
                 free: false,
                 assignable: true,
-                bot: true,
+                is_bot: true,
             }
         };
     }
@@ -266,7 +266,7 @@ function init_map() {
 
 function new_player() {
     for (let i = 0; i < MAX_PLAYERS; ++i) {
-        if ((!(map[i].player.free || map[i].player.bot)) || !map[i].player.assignable) {
+        if ((!(map[i].player.free || map[i].player.is_bot)) || !map[i].player.assignable) {
             continue;
         }
         console.log('assigning player', i);
@@ -275,7 +275,7 @@ function new_player() {
         map[i].player.position_fraction = 0;
         map[i].player.killed = false;
         map[i].player.killer = -1;
-        map[i].player.bot = false;
+        map[i].player.is_bot = false;
         map[i].player.kill_notified = false;
         map[i].player.speed = constants.MIN_SPEED;
         return i;
@@ -366,7 +366,7 @@ function handle_collision(tiles) {
         console.log('killed', killed_player.route_id)
         merge_routes(killer_id, killed_id);
     }
-}
+}5
 
 function detect_collisions() {
     for (const x in x_map) {

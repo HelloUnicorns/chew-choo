@@ -101,7 +101,8 @@ setInterval(() => {
                 is_speed_down: route.player.is_speed_down,
                 server_time: server_time,
                 is_stopped: route.player.is_stopped,
-                is_invincible: route.player.is_invincible
+                is_invincible: route.player.is_invincible,
+                is_bot: route.player.is_bot
             };
         }
     }

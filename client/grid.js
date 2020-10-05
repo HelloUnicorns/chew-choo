@@ -13,7 +13,7 @@ const CART_Z_INEDX = 3;
 function update_grid_sprite(sprite, grid_x, grid_y, angle, tint, alpha) {
     sprite.setPosition(GRID_ORIGIN_X + grid_x * GRID_PIECE_WIDTH, GRID_ORIGIN_Y + grid_y * GRID_PIECE_WIDTH);
     sprite.setAngle(angle);
-    grid_sprite.setTint(tint, tint, tint, tint);
+    sprite.setTint(tint, tint, tint, tint);
     sprite.setAlpha(alpha, alpha, alpha, alpha);
 }
 

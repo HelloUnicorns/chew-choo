@@ -14,6 +14,8 @@ const ENGINE_SCALE = ENGINE_WIDTH / ENGINE_IMAGE_WIDTH;
 
 const PLAYER_TRAIN_COLOR = 0x00ff00;
 const ENEMY_TRAIN_COLOR = 0xff0000;
+const BOT_TRAIN_COLOR = 0xffff00;
+
 const INVINCIBLE_TRAIN_ALPHA = 0.25;
 const NORMAL_TRAIN_ALPHA = 1;
 
@@ -34,7 +36,8 @@ function build_train(route_id, server_player) {
         acceleration: server_player.acceleration,
         is_stopped: server_player.is_stopped,
         is_invincible: server_player.is_invincible,
-        route_id: route_id
+        is_bot: server_player.is_bot,
+        route_id: route_id,
     };
 }
 
@@ -51,7 +54,9 @@ function draw_cart_by_index(train, cart_index, is_engine, is_own) {
     position_in_route = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
     rail_tile = rails.tiles[position_in_route];
     angle = get_cart_angle_by_tile(rail_tile);
-    cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle, is_engine, is_own, train.is_invincible);
+
+    cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle, is_engine, is_own, train.is_bot, train.is_invincible);
+
     train.sprites.push(cart_sprite);
 }
 
@@ -102,19 +107,23 @@ function remove_train(route_id) {
     }
 }
 
+function get_cart_color(is_own, is_bot) {
+    return is_own ? PLAYER_TRAIN_COLOR: is_bot ? BOT_TRAIN_COLOR : ENEMY_TRAIN_COLOR;
+}
+
 function draw_all_trains(player_route_id) {
     for (let route_id in trains) {
         draw_train(trains[route_id], route_id == player_route_id);
     }
 }
 
-function draw_cart(grid_x, grid_y, angle, is_engine, is_own, is_invincible) {
+function draw_cart(grid_x, grid_y, angle, is_engine, is_own, is_bot, is_invincible) {
     return draw_grid_sprite(
         grid_x, grid_y, angle, 
         is_engine ? 'engine' : 'cart', 
         is_engine ? ENGINE_SCALE : CART_SCALE, 
         CART_Z_INEDX, 
-        is_own ? PLAYER_TRAIN_COLOR: ENEMY_TRAIN_COLOR,
+        get_cart_color(is_own, is_bot),
         is_invincible ? INVINCIBLE_TRAIN_ALPHA : NORMAL_TRAIN_ALPHA);
 }
 
@@ -148,6 +157,7 @@ function update_train(train) {
     calculate_speed_and_position(train, rails, current_time);
 
     let train_alpha = train.is_invincible ? INVINCIBLE_TRAIN_ALPHA : NORMAL_TRAIN_ALPHA;
+    let train_tint = get_cart_color(global_data.player.train.route_id == train.route_id, train.is_bot);
 
     for (cart_index = 0; cart_index < train.length; cart_index++) {
         tile_index = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
@@ -167,7 +177,7 @@ function update_train(train) {
         position_x = rail_tile.x * (1 - train.position_fraction) + next_rail_tile.x * train.position_fraction;
         position_y = rail_tile.y * (1 - train.position_fraction) + next_rail_tile.y * train.position_fraction;
         angle = rail_angle * (1 - train.position_fraction) + next_rail_angle * train.position_fraction;
-        update_grid_sprite(train.sprites[cart_index], position_x, position_y, angle, tint, train_alpha);
+        update_grid_sprite(train.sprites[cart_index], position_x, position_y, angle, train_tint, train_alpha);
     }
 }
 
