@@ -95,6 +95,10 @@ function set_rails(outside_map) {
     }
 }
 
+function get_rails(route_id) {
+    return map;
+}
+
 function get_rails_by_id(route_id) {
     return map[route_id];
 }
@@ -109,5 +113,6 @@ function update_rail(route_id, tiles, player_route_id) {
 
 exports.draw_rails = draw_rails;
 exports.set_rails = set_rails;
+exports.get_rails = get_rails;
 exports.get_rails_by_id = get_rails_by_id;
 exports.update_rail = update_rail;
