@@ -284,11 +284,9 @@ function unload_player_from_x_map(route_id) {
 }
 
 function replace_player_with_bot(route_id) {
-    map[route_id].player.is_bot = true;
-}
-
-function replace_player_with_bot(route_id) {
-    map[route_id].player.is_bot = true;
+    if (map[route_id].player) {
+        map[route_id].player.is_bot = true;
+    }
 }
 
 function update_occupied_tiles(route) {
