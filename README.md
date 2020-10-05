@@ -1,6 +1,8 @@
 # Chew Choo!
 ### Multiplayer/singleplayer game by HelloGravity, RainbowUnicorn & Meap (LD47 Jam Entry)
 
+![](./game_video.gif)
+
 **'Chew Choo!'** is a multiplayer/singleplayer web-game where the player controls a train on a cyclic route (loop!).  
 The routes of trains of different players cross each other,  
 and the goal of the game is to be the last one standing by running over other trains.  
