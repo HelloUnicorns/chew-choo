@@ -1,6 +1,6 @@
 const global_data = require('./global_data.js');
 const constants = require('../common/constants.js');
-const { get_number_of_trains } = require('./train.js');
+const { get_train_by_id, get_number_of_trains } = require('./train.js');
 const { get_rails } = require('./rails.js');
 
 const SPEED_METER_SCALE = 0.5;
@@ -61,11 +61,15 @@ class GameOverlayScene extends Phaser.Scene {
             this.leaderboard_background.x - this.leaderboard_background.width + 20, 20, 
             'Remaining: 0', { font: '28px Arial', fill: '#000000' });
 
-        this.leaderboard_rows = [];
+        this.leaderboard_rows_bots = [];
+        this.leaderboard_rows_not_bots = [];
         for (let i = 0; i < LEADERBOARD_TOP_SIZE; i++) {
-            this.leaderboard_rows.push(this.add.text(
+            this.leaderboard_rows_bots.push(this.add.text(
                 this.leaderboard_background.x - this.leaderboard_background.width + 20, 56 + 26 * i, 
                 '', { font: '24px Arial', fill: '#000000' }));
+            this.leaderboard_rows_not_bots.push(this.add.text(
+                this.leaderboard_background.x - this.leaderboard_background.width + 20, 56 + 26 * i, 
+                '', { font: '24px Arial', fill: '#cc0000' }));
         }
         this.leaderboard_player_row = this.add.text(
             this.leaderboard_background.x - this.leaderboard_background.width + 20, LEADERBOARD_DEFAULT_PLAYER_ROW_Y, 
@@ -93,17 +97,26 @@ class GameOverlayScene extends Phaser.Scene {
         let player_found_in_top = false;
         for (let i = 0; i < LEADERBOARD_TOP_SIZE; i++) {
             if (i >= number_of_remaining_players) {
-                this.leaderboard_rows[i].setText('');
+                this.leaderboard_rows_bots[i].setText('');
+                this.leaderboard_rows_not_bots[i].setText('');
             }
             else {
                 if (i == player_rank) {
-                    this.leaderboard_rows[i].setText('');
-                    this.leaderboard_player_row.y = this.leaderboard_rows[i].y;
+                    this.leaderboard_rows_bots[i].setText('');
+                    this.leaderboard_rows_not_bots[i].setText('');
+                    this.leaderboard_player_row.y = this.leaderboard_rows_not_bots[i].y;
                     this.leaderboard_player_row.setText(`${i + 1}. Player ${leaderboard_info[i][0]}: ${leaderboard_info[i][1]}`);
                     player_found_in_top = true;
                 }
                 else {
-                    this.leaderboard_rows[i].setText(`${i + 1}. Player ${leaderboard_info[i][0]}: ${leaderboard_info[i][1]}`)
+                    if (get_train_by_id(leaderboard_info[i][0]).is_bot) {
+                        this.leaderboard_rows_bots[i].setText(`${i + 1}. Player ${leaderboard_info[i][0]}: ${leaderboard_info[i][1]}`)
+                        this.leaderboard_rows_not_bots[i].setText('')
+                    }
+                    else {
+                        this.leaderboard_rows_bots[i].setText('')
+                        this.leaderboard_rows_not_bots[i].setText(`${i + 1}. Player ${leaderboard_info[i][0]}: ${leaderboard_info[i][1]}`)
+                    }
                 }
             }
         }
