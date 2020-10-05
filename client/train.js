@@ -167,7 +167,7 @@ function update_train(train) {
         position_x = rail_tile.x * (1 - train.position_fraction) + next_rail_tile.x * train.position_fraction;
         position_y = rail_tile.y * (1 - train.position_fraction) + next_rail_tile.y * train.position_fraction;
         angle = rail_angle * (1 - train.position_fraction) + next_rail_angle * train.position_fraction;
-        update_grid_sprite(train.sprites[cart_index], position_x, position_y, angle, train_alpha);
+        update_grid_sprite(train.sprites[cart_index], position_x, position_y, angle, tint, train_alpha);
     }
 }
 
@@ -178,7 +178,7 @@ function update_trains() {
 }
 
 
-function update_server_train_location(route_id, server_location) {
+function update_server_train_state(route_id, server_location) {
     let cur_time = window.performance.now();
     let train = trains[route_id];
     let rails = get_rails_by_id(train.route_id);
@@ -194,6 +194,7 @@ function update_server_train_location(route_id, server_location) {
 
     train.is_stopped = server_location.is_stopped;
     train.is_invincible = server_location.is_invincible;
+    train.is_bot = server_location.is_bot;
         
     if (!train.server_shadow_train && global_data.latency != 0) {
         train.position_fraction = server_shadow_train.position_fraction;
@@ -213,6 +214,6 @@ exports.draw_all_trains = draw_all_trains;
 exports.build_train = build_train;
 exports.update_trains = update_trains;
 exports.get_train_by_id = get_train_by_id;
-exports.update_server_train_location = update_server_train_location;
+exports.update_server_train_state = update_server_train_state;
 exports.remove_train = remove_train;
 exports.get_number_of_trains = get_number_of_trains;

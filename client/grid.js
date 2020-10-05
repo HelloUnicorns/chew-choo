@@ -10,18 +10,18 @@ const NORMAL_TRACK_Z_INDEX = 1;
 const OWN_TRACK_Z_INEDX = 2;
 const CART_Z_INEDX = 3;
 
-function update_grid_sprite(sprite, grid_x, grid_y, angle, alpha) {
+function update_grid_sprite(sprite, grid_x, grid_y, angle, tint, alpha) {
     sprite.setPosition(GRID_ORIGIN_X + grid_x * GRID_PIECE_WIDTH, GRID_ORIGIN_Y + grid_y * GRID_PIECE_WIDTH);
     sprite.setAngle(angle);
+    grid_sprite.setTint(tint, tint, tint, tint);
     sprite.setAlpha(alpha, alpha, alpha, alpha);
 }
 
 function draw_grid_sprite(grid_x, grid_y, angle, sprite_name, scale, depth, tint, alpha) {
     let grid_sprite = global_data.game_scene.add.sprite(0, 0, sprite_name);
-    update_grid_sprite(grid_sprite, grid_x, grid_y, angle, alpha);
+    update_grid_sprite(grid_sprite, grid_x, grid_y, angle, tint, alpha);
     grid_sprite.setScale(scale);
     grid_sprite.setDepth(depth);
-    grid_sprite.setTint(tint, tint, tint, tint);
     return grid_sprite;
 }
 

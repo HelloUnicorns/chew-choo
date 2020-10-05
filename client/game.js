@@ -6,7 +6,7 @@ const { GameScene } = require('./game_scene.js');
 const { GameOverlayScene } = require('./game_overlay_scene.js');
 const { GameoverScene } = require('./gameover_scene.js');
 const { set_rails, update_rail } = require('./rails.js');
-const { build_train, get_train_by_id, update_server_train_location, remove_train } = require('./train.js');
+const { build_train, get_train_by_id, update_server_train_state, remove_train } = require('./train.js');
 
 
 const game = new Phaser.Game({
@@ -49,7 +49,7 @@ event_handlers.position = (event) => {
     }
     last_server_time = event.server_time;
     for (let route_id in event.locations) {
-        update_server_train_location(route_id, event.locations[route_id]);
+        update_server_train_state(route_id, event.locations[route_id]);
     }
 };
 
