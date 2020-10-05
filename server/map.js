@@ -2,6 +2,7 @@ const { performance } = require('perf_hooks');
 const { calculate_speed_and_position, set_train_position } = require('../common/position.js');
 const constants = require('../common/constants.js');
 const e = require('express');
+const { exception } = require('console');
 
 let route_start_positions = [
 
@@ -359,12 +360,37 @@ function handle_collision(tiles) {
     
     let killer_tile = undefined;
     let entering_tiles = tiles.filter(tile => tile.entering);
-    if (entering_tiles.length == 1) {
-        killer_tile = entering_tiles[0];
-    } else {
-        console.log('player', players[0].position_fraction, players[1].position_fraction);
-        let killer_index = (players[0].position_fraction < players[1].position_fraction) ? 0 : 1;
-        killer_tile = tiles[killer_index];
+
+    switch (entering_tiles.length) {
+        case 0:
+            let position_delta = (tile) => {
+                let locomotive = map[tile.route_id].player.position_in_route;
+                let len = map[tile.route_id];
+                for (let i = locomotive;
+                        (locomotive - i + len) % len <= map[tile.route_id].player.length;
+                        i = (i - 1 + len) % len) {
+                    let t = map[tile.route_id].tiles[i];
+                    if (t.x == tile.x && t.y == tile.y) {
+                        return (locomotive - i + len) % len + map[tile.route_id].player.position_fraction;
+                    }
+                }
+                throw new exception('Could not find tile in route');
+            }
+
+            let deltas = entering_tiles.map(tile => position_delta(tile));
+            let killer_idx = deltas[0] < deltas[1] ? 0 : 1;
+            killer_tile = tiles[killer_idx];
+            break;
+        case 1:
+            killer_tile = entering_tiles[0];
+            break;
+        case 2:
+            console.log('player', players[0].position_fraction, players[1].position_fraction);
+            let killer_index = (players[0].position_fraction < players[1].position_fraction) ? 0 : 1;
+            killer_tile = tiles[killer_index];
+            break;
+        default:
+            throw new Error('More than 2 entering tiles');
     }
 
     let killee_tile = tiles.find(tile => tile != killer_tile);
