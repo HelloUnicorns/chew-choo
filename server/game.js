@@ -128,6 +128,9 @@ wss.on('connection', (client) => {
 setInterval(() => {
     let current_time = performance.now();
     wss.clients.forEach((client) => {
+        if (!client.initialized || client.removed) {
+            return;
+        }
         client.send(JSON.stringify({ time: current_time, type: 'time' }));
     });
 }, 1000 / 10);
@@ -156,7 +159,7 @@ setInterval(() => {
     }
 
     wss.clients.forEach((client) => {
-        if (!client.initialized) {
+        if (!client.initialized || client.removed) {
             return;
         }
 
@@ -201,11 +204,16 @@ setInterval(() => {
 
     /* Update kills */
     wss.clients.forEach((client) => {
-        if (!client.initialized) {
+        if (!client.initialized || client.removed) {
             return;
         }
 
         client.send(JSON.stringify({ routes, kills, type: 'kill' }));
+        
+        if (kills.findIndex((a) => { return a.killed_route_id == client.route_id; }) != -1) {
+            client.removed = true;
+            client.route_id = undefined;
+        }
     });
 }, 1000 / 60);
 
@@ -222,8 +230,13 @@ setInterval(() => {
     console.log(`Player in route ${winner_route_id} win!`);
 
     wss.clients.forEach((client) => {
-        if (client.initialized && !client.removed && client.route_id == winner_route_id) {
+        if (!client.initialized || client.removed) {
+            return;
+        }
+        if (client.route_id == winner_route_id) {
             client.send(JSON.stringify({ type: 'win' }));
+            client.removed = true;
+            client.route_id = undefined;
         }
     });
 
