@@ -157,7 +157,7 @@ function update_train(train) {
     if (train.server_shadow_train) {
         update_train_acceleration_fix(train, rails);
     }
-    calculate_speed_and_position(train, rails, current_time);
+    calculate_speed_and_position(train, rails.tiles.length, current_time);
 
     let train_alpha = undefined;
     switch (train.invincibility_state) {
@@ -228,7 +228,7 @@ function update_server_train_state(route_id, server_location) {
     }
 
     /* proceed client-side calculation */
-    calculate_speed_and_position(train, rails, cur_time);
+    calculate_speed_and_position(train, rails.tiles.length, cur_time);
 
     if (global_data.latency != 0) {
         train.server_shadow_train = server_shadow_train;
