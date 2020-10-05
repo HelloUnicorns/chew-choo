@@ -13,3 +13,5 @@ exports.TRACK_HEIGHT = 9;
 
 exports.START_X = 0;
 exports.START_Y = 0;
+
+exports.PLAYER_EXTRA_INVINCIBILITY_TIME = 10;

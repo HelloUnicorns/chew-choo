@@ -48,7 +48,6 @@ class GameScene extends Phaser.Scene {
     }
 
     resume_player_train() {
-        global_data.player.train.is_stopped = false;
         send_event({type: 'resume_player'});
     }
 

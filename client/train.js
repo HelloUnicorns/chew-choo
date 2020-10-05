@@ -33,6 +33,7 @@ function build_train(route_id, server_player) {
         server_shadow_train: undefined,
         acceleration: server_player.acceleration,
         is_stopped: server_player.is_stopped,
+        is_invincible: server_player.is_invincible,
         route_id: route_id
     };
 }
@@ -50,7 +51,7 @@ function draw_cart_by_index(train, cart_index, is_engine, is_own) {
     position_in_route = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
     rail_tile = rails.tiles[position_in_route];
     angle = get_cart_angle_by_tile(rail_tile);
-    cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle, is_engine, is_own, train.is_stopped);
+    cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle, is_engine, is_own, train.is_invincible);
     train.sprites.push(cart_sprite);
 }
 
@@ -146,7 +147,7 @@ function update_train(train) {
     }
     calculate_speed_and_position(train, rails, current_time);
 
-    let train_alpha = train.is_stopped ? INVINCIBLE_TRAIN_ALPHA : NORMAL_TRAIN_ALPHA;
+    let train_alpha = train.is_invincible ? INVINCIBLE_TRAIN_ALPHA : NORMAL_TRAIN_ALPHA;
 
     for (cart_index = 0; cart_index < train.length; cart_index++) {
         tile_index = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
@@ -187,6 +188,9 @@ function update_server_train_location(route_id, server_location) {
         last_position_update: cur_time,
         server_time: server_location.server_time,
     }
+
+    train.is_stopped = server_location.is_stopped;
+    train.is_invincible = server_location.is_invincible;
         
     if (!train.server_shadow_train && global_data.latency != 0) {
         train.position_fraction = server_shadow_train.position_fraction;

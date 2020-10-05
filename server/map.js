@@ -253,6 +253,7 @@ function init_map() {
                 is_speed_down: false,
                 killed: false,
                 is_stopped: false,
+                is_invincible: false,
                 killer: -1,
                 kill_notified: false,
                 free: false,
@@ -326,7 +327,7 @@ function handle_collision(tiles) {
 
     let player_0 = map[tiles[0].route_id].player;
     let player_1 = map[tiles[1].route_id].player;
-    if (player_0.killed || player_1.killed || player_0.is_stopped || player_1.is_stopped) {
+    if (player_0.killed || player_1.killed || player_0.is_invincible || player_1.is_invincible) {
         return;
     }
 
