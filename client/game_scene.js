@@ -17,6 +17,7 @@ class GameScene extends Phaser.Scene {
         this.game_inited_target = 2;
         this.up_key = undefined;
         this.down_key = undefined;
+        this.stopped = false;
 
     }
 
@@ -95,7 +96,7 @@ class GameScene extends Phaser.Scene {
     }
 
     update() {
-        if (this.game_inited != this.game_inited_target) {
+        if (this.game_inited != this.game_inited_target || this.stopped) {
             return;
         }
         this.update_player();
