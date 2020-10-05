@@ -1,5 +1,5 @@
 const global_data = require('./global_data.js');
-const { send_event } = require('./websockets.js');
+const { connect_to_server, send_event } = require('./websockets.js');
 const constants = require('../common/constants.js');
 const { GRID_PIECE_WIDTH } = require('./grid.js');
 const { draw_rails } = require('./rails.js');
@@ -62,6 +62,7 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
+        connect_to_server();
         this.game_inited += 1;
         this.client_loaded();
     }
