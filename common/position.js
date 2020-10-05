@@ -10,15 +10,11 @@ function calculate_speed_and_position(train, route, new_time) {
     if (time_passed_in_seconds == 0) {
         return;
     }
-<<<<<<< HEAD
     if (train.is_stopped) {
         train.last_position_update = new_time;
         return;
     }
 
-=======
-        
->>>>>>> route-deletion
     train.speed += train.acceleration * time_passed_in_seconds;
     let old_speed = train.speed;
     let new_speed = train.speed;
