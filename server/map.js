@@ -196,7 +196,7 @@ function compute_start_positions() {
     let direction = 'right';
     let count = 1;
     let current_count = 1;
-    for (let i =1; i < MAX_PLAYERS; i++) {
+    for (let i = 1; i < MAX_PLAYERS; i++) {
         last = route_start_positions[i - 1];
         switch (direction) {
             case 'right':
@@ -256,7 +256,6 @@ function init_map() {
                 invincibility_state: constants.PLAYER_NOT_INVINCIBLE,
                 killer: -1,
                 kill_notified: false,
-                free: false,
                 assignable: true,
                 is_bot: true,
             }
@@ -265,20 +264,13 @@ function init_map() {
 }
 
 function new_player() {
-    for (let i = 0; i < MAX_PLAYERS; ++i) {
-        if ((!(map[i].player.free || map[i].player.is_bot)) || !map[i].player.assignable) {
+    for (const route_id in map) {
+        if (!map[route_id].player.is_bot || !map[route_id].player.assignable) {
             continue;
         }
-        console.log('assigning player', i);
-        map[i].player.free = false;
-        map[i].player.position_in_route = 0;
-        map[i].player.position_fraction = 0;
-        map[i].player.killed = false;
-        map[i].player.killer = -1;
-        map[i].player.is_bot = false;
-        map[i].player.kill_notified = false;
-        map[i].player.speed = constants.MIN_SPEED;
-        return i;
+        console.log('assigning player', route_id);
+        map[route_id].player.is_bot = false;
+        return route_id;
     }
 }
 
@@ -291,15 +283,13 @@ function unload_player_from_x_map(route_id) {
     }
 }
 
-function delete_player(route_id) {
-    map[route_id].player.free = true;
-    map[route_id].player.killed = false;
-    map[route_id].player.killed_notified = false;
+function replace_player_with_bot(route_id) {
+    if (map[route_id]) {
+        map[route_id].player.is_bot = true;
+    }
 }
 
 function update_occupied_tiles(route) {
-    let occupied_tiles = [];
-    let free_tiles = [];
     let player_position = route.player.position_in_route;
 
     /* Locomotive */
@@ -369,7 +359,7 @@ function handle_collision(tiles) {
         console.log('killed', killed_player.route_id)
         merge_routes(killer_id, killed_id);
     }
-}5
+}
 
 function detect_collisions() {
     for (const x in x_map) {
@@ -386,7 +376,7 @@ function update_map() {
     let new_time = performance.now();
     for (const route_id in map) {
         const route = map[route_id];
-        if (route.player.killed || route.player.free) {
+        if (route.player.killed) {
             continue;
         }
         calculate_speed_and_position(route.player, route, new_time);
@@ -396,7 +386,6 @@ function update_map() {
 }
 
 function is_speed_up(speed_message_value) {
-    return speed_message_value & constants.SPEED_UP_FLAG;
     return speed_message_value & constants.SPEED_UP_FLAG;
 }
 
@@ -415,5 +404,5 @@ exports.map = map;
 exports.new_player = new_player;
 exports.update_map = update_map;
 exports.update_speed_change = update_speed_change;
-exports.delete_player = delete_player;
+exports.replace_player_with_bot = replace_player_with_bot;
 exports.detect_collisions = detect_collisions;
