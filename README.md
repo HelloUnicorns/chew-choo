@@ -1,11 +1,12 @@
-# Chew Choo - Multiplayer game by HelloGravity, RainbowUnicorn & Meap (LD47 Jam Entry)
+# Chew Choo! - Multiplayer game by HelloGravity, RainbowUnicorn & Meap (LD47 Jam Entry)
 
-**'Chew Choo'** is a multiplayer web-game where the player controls a train on a cyclic route.  
-The routes of trains of different players have crossings between them,  
-and the goal of the game is to run over other people's trains.  
-he player's route is expanded with the routes of the trains it ran over.  
+**'Chew Choo!'** is a multiplayer web-game where the player controls a train on a cyclic route (loop!).
+The routes of trains of different players have cross each other,
+and the goal of the game is to be the last one standing by running over other trains.
+The player's route will expand and merge with the routes of the trains it runs over.
 
-This game was a Ludum Dare #47 Jam entry for which the theme was 'stuck in a loop'.  
+This game was created for the Ludum Dare #47 Jam competition.
+The theme of the competition: 'Stuck in a loop'.  
   
   
 ## Play Online
