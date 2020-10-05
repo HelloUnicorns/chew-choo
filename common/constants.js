@@ -7,3 +7,5 @@ exports.ACCELERATION = 5;
 
 exports.SPEED_UP_FLAG = 1;
 exports.SPEED_DOWN_FLAG = 2;
+
+exports.PLAYER_EXTRA_INVINCIBILITY_TIME = 10;

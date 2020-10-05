@@ -1,4 +1,5 @@
 const { wss } = require('./server.js');
+const constants = require('../common/constants.js');
 const { performance } = require('perf_hooks');
 const map = require('./map.js');
 
@@ -6,15 +7,17 @@ function get_random_tint() {
     return Math.random() * 0xffffff;
 }
 
+let invincibility_timeouts = {}; /* by route id */
+
 const ID_LEN = 8;
 
 function makeid(length) {
     /* https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript */
-    var result           = '';
-    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var result = '';
+    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     var charactersLength = characters.length;
-    for (var i = 0; i < length; i++ ) {
-       result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    for (var i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
     return result;
 }
@@ -30,17 +33,22 @@ wss.on('connection', (client) => {
     client.initialized = true;
 
     map.map[client.route_id].player.is_stopped = true;
+    if (invincibility_timeouts[client.route_id]) {
+        clearTimeout(invincibility_timeouts[client.route_id]);
+        delete invincibility_timeouts[client.route_id];
+    }
+    map.map[client.route_id].player.is_invincible = true;
 
     console.log(`Client ${client.id} connected`);
     console.log(`Client ${client.id} occupies route ${client.route_id}`);
 
     client.send(JSON.stringify({
-            client_id: client.id,
-            type: 'connection',
-            map: map.map,
-            route_id: client.route_id
+        client_id: client.id,
+        type: 'connection',
+        map: map.map,
+        route_id: client.route_id
     }));
-    
+
     client.on('close', () => {
         console.log(`Client ${client.id} disconnected`);
         map.delete_player(client.id);
@@ -53,10 +61,18 @@ wss.on('connection', (client) => {
         }
         else if (message.type == 'latency_update') {
             let latency = (performance.now() - message.prev_server_time) / 2;
-            client.send(JSON.stringify({latency: latency, type: 'latency'}));
+            client.send(JSON.stringify({ latency: latency, type: 'latency' }));
         }
         else if (message.type == 'resume_player') {
             map.map[client.route_id].player.is_stopped = false;
+            if (invincibility_timeouts[client.route_id]) {
+                clearTimeout(invincibility_timeouts[client.route_id]);
+            }
+            invincibility_timeouts[client.route_id] = setTimeout(
+                () => {
+                    delete invincibility_timeouts[client.route_id];
+                    map.map[client.route_id].player.is_invincible = false;
+                }, constants.PLAYER_EXTRA_INVINCIBILITY_TIME * 1000);
         }
     });
 });
@@ -64,7 +80,7 @@ wss.on('connection', (client) => {
 setInterval(() => {
     let current_time = performance.now();
     wss.clients.forEach((client) => {
-        client.send(JSON.stringify({time: current_time, type: 'time'}));
+        client.send(JSON.stringify({ time: current_time, type: 'time' }));
     });
 }, 1000 / 10);
 
@@ -73,7 +89,7 @@ setInterval(() => {
     map.update_map();
     let locations = {};
     let server_time = performance.now();
-    
+
     for (const [route_id, route] of Object.entries(map.map)) {
         if (!route.player.killed) {
             locations[route_id] = {
@@ -92,7 +108,7 @@ setInterval(() => {
             return;
         }
 
-        client.send(JSON.stringify({ locations, type: 'position'}));
+        client.send(JSON.stringify({ locations, type: 'position' }));
     });
 }, 1000 / 60);
 
@@ -114,8 +130,8 @@ setInterval(() => {
         if (!client.initialized) {
             return;
         }
-        
-        client.send(JSON.stringify({killed, type: 'kill'}));
+
+        client.send(JSON.stringify({ killed, type: 'kill' }));
         let player = map.map[client.route_id].player;
         if (player.killed && !player.kill_notified) {
             map.delete_player(client.id);

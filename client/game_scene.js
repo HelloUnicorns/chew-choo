@@ -49,6 +49,9 @@ class GameScene extends Phaser.Scene {
 
     resume_player_train() {
         global_data.player.train.is_stopped = false;
+        setTimeout(() => {
+            global_data.player.train.is_invincible = false;
+        }, constants.PLAYER_EXTRA_INVINCIBILITY_TIME * 1000);
         send_event({type: 'resume_player'});
     }
 

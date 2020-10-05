@@ -1,8 +1,8 @@
 const { performance } = require('perf_hooks');
 const { calculate_speed_and_position } = require('../common/position.js');
 const constants = require('../common/constants.js');
-const TRACK_WIDTH = 30;
-const TRACK_HEIGHT = 21;
+const TRACK_WIDTH = 9;
+const TRACK_HEIGHT = 9;
 
 const START_X = 0;
 const START_Y = 0;
@@ -151,6 +151,7 @@ function init_map() {
                 is_speed_down: false,
                 killed: false,
                 is_stopped: false,
+                is_invincible: false,
             }
         };
     }
@@ -228,7 +229,7 @@ function handle_collision(tiles) {
 
     let player_0 = map[tiles[0].route_id].player;
     let player_1 = map[tiles[1].route_id].player;
-    if (player_0.killed || player_1.killed || player_0.is_stopped || player_1.is_stopped) {
+    if (player_0.killed || player_1.killed || player_0.is_invincible || player_1.is_invincible) {
         return;
     }
 
