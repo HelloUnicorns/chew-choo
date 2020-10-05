@@ -134,7 +134,7 @@ setInterval(() => {
 
 /* Position */
 setInterval(() => {
-    map.update_map();
+    let routes_removed_leftover = map.update_map();
     let locations = {};
     let server_time = performance.now();
 
@@ -154,12 +154,13 @@ setInterval(() => {
             };
         }
     }
+
     wss.clients.forEach((client) => {
         if (!client.initialized) {
             return;
         }
 
-        client.send(JSON.stringify({ locations, type: 'position' }));
+        client.send(JSON.stringify({ locations, changed_routes: routes_removed_leftover, type: 'position' }));
     });
 }, 1000 / 60);
 
@@ -190,11 +191,11 @@ setInterval(() => {
     kills.forEach((kill) => {
         routes.push({
             route_id: kill.killer_route_id,
-            tiles: (map.map[kill.killer_route_id]) ? map.map[kill.killer_route_id].tiles : []
+            tiles: map.map[kill.killer_route_id] ? map.map[kill.killer_route_id].leftover_tiles.concat(map.map[kill.killer_route_id].tiles) : []
         });
         routes.push({
             route_id: kill.killed_route_id,
-            tiles: [] // Empty list
+            tiles: []
         });
     });
 

@@ -25,6 +25,13 @@ const game = new Phaser.Game({
     scene: [ GameScene, GameOverlayScene, GameoverScene, WinScene, ErrorScene ]
 });
 
+function update_routes(routes) {
+    for (let route of routes) {
+        update_rail(route.route_id, route.tiles, global_data.player.train.route_id);
+        get_train_by_id(route.route_id).position_in_route = 0;
+    }
+}
+
 event_handlers.connection = (event) => {
     set_rails(event.map);
     for (const route_id in event.map) {
@@ -44,6 +51,9 @@ event_handlers.position = (event) => {
     if (global_data.game_scene.game_inited != global_data.game_scene.game_inited_target) {
         return;
     }
+
+    update_routes(event.changed_routes);
+
     if (event.server_time < last_server_time) {
         /* a newer update has already arrived */
         console.log('got an out-of-order positions update')
@@ -60,9 +70,7 @@ event_handlers.kill = (event) => {
         return;
     }
 
-    for (let route of event.routes) {
-        update_rail(route.route_id, route.tiles, global_data.player.train.route_id);
-    }
+    update_routes(event.routes);
 
     let kills = event.kills.map(kill => ({
         killed: Number(kill.killed_route_id),
