@@ -16,10 +16,10 @@ EU Server: https://chew-choo-eu.herokuapp.com/
 US Server: https://chew-choo-us.herokuapp.com/  
   
 ## Game Controls
-Press **up** arrow key to speed up.
-Press **down** arrow key to slow down.
-Press **m** to toggle music.
-
+Press **up** arrow key to speed up.  
+Press **down** arrow key to slow down.  
+Press **m** to toggle music.  
+  
 ## Build and run locally
 The server was tested on Windows & Linux.
 1. Install git (see https://git-scm.com/downloads)
