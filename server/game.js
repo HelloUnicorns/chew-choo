@@ -205,15 +205,23 @@ setInterval(() => {
 
 /* Check win condition */
 setInterval(() => {
-    if (Object.keys(map.map).length == 1) {
-        let = winner_route_id = undefined;
-        for (const route_id in map.map) {
-            winner_route_id = route_id;
-        }
-        wss.clients.forEach((client) => {
-            if (client.initialized && !client.removed && client.route_id == winner_route_id) {
-                client.send(JSON.stringify({ type: 'win' }));
-            }
-        })
+    let route_ids = Object.keys(map.map);
+    if (route_ids.length > 1) {
+        /* More than 1 player remaining */
+        return;
     }
+
+    /* Victory! :) */
+    let winner_route_id = route_ids[0];
+    console.log(`Player in route ${winner_route_id} win!`);
+
+    wss.clients.forEach((client) => {
+        if (client.initialized && !client.removed && client.route_id == winner_route_id) {
+            client.send(JSON.stringify({ type: 'win' }));
+        }
+    });
+
+    /* Reset map */
+    console.log('Reseting map');
+    map.init_map();
 }, 1000 / 10);

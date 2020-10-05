@@ -7,7 +7,7 @@ let route_start_positions = [
 ];
 
 let directions = ['right', 'down', 'left', 'up']
-const MAX_PLAYERS = 2;
+const MAX_PLAYERS = 65;
 
 let map = {};
 let x_map = {};
@@ -237,7 +237,12 @@ function compute_start_positions() {
 }
 
 function init_map() {
-    compute_start_positions();
+    if (route_start_positions.length == 0) {
+        compute_start_positions();
+    }
+
+    x_map = {};
+
     for (let i = 0; i < MAX_PLAYERS; ++i) {
         start_position = route_start_positions[i];
         map[i] = {
@@ -406,3 +411,4 @@ exports.update_map = update_map;
 exports.update_speed_change = update_speed_change;
 exports.replace_player_with_bot = replace_player_with_bot;
 exports.detect_collisions = detect_collisions;
+exports.init_map = init_map;
