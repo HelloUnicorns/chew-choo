@@ -8,6 +8,7 @@ const { GameoverScene } = require('./gameover_scene.js');
 const { WinScene } = require('./win_scene.js');
 const { set_rails, update_rail } = require('./rails.js');
 const { build_train, get_train_by_id, update_server_train_state, remove_train } = require('./train.js');
+const { ErrorScene } = require('./error_scene.js');
 
 
 const game = new Phaser.Game({
@@ -21,7 +22,7 @@ const game = new Phaser.Game({
             gravity: { y: 200 }
         }
     },
-    scene: [ GameScene, GameOverlayScene, GameoverScene, WinScene ]
+    scene: [ GameScene, GameOverlayScene, GameoverScene, WinScene, ErrorScene ]
 });
 
 function update_routes(routes) {
@@ -102,4 +103,9 @@ event_handlers.win = (event) => {
     game.scene.start('WinScene');
     game.scene.stop('GameOverlayScene');
     game.scene.stop('GameScene');    
+};
+
+event_handlers.error = (event) => {
+    game.scene.start('ErrorScene', event.message);
+    game.scene.stop('GameOverlayScene');
 };
