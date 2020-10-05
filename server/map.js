@@ -137,7 +137,8 @@ function merge_routes(killer_route_id, killee_route_id) {
     }
 
     if (crossings.length != 2) {
-        throw new Error(`Routes have ${crossings.length} crossings`);
+        console.log(`BUG: Routes ${killer_route_id} and ${killee_route_id} have ${crossings.length} crossings`);
+        return;
     }
 
     let killer_crossing_indexes = crossings.map(crossing => indexOf(killer_coors, crossing));
