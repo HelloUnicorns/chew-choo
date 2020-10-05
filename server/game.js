@@ -47,7 +47,12 @@ wss.on('connection', (client) => {
     client.id = makeid(ID_LEN);
     route_id = map.new_player();
     if (route_id == undefined) {
-        console.log('Error');
+        // All routes are occupied
+        client.send(JSON.stringify({
+            message: 'Server is full',
+            type: 'error'
+        }));
+        console.log('Server is full - refused new client');
         return;
     }
     client.route_id = route_id;
