@@ -27,7 +27,7 @@ function mark_tile_occupied(tile, entering=false) {
 
     let matching_tiles = x_map[tile.x][tile.y].filter(t => t.route_id == tile.route_id);
     if (matching_tiles.length > 0) {
-        for (let tile in matching_tiles) {
+        for (let tile of matching_tiles) {
             tile.entering = entering;
         }
         return;
@@ -124,7 +124,7 @@ function walk_tiles_to_next_crossing(tiles, start_tile_index, crossings) {
 
 function find_top_left_tile_index(tiles) {
     let top_left_tile_index = 0;
-    for (const tile_index in tiles) {
+    for (let tile_index = 0; tile_index < tiles.length; tile_index++) {
         if ((tiles[tile_index].x < tiles[top_left_tile_index].x) || 
             (tiles[tile_index].x == tiles[top_left_tile_index].x && tiles[tile_index].y <= tiles[top_left_tile_index].y)) {
                 top_left_tile_index = tile_index;
@@ -201,7 +201,7 @@ function union_routes(killer_route_id, killee_route_id) {
     map[killer_route_id].leftover_tiles = leftover_tiles;
     map[killee_route_id].tiles = [];
 
-
+    
     unload_player_from_x_map(killer_route_id);
     unload_player_from_x_map(killee_route_id);
     update_occupied_tiles(map[killer_route_id]);
