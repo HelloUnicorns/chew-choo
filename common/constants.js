@@ -14,4 +14,10 @@ exports.TRACK_HEIGHT = 9;
 exports.START_X = 0;
 exports.START_Y = 0;
 
-exports.PLAYER_EXTRA_INVINCIBILITY_TIME = 10;
+/* Invincibility */
+exports.PLAYER_FULLY_INVISIBLE_TIME = 5; // In seconds
+exports.PLAYER_BLINKING_TIME = 3; // In seconds
+
+exports.PLAYER_NOT_INVINCIBLE = 0;
+exports.PLAYER_BLINKING = 1;
+exports.PLAYER_FULLY_INVISIBLE = 2;

@@ -22,6 +22,29 @@ function makeid(length) {
     return result;
 }
 
+function start_invincibility_updates(route_id) {
+    map.map[route_id].player.is_stopped = false;
+    if (invincibility_timeouts[route_id]) {
+        clearTimeout(invincibility_timeouts[route_id]);
+    }
+
+    /* Start fully invisible timer */
+    invincibility_timeouts[route_id] = setTimeout(
+        () => {
+            delete invincibility_timeouts[route_id];
+            map.map[route_id].player.invincibility_state = constants.PLAYER_BLINKING;
+            
+            /* Start blinking timer */
+            invincibility_timeouts[route_id] = setTimeout(
+                () => {
+
+                    /* Player is not invincible anymore */
+                    delete invincibility_timeouts[route_id];
+                    map.map[route_id].player.invincibility_state = constants.PLAYER_NOT_INVINCIBLE;
+                }, constants.PLAYER_BLINKING_TIME * 1000);
+        }, constants.PLAYER_FULLY_INVISIBLE_TIME * 1000);
+}
+
 wss.on('connection', (client) => {
     client.id = makeid(ID_LEN);
     route_id = map.new_player();
@@ -37,7 +60,7 @@ wss.on('connection', (client) => {
         clearTimeout(invincibility_timeouts[client.route_id]);
         delete invincibility_timeouts[client.route_id];
     }
-    map.map[client.route_id].player.is_invincible = true;
+    map.map[client.route_id].player.invincibility_state = constants.PLAYER_FULLY_INVISIBLE;
 
     console.log(`Client ${client.id} connected`);
     console.log(`Client ${client.id} occupies route ${client.route_id}`);
@@ -64,15 +87,7 @@ wss.on('connection', (client) => {
             client.send(JSON.stringify({ latency: latency, type: 'latency' }));
         }
         else if (message.type == 'resume_player') {
-            map.map[client.route_id].player.is_stopped = false;
-            if (invincibility_timeouts[client.route_id]) {
-                clearTimeout(invincibility_timeouts[client.route_id]);
-            }
-            invincibility_timeouts[client.route_id] = setTimeout(
-                () => {
-                    delete invincibility_timeouts[client.route_id];
-                    map.map[client.route_id].player.is_invincible = false;
-                }, constants.PLAYER_EXTRA_INVINCIBILITY_TIME * 1000);
+            start_invincibility_updates(client.route_id);
         }
     });
 });
@@ -101,7 +116,7 @@ setInterval(() => {
                 is_speed_down: route.player.is_speed_down,
                 server_time: server_time,
                 is_stopped: route.player.is_stopped,
-                is_invincible: route.player.is_invincible,
+                invincibility_state: route.player.invincibility_state,
                 is_bot: route.player.is_bot
             };
         }

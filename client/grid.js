@@ -22,7 +22,38 @@ function draw_grid_sprite(grid_x, grid_y, angle, sprite_name, scale, depth, tint
     update_grid_sprite(grid_sprite, grid_x, grid_y, angle, tint, alpha);
     grid_sprite.setScale(scale);
     grid_sprite.setDepth(depth);
+    grid_sprite.start_blinking = start_blinking;
+    grid_sprite.stop_blinking = stop_blinking;
     return grid_sprite;
+}
+
+function start_blinking(minimum_alpha) {    
+    let sprite = this;
+    if (sprite.interval) {
+        return;
+    }
+
+    let blinking_constant = 2 * Math.PI;
+    let start_time = Date.now();    
+
+    sprite.interval = setInterval(()=> {
+        let time = Date.now();
+        let delta = (time - start_time) / 1000;
+
+        sprite.alpha = 
+            (1 - minimum_alpha) / 2
+            * Math.sin(blinking_constant * delta + Math.PI)
+            + (1 + minimum_alpha) / 2;
+    }, 10);
+}
+
+function stop_blinking(alpha=1) {
+    let sprite = this;
+    if (sprite.interval) {
+        clearInterval(sprite.interval);
+        sprite.interval = undefined;
+    }
+    sprite.alpha = alpha;
 }
 
 
