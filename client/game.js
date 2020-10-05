@@ -81,9 +81,10 @@ event_handlers.kill = (event) => {
         if (global_data.game_scene.bg_music) {
             global_data.game_scene.bg_music.mute = true;
         }
+        
+        global_data.game_scene.stopped = true;
         game.scene.start('GameoverScene');
         game.scene.stop('GameOverlayScene');
-        game.scene.stop('GameScene');    
         return;
     }
 
@@ -102,10 +103,10 @@ event_handlers.win = (event) => {
     }
     game.scene.start('WinScene');
     game.scene.stop('GameOverlayScene');
-    game.scene.stop('GameScene');    
 };
 
 event_handlers.error = (event) => {
     game.scene.start('ErrorScene', event.message);
     game.scene.stop('GameOverlayScene');
+    game.scene.stop('GameScene');
 };

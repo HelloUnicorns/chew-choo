@@ -151,9 +151,12 @@ function update_train(train) {
     if (train.is_stopped) {
         return;
     }
+    let rails = get_rails_by_id(train.route_id);
+    if (!rails) {
+        return;
+    }
 
     let current_time = window.performance.now();
-    let rails = get_rails_by_id(train.route_id);
     if (train.server_shadow_train) {
         update_train_acceleration_fix(train, rails);
     }
