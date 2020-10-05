@@ -165,36 +165,24 @@ setInterval(() => {
 
 /* Kills */
 setInterval(() => {
-    map.detect_collisions();
-    let kills = [];
+    let [updated_route_ids, killed_route_ids] = map.detect_collisions();
 
-    for (const [route_id, route] of Object.entries(map.map)) {
-        if (route.player.killed && !route.player.kill_notified) {
-            route.player.kill_notified = true;
-            kills.push({ killed_route_id: route_id, killer_route_id: route.player.killer });
-        }
-    }
-
-    if (kills.length == 0) {
+    if (killed_route_ids.length == 0) {
         return;
     }
 
     console.log(`Printing kill list`);
-    kills.forEach(kill => {
-        console.log(`killed: ${kill.killed_route_id}, killer: ${kill.killer_route_id}`);
-        delete map.map[kill.killed_route_id];
+    killed_route_ids.forEach(killed_route_id => {
+        console.log(`killed: ${killed_route_id}`);
+        delete map.map[killed_route_id];
     });
 
     /* Update tile changes */
     let routes = [];
-    kills.forEach((kill) => {
+    updated_route_ids.forEach((route_id) => {
         routes.push({
-            route_id: kill.killer_route_id,
-            tiles: (kill.killer_route_id == -1) ? undefined : map.map[kill.killer_route_id].tiles
-        });
-        routes.push({
-            route_id: kill.killed_route_id,
-            tiles: [] // Empty list
+            route_id: route_id,
+            tiles: (route_id == -1) ? undefined : map.map[route_id] ? map.map[route_id].tiles : []
         });
     });
 
@@ -204,7 +192,7 @@ setInterval(() => {
             return;
         }
 
-        client.send(JSON.stringify({ routes, kills, type: 'kill' }));
+        client.send(JSON.stringify({ routes, killed: killed_route_ids, type: 'kill' }));
     });
 }, 1000 / 60);
 

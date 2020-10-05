@@ -1,6 +1,7 @@
 const { performance } = require('perf_hooks');
 const { calculate_speed_and_position } = require('../common/position.js');
 const constants = require('../common/constants.js');
+const { exception } = require('console');
 
 let route_start_positions = [
 
@@ -9,16 +10,36 @@ let route_start_positions = [
 let directions = ['right', 'down', 'left', 'up']
 const MAX_PLAYERS = 65;
 
+/* Perform shallow copy, all types should be primitive */
+const NEW_PLAYER = {
+    position_in_route: 0,
+    last_position_update: 0,
+    position_fraction: 0,
+    length: 3,
+    speed: constants.MIN_SPEED, /* in tiles per second */
+    acceleration: 0, /* in tiles per second squared */
+    is_speed_up: false,
+    is_speed_down: false,
+    killed: false,
+    is_stopped: false,
+    invincibility_state: constants.PLAYER_NOT_INVINCIBLE,
+    killer: -1,
+    kill_notified: false,
+    assignable: true,
+    is_bot: true,
+    killing_list: undefined,
+};
+
 let map = {};
 let x_map = {};
 
 function mark_tile_occupied(tile, entering=false) {
     x_map[tile.x] = x_map[tile.x] || {};
-    x_map[tile.x][tile.y] = x_map[tile.x][tile.y] || [];
+    x_map[tile.x][tile.y] = x_map[tile.x][tile.y] || [];    
 
     let matching_tiles = x_map[tile.x][tile.y].filter(t => t.route_id == tile.route_id);
     if (matching_tiles.length > 0) {
-        for (let tile in matching_tiles) {
+        for (let tile of matching_tiles) {
             tile.entering = entering;
         }
         return;
@@ -90,6 +111,34 @@ Array.prototype.rotate = (function() {
     };
 })();
 
+function seperate_routes(route_id) {
+    /* List of route ids to reconstruct */
+    let ids = map[route_id].player.killing_list.concat([route_id]);
+
+    /* Get current position of alive bots */
+    let position = 0;
+    for (let [_id, route] of Object.entries(map)) {
+        if (route.player && route.player.is_bot && !route.player.killed) {
+            position = route.player.position_in_route;
+            break;
+        }
+    }
+
+    for (let _id of ids) {
+        unload_player_from_x_map(_id);
+        let route_start_position = route_start_positions[_id];
+        map[_id] = {
+            tiles: build_rectangular_route(route_start_position.x, route_start_position.y, constants.TRACK_WIDTH, constants.TRACK_HEIGHT, _id),
+            player: {...NEW_PLAYER}
+        };
+        map[_id].player.position_in_route = position;
+        map[_id].player.last_position_update = performance.now();
+        map[_id].player.killing_list = [];
+    }
+
+    return ids;
+}
+
 const ROTATION = constants.TRACK_HEIGHT / 3;
 function merge_routes(killer_route_id, killee_route_id) {
     function indexOf(arr, coor) {
@@ -138,7 +187,7 @@ function merge_routes(killer_route_id, killee_route_id) {
 
     if (crossings.length != 2) {
         console.log(`BUG: Routes ${killer_route_id} and ${killee_route_id} have ${crossings.length} crossings`);
-        return;
+        return [];
     }
 
     let killer_crossing_indexes = crossings.map(crossing => indexOf(killer_coors, crossing));
@@ -178,9 +227,12 @@ function merge_routes(killer_route_id, killee_route_id) {
 
     killer_tiles.rotate(-indexOf2(killer_tiles, first_killer_coordinates));
     killer_tiles.rotate(-ROTATION);
-    map[killer_route_id].tiles = killer_tiles; 
+    map[killer_route_id].tiles = killer_tiles;
+    map[killer_route_id].player.killing_list.push(killee_route_id);
     /* Delete tiles of killee */
     map[killee_route_id].tiles = [];
+
+    return [killer_route_id, killee_route_id];
 }
 
 function compute_start_positions() {
@@ -248,24 +300,10 @@ function init_map() {
         start_position = route_start_positions[i];
         map[i] = {
             tiles: build_rectangular_route(start_position.x, start_position.y, constants.TRACK_WIDTH, constants.TRACK_HEIGHT, i),
-            player: {
-                position_in_route: 0,
-                last_position_update: performance.now(),
-                position_fraction: 0,
-                length: 3,
-                speed: constants.MIN_SPEED, /* in tiles per second */
-                acceleration: 0, /* in tiles per second squared */
-                is_speed_up: false,
-                is_speed_down: false,
-                killed: false,
-                is_stopped: false,
-                invincibility_state: constants.PLAYER_NOT_INVINCIBLE,
-                killer: -1,
-                kill_notified: false,
-                assignable: true,
-                is_bot: true,
-            }
+            player: {...NEW_PLAYER}
         };
+        map[i].player.last_position_update = performance.now();
+        map[i].player.killing_list = [];
     }
 }
 
@@ -318,7 +356,7 @@ function handle_collision(tiles) {
     if (tiles.length > 2) {
         throw new Error('More than 2 trains collided');
     } else if ( tiles.length < 2) {
-        return;
+        return [[], []];
     }
 
     let player_0 = map[tiles[0].route_id].player;
@@ -327,55 +365,74 @@ function handle_collision(tiles) {
         || player_1.killed 
         || player_0.invincibility_state != constants.PLAYER_NOT_INVINCIBLE
         || player_1.invincibility_state != constants.PLAYER_NOT_INVINCIBLE) {
-        return;
+        return [[], []];
     }
 
-    let killed = tiles.filter(tile => !tile.entering);
-    if (killed.length == 0) {
-        if (player_0.position_fraction >= player_1.position_fraction) {
-            player_0.killed = true;
-            player_0.killer = tiles[1].route_id;
-            console.log('killed', tiles[0].route_id)
-            unload_player_from_x_map(tiles[0].route_id);
-            merge_routes(tiles[1].route_id, tiles[0].route_id);
+    let killer_id = -1;
+    let killed_ids = [];
+
+    let killed_tiles = tiles.filter(tile => !tile.entering);
+    switch (killed_tiles.length) {
+        case 0:
+            if (player_0.position_fraction >= player_1.position_fraction) {
+                /* Player 1 killed player 0 */
+                killer_id = tiles[1].route_id;
+                killed_ids.push(tiles[0].route_id);
+    
+            } else {
+                 /* Player 0 killed player 1 */
+                killer_id = tiles[0].route_id;
+                killed_ids.push(tiles[1].route_id);
+            }
+            break;
+        case 1:
+            killed_ids.push(killed_tiles[0].route_id);
+            killer_id = tiles.map(tile => tile.route_id).filter(route_id => route_id != killed_ids[0]);
+            break;
+        case 2:
+            killed_ids = killed_tiles.map(tile => tile.route_id);
+            killer_id = undefined;
+            break;
+    }
+
+    for (let killed_id of killed_ids) {
+        map[killed_id].player.killed = true;
+        unload_player_from_x_map(killed_id);
+        console.log(`Player in route ${killed_id} got killed`);
+    }
+
+    if (killer_id != undefined) {
+        let killed_id = killed_ids[0];
+        map[killed_id].player.killer = killer_id;
+        if (!map[killer_id].player.is_bot) {
+            let ret_value = [merge_routes(killer_id, killed_id), killed_ids]
+            return ret_value;
         } else {
-            player_1.killed = true;
-            player_1.killer = tiles[0].route_id;
-            console.log('killed', tiles[1].route_id)
-            unload_player_from_x_map(tiles[1].route_id);
-            merge_routes(tiles[0].route_id, tiles[1].route_id);
+            if (map[killed_id].player.killing_list && map[killed_id].player.killing_list.length > 0)
+            {
+                let ret_value = [seperate_routes(killed_id), killed_ids]
+                return ret_value;
+            }
         }
-        return;
     }
 
-
-    for (let tile of killed) {
-        map[tile.route_id].player.killed = true;
-        unload_player_from_x_map(tile.route_id);
-        console.log(`Player in route ${tile.route_id} got killed`);
-    }
-
-    if (killed.length == 1) {
-        let killed_player = killed[0];
-        let killed_id = killed_player.route_id;
-        let killer_id = tiles.filter(tile => tile.route_id != killed_id)[0].route_id;
-
-        map[killed_player.route_id].player.killer = killer_id;
-        killed_player.killed = true;
-        console.log('killed', killed_player.route_id)
-        merge_routes(killer_id, killed_id);
-    }
+    return [[], killed_ids];
 }
 
 function detect_collisions() {
+    let updated_routes = [];
+    let killed_players = [];
     for (const x in x_map) {
         for (const y in x_map[x]) {
             let tiles = x_map[x][y];
             if (tiles.length > 1) {
-                handle_collision(tiles);
+                let ret_value = handle_collision(tiles);
+                updated_routes = updated_routes.concat(ret_value[0]);
+                killed_players = killed_players.concat(ret_value[1]);
             } 
         }
     }
+    return [Array.from(new Set(updated_routes)), Array.from(new Set(killed_players))];
 }
 
 function update_map() {
