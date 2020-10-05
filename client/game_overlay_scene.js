@@ -32,14 +32,14 @@ class GameOverlayScene extends Phaser.Scene {
 
     create() {        
         let speed_meter_colors = this.add.sprite(
-            constants.CANVAS_WIDTH - SPEED_METER_COLORS_WIDTH / 2,
+            constants.CANVAS_WIDTH - SPEED_METER_COLORS_WIDTH / 2 - 10,
             constants.CANVAS_HEIGHT - SPEED_METER_COLORS_HEIGHT / 2,
             'speed_meter_colors');
         speed_meter_colors.setScale(SPEED_METER_SCALE);
         speed_meter_colors.setAlpha(0.5);
         
         this.speed_meter_arrow = this.add.sprite(
-            constants.CANVAS_WIDTH - SPEED_METER_COLORS_WIDTH / 2 + SPEED_METER_ARROWS_X_OFFSET,
+            constants.CANVAS_WIDTH - SPEED_METER_COLORS_WIDTH / 2 - 10 + SPEED_METER_ARROWS_X_OFFSET,
             constants.CANVAS_HEIGHT,
             'speed_meter_arrow'
         );
@@ -48,7 +48,7 @@ class GameOverlayScene extends Phaser.Scene {
         this.speed_meter_arrow.setAlpha(0.8);
 
         this.speed_meter = this.add.text(
-            constants.CANVAS_WIDTH - SPEED_METER_COLORS_WIDTH / 2 - 8,
+            constants.CANVAS_WIDTH - SPEED_METER_COLORS_WIDTH / 2 - 18,
             constants.CANVAS_HEIGHT - SPEED_METER_COLORS_HEIGHT / 2 + 20, 
             '0 tps',
             { font: '36px Arial', fill: '#000000' });
