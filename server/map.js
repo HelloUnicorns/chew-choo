@@ -401,7 +401,7 @@ function update_map() {
             continue;
         }
         if (route.player.is_in_leftover) {
-            calculate_speed_and_position(route.player, 10000, new_time);
+            calculate_speed_and_position(route.player, Infinity, new_time);
             if (route.player.position_in_route >= route.leftover_tiles.length) {
                 /* left the leftover */
                 set_train_position(route.player, route.player.position_in_route - route.leftover_tiles.length, route.tiles.length);
