@@ -202,3 +202,18 @@ setInterval(() => {
         client.send(JSON.stringify({ routes, kills, type: 'kill' }));
     });
 }, 1000 / 60);
+
+/* Check win condition */
+setInterval(() => {
+    if (Object.keys(map.map).length == 1) {
+        let = winner_route_id = undefined;
+        for (const route_id in map.map) {
+            winner_route_id = route_id;
+        }
+        wss.clients.forEach((client) => {
+            if (client.initialized && !client.removed && client.route_id == winner_route_id) {
+                client.send(JSON.stringify({ type: 'win' }));
+            }
+        })
+    }
+}, 1000 / 10);

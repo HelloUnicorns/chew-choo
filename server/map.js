@@ -7,7 +7,7 @@ let route_start_positions = [
 ];
 
 let directions = ['right', 'down', 'left', 'up']
-const MAX_PLAYERS = 65;
+const MAX_PLAYERS = 2;
 
 let map = {};
 let x_map = {};
