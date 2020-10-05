@@ -7,10 +7,15 @@ let route_start_positions = [
 ];
 
 let directions = ['right', 'down', 'left', 'up']
-const MAX_PLAYERS = 2;
+const MAX_PLAYERS = 65;
 
 let map = {};
 let x_map = {};
+
+
+function tile_to_player(tile) {
+    return map[tile.route_id].player;
+}
 
 function mark_tile_occupied(tile, entering=false) {
     x_map[tile.x] = x_map[tile.x] || {};
@@ -46,140 +51,129 @@ function clear_tile_occupied(tile) {
 function build_rectangular_route(grid_x, grid_y, width, height, route_id) {
     let route = [];
     for (let i = 1; i < width - 1; i++) {
-        route.push({x: grid_x + i, y: grid_y, direction_from: 'left', direction_to: 'right', index: route.length, route_id});
+        route.push({x: grid_x + i, y: grid_y, direction_from: 'left', direction_to: 'right', route_id});
     }
 
-    route.push({x: grid_x + width - 1, y: grid_y, direction_from: 'left', direction_to: 'bottom', index: route.length, route_id});
+    route.push({x: grid_x + width - 1, y: grid_y, direction_from: 'left', direction_to: 'bottom', route_id});
     
     for (let i = 1; i < height - 1; i++) {
-        route.push({x: grid_x + width - 1, y: grid_y + i, direction_from: 'top', direction_to: 'bottom', index: route.length, route_id});
+        route.push({x: grid_x + width - 1, y: grid_y + i, direction_from: 'top', direction_to: 'bottom', route_id});
     }
 
-    route.push({x: grid_x + width - 1, y: grid_y + height - 1, direction_from: 'top', direction_to: 'left', index: route.length, route_id});
+    route.push({x: grid_x + width - 1, y: grid_y + height - 1, direction_from: 'top', direction_to: 'left', route_id});
     
     for (let i = width - 2; i > 0; i--) {
-        route.push({x: grid_x + i, y: grid_y + height - 1, direction_from: 'right', direction_to: 'left', index: route.length, route_id});
+        route.push({x: grid_x + i, y: grid_y + height - 1, direction_from: 'right', direction_to: 'left', route_id});
     }
     
-    route.push({x: grid_x, y: grid_y + height - 1, direction_from: 'right', direction_to: 'top', index: route.length, route_id});
+    route.push({x: grid_x, y: grid_y + height - 1, direction_from: 'right', direction_to: 'top', route_id});
     
     for (let i = height - 2; i > 0; i--) {
-        route.push({x: grid_x, y: grid_y + i, direction_from: 'bottom', direction_to: 'top', index: route.length, route_id});
+        route.push({x: grid_x, y: grid_y + i, direction_from: 'bottom', direction_to: 'top', route_id});
     }
 
-    route.push({x: grid_x, y: grid_y, direction_from: 'bottom', direction_to: 'right', index: route.length, route_id});
+    route.push({x: grid_x, y: grid_y, direction_from: 'bottom', direction_to: 'right', route_id});
  
     return route;
 }
 
-Array.prototype.rotate = (function() {
-    // save references to array functions to make lookup faster
-    var push = Array.prototype.push,
-        splice = Array.prototype.splice;
-
-    return function(count) {
-        var len = this.length >>> 0, // convert to uint
-            count = -(count >> 0); // convert to int
-
-        // convert count to value in range [0, len)
-        count = ((count % len) + len) % len;
-
-        // use splice.call() instead of this.splice() to make function generic
-        push.apply(this, splice.call(this, 0, count));
-        return this;
-    };
-})();
-
-const ROTATION = constants.TRACK_HEIGHT / 3;
-function merge_routes(killer_route_id, killee_route_id) {
-    function indexOf(arr, coor) {
-        for (let [index, item] of arr.entries()) {
-            if (item[0] == coor[0] && item[1] == coor[1]) {
-                return index;
+function find_crossings(tiles_array) {
+    crossings = [];
+    for (let tile_0_idx = 0; tile_0_idx < tiles_array[0].length; tile_0_idx++) {
+        for (let tile_1_idx = 0; tile_1_idx < tiles_array[1].length; tile_1_idx++) {
+            if (tiles_array[0][tile_0_idx].x == tiles_array[1][tile_1_idx].x &&
+                tiles_array[0][tile_0_idx].y == tiles_array[1][tile_1_idx].y) {
+                crossings.push({
+                    tile_indices: [tile_0_idx, tile_1_idx],
+                    x: tiles_array[0][tile_0_idx].x,
+                    y: tiles_array[0][tile_0_idx].y})
             }
-        }
-
-        return -1;
+        }    
     }
+    return crossings;
+}
 
-    function indexOf2(arr, coor) {
-        for (let [index, item] of arr.entries()) {
-            if (item.x == coor[0] && item.y == coor[1]) {
-                return index;
-            }
+function find_crossing_by_coords(crossings, tile) {
+    for (const crossing of crossings) {
+        if (crossing.x == tile.x && crossing.y == tile.y) {
+            return crossing;
         }
-        return -1;
     }
+}
 
+function get_next_tile_index(tiles, tile_index) {
+    return (tile_index + 1) % tiles.length;
+}
+
+function walk_tiles_to_next_crossing(tiles, start_tile_index, crossings) {
+    let cur_index = start_tile_index;
+    let crossing = undefined;
+    let path = [];
+
+    do {
+        cur_index = get_next_tile_index(tiles, cur_index);
+        crossing = find_crossing_by_coords(crossings, tiles[cur_index]);
+        path.push(tiles[cur_index]);
+    } while (!crossing);
+    return { path, crossing };
+}
+
+function find_top_left_tile_index(tiles) {
+    let top_left_tile_index = 0;
+    for (const tile_index in tiles) {
+        if ((tiles[tile_index].x < tiles[top_left_tile_index].x) || 
+            (tiles[tile_index].x == tiles[top_left_tile_index].x && tiles[tile_index].y <= tiles[top_left_tile_index].y)) {
+                top_left_tile_index = tile_index;
+        }
+    }
+    return top_left_tile_index;
+}
+
+function find_external_crossing(crossings, tiles_arrays) {
+    let external_tiles_indices = tiles_arrays.map(find_top_left_tile_index);
+    let external_tiles = tiles_arrays.map((tiles, idx) => tiles[external_tiles_indices[idx]]);
+    let top_left_tile_index = find_top_left_tile_index(external_tiles);
+    return { 
+        first_external_crossing: 
+            walk_tiles_to_next_crossing(tiles_arrays[top_left_tile_index],
+                                        external_tiles_indices[top_left_tile_index],
+                                        crossings).crossing, 
+        tiles_array_index: top_left_tile_index 
+    }
+}
+
+
+function union_routes(killer_route_id, killee_route_id) {
     let killer_tiles = map[killer_route_id].tiles;
     let killee_tiles = map[killee_route_id].tiles;
+    let tiles_arrays = [killer_tiles, killee_tiles];
+    let crossings = find_crossings(tiles_arrays);
+    const { first_external_crossing, tiles_array_index } = find_external_crossing(crossings, tiles_arrays);
+    let current_crossing = first_external_crossing;
+    let current_tiles_array_index = tiles_array_index;
+    let external_crossings = [];
+    let new_route = [];
 
-    map[killer_route_id].player.assignable = false;
-    map[killee_route_id].player.assignable = false;
-    console.log(`route ${killer_route_id} unassignable anymore`)
-    console.log(`route ${killee_route_id} unassignable anymore`)
-
-    killer_tiles.rotate(ROTATION);
-    killee_tiles.rotate(ROTATION);
+    do {
+        current_tiles_array_index = 1 - current_tiles_array_index;
+        const { crossing, path } = walk_tiles_to_next_crossing(tiles_arrays[current_tiles_array_index],
+                                                               current_crossing.tile_indices[current_tiles_array_index],
+                                                               crossings);
+        external_crossings.push(crossing);
+        current_crossing = crossing;
+        new_route = new_route.concat(path);
+    } while (current_crossing != first_external_crossing);
 
     
-    let killer_coors = killer_tiles.map(tile => [tile.x, tile.y]);
-    let killee_coors = killee_tiles.map(tile => [tile.x, tile.y]);
-    let first_killer_coordinates = killer_coors[0];
-
-    let crossings = [];
-    for (let coor_killer of killer_coors) {
-        for (let coor_killee of killee_coors) {
-            if (coor_killer[0] == coor_killee[0] && coor_killer[1] == coor_killee[1]) {
-                crossings.push(coor_killer);
-            }
-        }
-    }
-
-    if (crossings.length != 2) {
-        throw new Error(`Routes have ${crossings.length} crossings`);
-    }
-
-    let killer_crossing_indexes = crossings.map(crossing => indexOf(killer_coors, crossing));
-
-    let killer_start_position =  Math.min(...killer_crossing_indexes);
-    let killer_end_position =  Math.max(...killer_crossing_indexes);
-
-    let killee_start_position =  indexOf(killee_coors, killer_coors[killer_start_position]);
-    let killee_end_position =  indexOf(killee_coors, killer_coors[killer_end_position]);
-
-    /* Set directions */
-    killer_tiles[killer_start_position].direction_to = killee_tiles[killee_start_position].direction_to;
-    killer_tiles[killer_end_position].direction_from = killee_tiles[killee_end_position].direction_from;
-
-    /* Get tiles from killee */
-    let crossing_length = Math.min(
-        Math.abs(killer_start_position - killer_end_position),
-        Math.abs(killee_start_position - killee_end_position),
-    );
-    killee_tiles.rotate(-killee_start_position - 1);
-    for (let i = 0; i < crossing_length + 1; ++i) {
-        killee_tiles.pop();
-    }
-
-    /* Prepare killer tiles */
-    killer_tiles.rotate(-killer_end_position);
-    for (let i = 0; i < crossing_length - 1; ++i) {
-        killer_tiles.pop();
-    }
-    
-    killer_tiles = [].concat(killer_tiles, killee_tiles);
-
-    killer_tiles.forEach(tile => {
+    new_route.forEach(tile => {
         tile.entering = false;
         tile.route_id = killer_route_id;
     });
 
-    killer_tiles.rotate(-indexOf2(killer_tiles, first_killer_coordinates));
-    killer_tiles.rotate(-ROTATION);
-    map[killer_route_id].tiles = killer_tiles; 
-    /* Delete tiles of killee */
+    map[killer_route_id].tiles = new_route;
     map[killee_route_id].tiles = [];
+
+    /* TODO: handle killer player position....... */
 }
 
 function compute_start_positions() {
@@ -309,56 +303,43 @@ function update_occupied_tiles(route) {
 }
 
 function handle_collision(tiles) {
+    if (tiles.length < 2) {
+        return;
+    }
     if (tiles.length > 2) {
         throw new Error('More than 2 trains collided');
-    } else if ( tiles.length < 2) {
+    }
+
+    let players = tiles.map(tile_to_player);
+        
+    if (players.some(player => (player.killed || player.invincibility_state != constants.PLAYER_NOT_INVINCIBLE))) {
         return;
     }
-
-    let player_0 = map[tiles[0].route_id].player;
-    let player_1 = map[tiles[1].route_id].player;
-    if (player_0.killed
-        || player_1.killed 
-        || player_0.invincibility_state != constants.PLAYER_NOT_INVINCIBLE
-        || player_1.invincibility_state != constants.PLAYER_NOT_INVINCIBLE) {
-        return;
+    
+    let killee_tile = undefined;
+    let entering_tiles = tiles.filter(tile => tile.entering);
+    if (entering_tiles.length == 1) {
+        killee_tile = entering_tiles[0];
+    } else {
+        let killee_index = (players[0].position_fraction < players[1].position_fraction) ? 0 : 1;
+        killee_tile = tiles[killee_index];
     }
 
-    let killed = tiles.filter(tile => !tile.entering);
-    if (killed.length == 0) {
-        if (player_0.position_fraction >= player_1.position_fraction) {
-            player_0.killed = true;
-            player_0.killer = tiles[1].route_id;
-            console.log('killed', tiles[0].route_id)
-            unload_player_from_x_map(tiles[0].route_id);
-            merge_routes(tiles[1].route_id, tiles[0].route_id);
-        } else {
-            player_1.killed = true;
-            player_1.killer = tiles[0].route_id;
-            console.log('killed', tiles[1].route_id)
-            unload_player_from_x_map(tiles[1].route_id);
-            merge_routes(tiles[0].route_id, tiles[1].route_id);
-        }
-        return;
-    }
+    let killer_tile = tiles.find(tile => tile != killee_tile);
+    let killee_player = tile_to_player(killee_tile);
+    let killer_player = tile_to_player(killer_tile);
+    
+    killee_player.killed = true;
+    killee_player.killer = killer_tile.route_id;
 
+    console.log(`Player in route ${killee_tile.route_id} got killed`);
+    unload_player_from_x_map(killee_tile.route_id);
+    
+    union_routes(killer_tile.route_id, killee_tile.route_id);
 
-    for (let tile of killed) {
-        map[tile.route_id].player.killed = true;
-        unload_player_from_x_map(tile.route_id);
-        console.log(`Player in route ${tile.route_id} got killed`);
-    }
-
-    if (killed.length == 1) {
-        let killed_player = killed[0];
-        let killed_id = killed_player.route_id;
-        let killer_id = tiles.filter(tile => tile.route_id != killed_id)[0].route_id;
-
-        map[killed_player.route_id].player.killer = killer_id;
-        killed_player.killed = true;
-        console.log('killed', killed_player.route_id)
-        merge_routes(killer_id, killed_id);
-    }
+    killee_player.assignable = false;
+    killer_player.assignable = false;
+    
 }
 
 function detect_collisions() {
