@@ -256,7 +256,6 @@ function init_map() {
                 is_invincible: false,
                 killer: -1,
                 kill_notified: false,
-                free: false,
                 assignable: true,
                 is_bot: true,
             }
@@ -266,18 +265,11 @@ function init_map() {
 
 function new_player() {
     for (let i = 0; i < MAX_PLAYERS; ++i) {
-        if ((!(map[i].player.free || map[i].player.is_bot)) || !map[i].player.assignable) {
+        if (!map[i].player.is_bot || !map[i].player.assignable) {
             continue;
         }
         console.log('assigning player', i);
-        map[i].player.free = false;
-        map[i].player.position_in_route = 0;
-        map[i].player.position_fraction = 0;
-        map[i].player.killed = false;
-        map[i].player.killer = -1;
         map[i].player.is_bot = false;
-        map[i].player.kill_notified = false;
-        map[i].player.speed = constants.MIN_SPEED;
         return i;
     }
 }
@@ -291,15 +283,15 @@ function unload_player_from_x_map(route_id) {
     }
 }
 
-function delete_player(route_id) {
-    map[route_id].player.free = true;
-    map[route_id].player.killed = false;
-    map[route_id].player.killed_notified = false;
+function replace_player_with_bot(route_id) {
+    map[route_id].player.is_bot = true;
+}
+
+function replace_player_with_bot(route_id) {
+    map[route_id].player.is_bot = true;
 }
 
 function update_occupied_tiles(route) {
-    let occupied_tiles = [];
-    let free_tiles = [];
     let player_position = route.player.position_in_route;
 
     /* Locomotive */
@@ -383,7 +375,7 @@ function update_map() {
     let new_time = performance.now();
     for (const route_id in map) {
         const route = map[route_id];
-        if (route.player.killed || route.player.free) {
+        if (route.player.killed) {
             continue;
         }
         calculate_speed_and_position(route.player, route, new_time);
@@ -393,7 +385,6 @@ function update_map() {
 }
 
 function is_speed_up(speed_message_value) {
-    return speed_message_value & constants.SPEED_UP_FLAG;
     return speed_message_value & constants.SPEED_UP_FLAG;
 }
 
@@ -412,5 +403,5 @@ exports.map = map;
 exports.new_player = new_player;
 exports.update_map = update_map;
 exports.update_speed_change = update_speed_change;
-exports.delete_player = delete_player;
+exports.replace_player_with_bot = replace_player_with_bot;
 exports.detect_collisions = detect_collisions;

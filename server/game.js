@@ -3,10 +3,6 @@ const constants = require('../common/constants.js');
 const { performance } = require('perf_hooks');
 const map = require('./map.js');
 
-function get_random_tint() {
-    return Math.random() * 0xffffff;
-}
-
 let invincibility_timeouts = {}; /* by route id */
 
 const ID_LEN = 8;
@@ -51,7 +47,7 @@ wss.on('connection', (client) => {
 
     client.on('close', () => {
         console.log(`Client ${client.id} disconnected`);
-        map.delete_player(client.route_id);
+        map.replace_player_with_bot(client.route_id);
     });
 
     client.on('message', (json_data) => {
@@ -123,7 +119,6 @@ setInterval(() => {
     for (const [route_id, route] of Object.entries(map.map)) {
         if (route.player.killed && !route.player.kill_notified) {
             route.player.kill_notified = true;
-            map.delete_player(route_id);
             kills.push({killed_route_id: route_id, killer_route_id: route.player.killer});
         }
     }
@@ -135,6 +130,7 @@ setInterval(() => {
     console.log(`Printing kill list`);
     kills.forEach(kill => {
         console.log(`killed: ${kill.killed_route_id}, killer: ${kill.killer_route_id}`);
+        delete map.map[kill.killed_route_id];
     });
 
     /* Update tile changes */
