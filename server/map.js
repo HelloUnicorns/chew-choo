@@ -316,16 +316,16 @@ function handle_collision(tiles) {
         return;
     }
     
-    let killee_tile = undefined;
+    let killer_tile = undefined;
     let entering_tiles = tiles.filter(tile => tile.entering);
     if (entering_tiles.length == 1) {
-        killee_tile = entering_tiles[0];
+        killer_tile = entering_tiles[0];
     } else {
-        let killee_index = (players[0].position_fraction < players[1].position_fraction) ? 0 : 1;
-        killee_tile = tiles[killee_index];
+        let killer_index = (players[0].position_fraction < players[1].position_fraction) ? 0 : 1;
+        killer_tile = tiles[killer_index];
     }
 
-    let killer_tile = tiles.find(tile => tile != killee_tile);
+    let killee_tile = tiles.find(tile => tile != killer_tile);
     let killee_player = tile_to_player(killee_tile);
     let killer_player = tile_to_player(killer_tile);
     
