@@ -185,7 +185,7 @@ setInterval(() => {
     kills.forEach((kill) => {
         routes.push({
             route_id: kill.killer_route_id,
-            tiles: (kill.killer_route_id == -1) ? undefined : map.map[kill.killer_route_id].tiles
+            tiles: (map.map[kill.killer_route_id]) ? map.map[kill.killer_route_id].tiles : []
         });
         routes.push({
             route_id: kill.killed_route_id,
