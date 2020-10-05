@@ -97,14 +97,6 @@ function find_crossings(tiles_array) {
     return crossings;
 }
 
-function find_tile_index_by_coords(tiles, x, y) {
-    for (let i = 0; i < tiles.length; i++) {
-        if (tiles[i].x == x && tiles[i].y == y) {
-            return i;
-        }
-    }
-}
-
 function find_crossing_by_tile(crossings, tile) {
     for (const crossing of crossings) {
         if (crossing.x == tile.x && crossing.y == tile.y) {
