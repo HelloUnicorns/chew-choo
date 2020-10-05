@@ -69,7 +69,7 @@ class GameOverlayScene extends Phaser.Scene {
         }
         this.leaderboard_player_row = this.add.text(
             this.leaderboard_background.x - this.leaderboard_background.width + 20, LEADERBOARD_DEFAULT_PLAYER_ROW_Y, 
-            '', { font: 'bold 24px Arial', fill: '#000000' });
+            '', { font: 'bold 24px Arial', fill: '#00cc00' });
     }
 
     update() {
