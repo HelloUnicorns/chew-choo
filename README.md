@@ -26,8 +26,8 @@ The server was tested on Windows & Linux.
 2. Install node.js (see https://nodejs.org/)
 3. Run the following in a terminal or command prompt:
 
-        git clone https://github.com/HelloUnicorns/LD47.git
-        cd LD47
+        git clone https://github.com/HelloUnicorns/chew-choo.git
+        cd chew-choo
         npm install .
         npm run build
         npm run start
