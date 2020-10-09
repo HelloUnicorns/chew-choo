@@ -44,7 +44,7 @@ function get_start_positions() {
                 11      10      9
             22      21      20      19                
     */
-   let start_positions = [];
+    let start_positions = [];
     start_positions.push({x: constants.START_X, y: constants.START_Y});
     let direction = DIRECTIONS[0];
     let count = 1;
