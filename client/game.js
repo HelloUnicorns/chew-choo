@@ -91,6 +91,8 @@ event_handlers.kill = (event) => {
         return;
     }
 
+    update_routes(event.routes);
+
     for (let route_id of killed) {
         remove_train(route_id);
     }
