@@ -7,7 +7,7 @@ const { exception } = require('console');
 const DIRECTIONS = ['right', 'down', 'left', 'up'];
 const MAX_PLAYERS = 65;
 
-let route_start_positions = get_start_positions();
+const route_start_positions = get_start_positions();
 
 let map = {};
 let x_map = {};
