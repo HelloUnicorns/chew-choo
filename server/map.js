@@ -209,6 +209,16 @@ function union_routes(killer_route_id, killee_route_id) {
     unload_player_from_x_map(killer_route_id);
     unload_player_from_x_map(killee_route_id);
     update_occupied_tiles(map[killer_route_id]);
+
+    let routes = [];
+    for (let route_id of [killer_route_id, killee_route_id]) {
+        routes.push({
+            route_id,
+            tiles: map[route_id].tiles
+        });
+    }
+
+    return routes;
 }
 
 function compute_start_positions() {
@@ -345,8 +355,16 @@ function update_occupied_tiles(route) {
 }
 
 function handle_collision(tiles) {
+    let update = {
+        routes: [],
+        kill: {
+            killee_route_id: undefined,
+            killer_route_id: undefined
+        }
+    };
+
     if (tiles.length < 2) {
-        return;
+        return undefined;
     }
     if (tiles.length > 2) {
         throw new Error('More than 2 trains collided');
@@ -355,7 +373,7 @@ function handle_collision(tiles) {
     let players = tiles.map(tile_to_player);
         
     if (players.some(player => (player.killed || player.invincibility_state != constants.PLAYER_NOT_INVINCIBLE))) {
-        return;
+        return undefined;
     }
     
     let killer_tile = undefined;
@@ -396,27 +414,45 @@ function handle_collision(tiles) {
     let killee_tile = tiles.find(tile => tile != killer_tile);
     let killee_player = tile_to_player(killee_tile);
     let killer_player = tile_to_player(killer_tile);
+
+    let killer_route_id = killer_tile.route_id;
+    let killed_route_id = killee_tile.route_id;
     
     killee_player.killed = true;
-    killee_player.killer = killer_tile.route_id;
 
-    console.log(`Player in route ${killee_tile.route_id} got killed`);    
-    union_routes(killer_tile.route_id, killee_tile.route_id);
+    console.log(`Player in route ${killed_route_id} got killed`);
+    update.routes = union_routes(killer_route_id, killed_route_id);
+
+    update.kill.killer_route_id = killer_route_id;
+    update.kill.killed_route_id = killed_route_id;
 
     killee_player.assignable = false;
     killer_player.assignable = false;
-    
+
+    return update;
 }
 
 function detect_collisions() {
+    let updates = {
+        kill: [],
+        routes: [],
+    };
+
     for (const x in x_map) {
         for (const y in x_map[x]) {
             let tiles = x_map[x][y];
             if (tiles.length > 1) {
-                handle_collision(tiles);
+                let update = handle_collision(tiles);
+                if (!update) {
+                    continue;
+                }
+
+                updates.routes = updates.routes.concat(update.routes);
+                updates.kill.push(update.kill);
             } 
         }
     }
+    return updates;
 }
 
 function update_map() {
