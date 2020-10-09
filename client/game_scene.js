@@ -48,8 +48,8 @@ class GameScene extends Phaser.Scene {
         this.down_key = this.input.keyboard.addKey('down');
     }
 
-    resume_player_train() {
-        send_event({type: 'resume_player'});
+    send_start_playing_event() {
+        send_event({type: 'start_playing'});
     }
 
     client_loaded() {
@@ -59,7 +59,7 @@ class GameScene extends Phaser.Scene {
     
         this.start_music();
         this.draw_map();
-        this.resume_player_train();
+        this.send_start_playing_event();
     }
 
     create() {

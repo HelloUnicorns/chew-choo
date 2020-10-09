@@ -17,8 +17,9 @@ exports.START_X = 0;
 exports.START_Y = 0;
 
 /* Invincibility */
-exports.PLAYER_FULLY_INVISIBLE_TIME = 5; // In seconds
-exports.PLAYER_BLINKING_TIME = 3; // In seconds
+exports.PLAYER_FULLY_INVISIBLE_TIME_MS = 5 * 1000;
+exports.PLAYER_BLINKING_TIME_MS = 3 * 1000;
+exports.START_PLAYING_EVENT_TIMEOUT_MS = 60 * 1000;
 
 exports.PLAYER_NOT_INVINCIBLE = 0;
 exports.PLAYER_BLINKING = 1;

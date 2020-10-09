@@ -20,12 +20,17 @@ const MINIMUM_BLINKING_ALPHA = 0.1;
 const INVINCIBLE_TRAIN_ALPHA = 0.25;
 const NORMAL_TRAIN_ALPHA = 1;
 
+const BLINKING_INTERVAL_MS = 10;
 
 let trains = {}; /* trains by route ids */
 
 function build_train(route_id, server_player) {
     return trains[route_id] = {
         sprites: [],
+        drawn: false,
+        blinking_interval: undefined,
+        alpha: INVINCIBLE_TRAIN_ALPHA,
+        invincibility_state: constants.PLAYER_FULLY_INVISIBLE,
         position_in_route: server_player.position_in_route,
         last_position_update: performance.now(),
         length: server_player.length,
@@ -36,10 +41,30 @@ function build_train(route_id, server_player) {
         server_shadow_train: undefined,
         acceleration: constants.DEFAULT_START_ACCELERATION,
         is_stopped: server_player.is_stopped,
-        invincibility_state: server_player.invincibility_state,
         is_bot: server_player.is_bot,
-        route_id: route_id,
+        route_id,
     };
+}
+
+function start_blinking(train) {
+    if (train.blinking_interval) {
+        return;
+    }
+
+    let start_time = performance.now();
+    train.blinking_interval = setInterval(()=> {
+        let time = performance.now();
+        let delta = (time - start_time) / 1000;
+        train.alpha = ((1 - MINIMUM_BLINKING_ALPHA) / 2) * Math.sin(2 * Math.PI * delta + Math.PI) + (1 + MINIMUM_BLINKING_ALPHA) / 2;
+    }, BLINKING_INTERVAL_MS);
+}
+
+function stop_blinking(train) {
+    if (!train.blinking_interval) {
+        return;
+    }
+    clearInterval(train.blinking_interval);
+    train.alpha = NORMAL_TRAIN_ALPHA;
 }
 
 function get_number_of_trains() {
@@ -56,7 +81,7 @@ function draw_cart_by_index(train, cart_index, is_engine, is_own) {
     rail_tile = rails.tiles[position_in_route];
     angle = get_cart_angle_by_tile(rail_tile);
 
-    cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle, is_engine, is_own, train.is_bot, train.invincibility_state);
+    cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle, is_engine, is_own, train.is_bot, train.alpha);
 
     train.sprites.push(cart_sprite);
 }
@@ -90,6 +115,10 @@ function get_cart_angle_by_tile(rail_tile) {
 }
 
 function draw_train(train, is_own) {
+    if (train.drawn) {
+        return;
+    }
+    train.drawn = true;
     draw_cart_by_index(train, 0, true, is_own);
     for (cart_index = 1; cart_index < train.length; cart_index++) {
         draw_cart_by_index(train, cart_index, false, is_own);
@@ -118,18 +147,15 @@ function draw_all_trains(player_route_id) {
     }
 }
 
-function draw_cart(grid_x, grid_y, angle, is_engine, is_own, is_bot, invincibility_state) {
+function draw_cart(grid_x, grid_y, angle, is_engine, is_own, is_bot, alpha) {
     let sprite = draw_grid_sprite(
         grid_x, grid_y, angle, 
         is_engine ? 'engine' : 'cart', 
         is_engine ? ENGINE_SCALE : CART_SCALE, 
         CART_Z_INEDX, 
         get_cart_color(is_own, is_bot),
-        invincibility_state == constants.PLAYER_NOT_INVINCIBLE ? NORMAL_TRAIN_ALPHA : INVINCIBLE_TRAIN_ALPHA);
+        alpha);
 
-    if (invincibility_state == constants.PLAYER_BLINKING) {
-        sprite.start_blinking(MINIMUM_BLINKING_ALPHA);
-    }
     return sprite;
 }
 
@@ -148,32 +174,20 @@ function update_train_acceleration_fix(train, rails) {
 }
 
 function update_train(train) {
-    if (train.is_stopped) {
-        return;
-    }
     let rails = get_rails_by_id(train.route_id);
     if (!rails) {
+        console.error(`No rails for train in route ${train.route_id}`)
         return;
     }
+
+    /* draw the drain if it isn't already drawn */
+    draw_train(train);
 
     let current_time = window.performance.now();
     if (train.server_shadow_train) {
         update_train_acceleration_fix(train, rails);
     }
     calculate_speed_and_position(train, rails.tiles.length, current_time);
-
-    let train_alpha = undefined;
-    switch (train.invincibility_state) {
-        case constants.PLAYER_NOT_INVINCIBLE:
-            train_alpha = NORMAL_TRAIN_ALPHA;
-            break;
-        case constants.PLAYER_BLINKING:
-            train_alpha = train.sprites[0].alpha;
-            break;
-        case constants.PLAYER_FULLY_INVISIBLE:
-            train_alpha = INVINCIBLE_TRAIN_ALPHA;
-            break;
-    }
 
     let train_tint = get_cart_color(global_data.player.train.route_id == train.route_id, train.is_bot);
 
@@ -192,10 +206,7 @@ function update_train(train) {
         position_x = rail_tile.x * (1 - train.position_fraction) + next_rail_tile.x * train.position_fraction;
         position_y = rail_tile.y * (1 - train.position_fraction) + next_rail_tile.y * train.position_fraction;
         angle = rail_angle * (1 - train.position_fraction) + next_rail_angle * train.position_fraction;
-        update_grid_sprite(train.sprites[cart_index], position_x, position_y, angle, train_tint, train_alpha);
-        if (train.invincibility_state == constants.PLAYER_BLINKING) {
-            train.sprites[cart_index].start_blinking(MINIMUM_BLINKING_ALPHA);
-        }
+        update_grid_sprite(train.sprites[cart_index], position_x, position_y, angle, train_tint, train.alpha);
     }
 }
 
@@ -211,10 +222,7 @@ function update_server_train_state(route_id, server_location) {
     let train = trains[route_id];
 
     if (!train) {
-        /* Train got deleted probably since bot killed regular player */
         train = build_train(route_id, server_location);
-        /* Your own train is never deleted, so it's another player's/bot's train */
-        draw_train(train, false);
     }
 
     let rails = get_rails_by_id(train.route_id);
@@ -229,8 +237,27 @@ function update_server_train_state(route_id, server_location) {
     }
 
     train.is_stopped = server_location.is_stopped;
-    train.invincibility_state = server_location.invincibility_state;
     train.is_bot = server_location.is_bot;
+
+    if (train.invincibility_state != server_location.invincibility_state) {
+        stop_blinking(train);
+        switch (server_location.invincibility_state) {
+            case constants.PLAYER_NOT_INVINCIBLE:
+                train.alpha = NORMAL_TRAIN_ALPHA;
+                break;
+            case constants.PLAYER_BLINKING:
+                start_blinking(train);
+                break;
+            case constants.PLAYER_FULLY_INVISIBLE:
+                train.alpha = INVINCIBLE_TRAIN_ALPHA;
+                break;
+            default:
+                console.error('Server sent bad invincibility state');
+                break;
+        }
+    
+        train.invincibility_state = server_location.invincibility_state;
+    }
         
     if (!train.server_shadow_train && global_data.latency != 0) {
         train.position_fraction = server_shadow_train.position_fraction;
