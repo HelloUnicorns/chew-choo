@@ -94,6 +94,7 @@ function remove_player(route_id) {
 
     console.log(`Player in route ${route_id} removed`);
     if (player.client) {
+        player.client.removed = true;
         player.client = undefined;
     }
     remove_start_playing_timeout(player);
@@ -111,7 +112,6 @@ function register_start_playing_event_timeout(route_id) {
     let client = player.client;
     player.start_playing_event_timeout = setTimeout(() => {
         console.log(`Client ${client.id} did not send start game event - got removed`);
-        client.removed = true;
         remove_player_and_replace_with_bot(route_id);
     }, constants.START_PLAYING_EVENT_TIMEOUT_MS);
 }
@@ -224,6 +224,16 @@ setInterval(() => {
     }
 
     console.log(`Printing kill list`);
+    
+    /* Update kills */
+    wss.clients.forEach((client) => {
+        if (!client.initialized || client.removed) {
+            return;
+        }
+
+        send_event(client, { routes: updates.routes, kills: updates.kill, type: 'kill' });
+    });
+
     updates.kill.forEach(kill => {
         console.log(`killed: ${kill.killed_route_id}, killer: ${kill.killer_route_id}`);
         if (!map.map[kill.killer_route_id].player.is_bot) {
@@ -234,14 +244,6 @@ setInterval(() => {
         /* If the killer is  bot, we just deconstruct the killee's route and spawn new bots */
     });
 
-    /* Update kills */
-    wss.clients.forEach((client) => {
-        if (!client.initialized || client.removed) {
-            return;
-        }
-
-        send_event(client, { routes: updates.routes, kills: updates.kill, type: 'kill' });
-    });
 }, 1000 / 60);
 
 /* Check win condition */
