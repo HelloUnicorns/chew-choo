@@ -235,11 +235,6 @@ setInterval(() => {
         }
 
         send_event(client, { routes: updates.routes, kills: updates.kill, type: 'kill' });
-        
-        if (updates.kill.findIndex((a) => { return a.killed_route_id == client.route_id; }) != -1) {
-            client.removed = true;
-            client.route_id = undefined;
-        }
     });
 }, 1000 / 60);
 
