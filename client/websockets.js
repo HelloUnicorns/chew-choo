@@ -24,6 +24,8 @@ export function send_event(event) {
     ws.send(JSON.stringify(event));
  }
 
+window.onbeforeunload = () => ws.close()
+
 ws.onmessage = (event_obj) => {
     let event = JSON.parse(event_obj.data);
     if (event.type in event_handlers) {
