@@ -2,6 +2,7 @@ const Phaser = require('phaser');
 const global_data = require('./global_data.js');
 const { event_handlers } = require('./websockets.js');
 const constants = require('../common/constants.js');
+const { MenuScene } = require('./menu_scene.js');
 const { GameScene } = require('./game_scene.js');
 const { GameOverlayScene } = require('./game_overlay_scene.js');
 const { GameoverScene } = require('./gameover_scene.js');
@@ -22,7 +23,7 @@ const game = new Phaser.Game({
             gravity: { y: 200 }
         }
     },
-    scene: [ GameScene, GameOverlayScene, GameoverScene, WinScene, ErrorScene ]
+    scene: [ MenuScene,GameScene, GameOverlayScene, GameoverScene, WinScene, ErrorScene ]
 });
 
 function update_routes(routes) {
