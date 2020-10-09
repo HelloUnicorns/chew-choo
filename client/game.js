@@ -54,6 +54,9 @@ event_handlers.position = (event) => {
     if (global_data.game_scene.game_inited != global_data.game_scene.game_inited_target) {
         return;
     }
+    if (global_data.game_scene.stopped) {
+        return;
+    }
 
     update_routes(event.changed_routes);
 
@@ -70,6 +73,9 @@ event_handlers.position = (event) => {
 
 event_handlers.kill = (event) => {
     if (global_data.game_scene.game_inited != global_data.game_scene.game_inited_target) {
+        return;
+    }
+    if (global_data.game_scene.stopped) {
         return;
     }
 

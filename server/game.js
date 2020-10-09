@@ -17,7 +17,8 @@ function makeid(length) {
     return result;
 }
 
-event_handlers = {}
+client_event_handlers = {}
+player_event_handlers = {}
 
 function send_event(client, event) {
     client.send(JSON.stringify(event));
@@ -43,14 +44,13 @@ function remove_blink_start_timeout(player) {
     }
 }
 
-event_handlers.start_playing = (player) => {
+player_event_handlers.start_playing = (player) => {
     player.is_stopped = false;
 
     remove_start_playing_timeout(player);
 
     /* start blinking timeout */
     player.blink_start_timeout = setTimeout(() => {
-        console.log(`player at route ${player.client.route_id} starts blinking`);
         player.blink_start_timeout = undefined;
         player.invincibility_state = constants.PLAYER_BLINKING;
 
@@ -62,13 +62,13 @@ event_handlers.start_playing = (player) => {
     }, constants.PLAYER_FULLY_INVISIBLE_TIME_MS);
 }
 
-event_handlers.speed_change = (player, event) => {
+player_event_handlers.speed_change = (player, event) => {
     map.update_speed_change(player.client.route_id, event.value);
 }
 
-event_handlers.latency_update = (player, event) => {
+client_event_handlers.latency_update = (client, event) => {
     let latency = (performance.now() - event.prev_server_time) / 2;
-    send_event(player.client, { latency, type: 'latency' });
+    send_event(client, { latency, type: 'latency' });
 }
 
 function get_train_info(player) {
@@ -94,8 +94,6 @@ function remove_player(route_id) {
 
     console.log(`Player in route ${route_id} removed`);
     if (player.client) {
-        player.client.removed = true;
-        player.client.route_id = undefined;
         player.client = undefined;
     }
     remove_start_playing_timeout(player);
@@ -112,7 +110,8 @@ function register_start_playing_event_timeout(route_id) {
     let player = map.map[route_id].player;
     let client = player.client;
     player.start_playing_event_timeout = setTimeout(() => {
-        console.log(`Client ${client.id} did not send start game event`);
+        console.log(`Client ${client.id} did not send start game event - got removed`);
+        client.removed = true;
         remove_player_and_replace_with_bot(route_id);
     }, constants.START_PLAYING_EVENT_TIMEOUT_MS);
 }
@@ -168,11 +167,18 @@ wss.on('connection', (client) => {
         const message = JSON.parse(json_data);
 
         if (client.removed) {
-            console.log(`Removed client ${client.id} sent message ${message.type}`)
+            console.warning(`Removed client ${client.id} sent message ${message.type}`)
             return;
         }
-        if (message.type in event_handlers) {
-            event_handlers[message.type](player, message);
+        if (message.type in client_event_handlers) {
+            client_event_handlers[message.type](client, message);
+        }
+        if (message.type in player_event_handlers) {
+            if (player.client != client) {
+                console.warning(`Client ${client.id} sent message ${message.type} but is no longer controlling ${route_id}`);
+                return;
+            }
+            player_event_handlers[message.type](player, message);
         }
     });
 });
