@@ -93,7 +93,7 @@ function remove_player(route_id) {
     }
     let player = map.map[route_id].player;
 
-    console.log(`Client ${route_id} removed`);
+    console.log(`Player in route ${route_id} removed`);
     if (player.client) {
         player.client.removed = true;
         player.client.route_id = undefined;
@@ -102,6 +102,10 @@ function remove_player(route_id) {
     remove_start_playing_timeout(player);
     remove_blink_start_timeout(player);
     remove_invincibility_end_timeout(player);
+}
+
+function remove_player_and_replace_with_bot(route_id) {
+    remove_player(route_id);
     map.replace_player_with_bot(route_id);
 }
 
@@ -109,7 +113,7 @@ function register_start_playing_event_timeout(route_id) {
     let player = map.map[route_id].player;
     player.start_playing_event_timeout = setTimeout(() => {
         console.log(`Client ${player.client.id} did not send start game event`);
-        remove_player(route_id);
+        remove_player_and_replace_with_bot(route_id);
     }, constants.START_PLAYING_EVENT_TIMEOUT_MS);
 }
 
@@ -157,7 +161,7 @@ wss.on('connection', (client) => {
         }
 
         console.log(`Client ${client.id} disconnected`);
-        remove_player(client.route_id);
+        remove_player_and_replace_with_bot(route_id);
     });
 
     client.on('message', (json_data) => {
@@ -218,6 +222,7 @@ setInterval(() => {
         console.log(`killed: ${kill.killed_route_id}, killer: ${kill.killer_route_id}`);
         if (!map.map[kill.killer_route_id].player.is_bot) {
             /* If the killer is a player, the killee's route gets merged into the killer's one */
+            remove_player(kill.killed_route_id);
             delete map.map[kill.killed_route_id];
         }
         /* If the killer is  bot, we just deconstruct the killee's route and spawn new bots */
