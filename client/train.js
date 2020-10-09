@@ -2,7 +2,7 @@ const constants = require('../common/constants.js');
 const global_data = require('./global_data.js')
 const { draw_grid_sprite, update_grid_sprite, GRID_PIECE_WIDTH, CART_Z_INEDX } = require('./grid.js');
 const { calculate_speed_and_position } = require('../common/position.js');
-const { get_rails_by_id } = require('./rails.js');
+const { get_tracks_by_player_id } = require('./routes.js');
 
 const CART_IMAGE_WIDTH = 100;
 const CART_WIDTH = GRID_PIECE_WIDTH;
@@ -17,15 +17,13 @@ const ENEMY_TRAIN_COLOR = 0xff0000;
 const BOT_TRAIN_COLOR = 0xffff00;
 
 const MINIMUM_BLINKING_ALPHA = 0.1;
-const INVINCIBLE_TRAIN_ALPHA = 0.25;
-const NORMAL_TRAIN_ALPHA = 1;
+export const INVINCIBLE_TRAIN_ALPHA = 0.25;
+export const NORMAL_TRAIN_ALPHA = 1;
 
 const BLINKING_INTERVAL_MS = 10;
 
-let trains = {}; /* trains by route ids */
-
-function build_train(route_id, server_player) {
-    return trains[route_id] = {
+export function build_train(route_id, server_player, is_own) {
+    return {
         sprites: [],
         drawn: false,
         blinking_interval: undefined,
@@ -43,10 +41,11 @@ function build_train(route_id, server_player) {
         is_stopped: server_player.is_stopped,
         is_bot: server_player.is_bot,
         route_id,
+        is_own
     };
 }
 
-function start_blinking(train) {
+export function start_blinking(train) {
     if (train.blinking_interval) {
         return;
     }
@@ -59,7 +58,7 @@ function start_blinking(train) {
     }, BLINKING_INTERVAL_MS);
 }
 
-function stop_blinking(train) {
+export function stop_blinking(train) {
     if (!train.blinking_interval) {
         return;
     }
@@ -67,73 +66,53 @@ function stop_blinking(train) {
     train.alpha = NORMAL_TRAIN_ALPHA;
 }
 
-function get_number_of_trains() {
-    return Object.keys(trains).length;
-}
+function draw_cart_by_index(train, tracks, cart_index, is_engine) {
+    let position_in_route = (train.position_in_route - cart_index + tracks.length) % tracks.length;
+    let track = tracks[position_in_route];
+    let angle = directions_to_cart_angle(track.direction_from, track.direction_to);
 
-function get_train_by_id(route_id) {
-    return trains[route_id];
-}
-
-function draw_cart_by_index(train, cart_index, is_engine, is_own) {
-    let rails = get_rails_by_id(train.route_id);
-    position_in_route = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
-    rail_tile = rails.tiles[position_in_route];
-    angle = get_cart_angle_by_tile(rail_tile);
-
-    cart_sprite = draw_cart(rail_tile.x, rail_tile.y, angle, is_engine, is_own, train.is_bot, train.alpha);
+    let cart_sprite = draw_cart(track.x, track.y, angle, is_engine, train.is_own, train.is_bot, train.alpha);
 
     train.sprites.push(cart_sprite);
 }
 
-function get_cart_angle_by_tile(rail_tile) {
-    if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'top') {
+function directions_to_cart_angle(direction_from, direction_to) {
+    if (direction_from == 'bottom' && direction_to == 'top') {
         return 270;
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'left') {
+    } else if (direction_from == 'bottom' && direction_to == 'left') {
         return 225;
-    } else if (rail_tile.direction_from == 'bottom' && rail_tile.direction_to == 'right') {
+    } else if (direction_from == 'bottom' && direction_to == 'right') {
         return 305;
-    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'bottom') {
+    } else if (direction_from == 'top' && direction_to == 'bottom') {
         return 90;
-    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'left') {
+    } else if (direction_from == 'top' && direction_to == 'left') {
         return 135;
-    } else if (rail_tile.direction_from == 'top' && rail_tile.direction_to == 'right') {
+    } else if (direction_from == 'top' && direction_to == 'right') {
         return 45;
-    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'top') {
+    } else if (direction_from == 'left' && direction_to == 'top') {
         return 305;
-    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'bottom') {
+    } else if (direction_from == 'left' && direction_to == 'bottom') {
         return 45;
-    } else if (rail_tile.direction_from == 'left' && rail_tile.direction_to == 'right') {
+    } else if (direction_from == 'left' && direction_to == 'right') {
         return 0;
-    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'left') {
+    } else if (direction_from == 'right' && direction_to == 'left') {
         return 180;
-    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'top') {
+    } else if (direction_from == 'right' && direction_to == 'top') {
         return 225;
-    } else if (rail_tile.direction_from == 'right' && rail_tile.direction_to == 'bottom') {
+    } else if (direction_from == 'right' && direction_to == 'bottom') {
         return 135;
     }
+    throw new Error('Cannot calculate cart angle');
 }
 
-function draw_train(train, is_own) {
+export function draw_train(train, tracks) {
     if (train.drawn) {
         return;
     }
     train.drawn = true;
-    draw_cart_by_index(train, 0, true, is_own);
-    for (cart_index = 1; cart_index < train.length; cart_index++) {
-        draw_cart_by_index(train, cart_index, false, is_own);
-    }
-}
-
-function remove_train(route_id) {
-    let train = get_train_by_id(route_id);
-    if (!train) {
-        return;
-    }
-
-    delete trains[route_id];
-    for (let sprite of train.sprites) {
-        sprite.destroy();
+    draw_cart_by_index(train, tracks, 0, true);
+    for (let cart_index = 1; cart_index < train.length; cart_index++) {
+        draw_cart_by_index(train, tracks, cart_index, false);
     }
 }
 
@@ -141,22 +120,14 @@ function get_cart_color(is_own, is_bot) {
     return is_own ? PLAYER_TRAIN_COLOR: is_bot ? BOT_TRAIN_COLOR : ENEMY_TRAIN_COLOR;
 }
 
-function draw_all_trains(player_route_id) {
-    for (let route_id in trains) {
-        draw_train(trains[route_id], route_id == player_route_id);
-    }
-}
-
 function draw_cart(grid_x, grid_y, angle, is_engine, is_own, is_bot, alpha) {
-    let sprite = draw_grid_sprite(
+    return draw_grid_sprite(
         grid_x, grid_y, angle, 
         is_engine ? 'engine' : 'cart', 
         is_engine ? ENGINE_SCALE : CART_SCALE, 
         CART_Z_INEDX, 
         get_cart_color(is_own, is_bot),
         alpha);
-
-    return sprite;
 }
 
 const t1 = 0.1;
@@ -166,117 +137,40 @@ function my_delta_mod(number, mod) {
     return (((number % mod) + mod + mod/2) % mod) - mod/2;
 }
 
-function update_train_acceleration_fix(train, rails) {
-    x_server = train.server_shadow_train.position_in_route + train.server_shadow_train.position_fraction;
-    x_0 = train.position_in_route + train.position_fraction;
-    delta_x = my_delta_mod(x_server + (train.server_shadow_train.speed * global_data.latency / 1000) - x_0, rails.tiles.length)
+function update_train_acceleration_fix(train, track) {
+    let x_server = train.server_shadow_train.position_in_route + train.server_shadow_train.position_fraction;
+    let x_0 = train.position_in_route + train.position_fraction;
+    let delta_x = my_delta_mod(x_server + (train.server_shadow_train.speed * global_data.latency / 1000) - x_0, track.length)
     train.acceleration = (train.server_shadow_train.speed + delta_x / t1 - train.speed) / t2;
 }
 
-function update_train(train) {
-    let rails = get_rails_by_id(train.route_id);
-    if (!rails) {
-        console.error(`No rails for train in route ${train.route_id}`)
-        return;
-    }
-
+export function update_train(train, tracks) {
     /* draw the drain if it isn't already drawn */
     draw_train(train);
 
     let current_time = window.performance.now();
     if (train.server_shadow_train) {
-        update_train_acceleration_fix(train, rails);
+        update_train_acceleration_fix(train, tracks);
     }
-    calculate_speed_and_position(train, rails.tiles.length, current_time);
+    calculate_speed_and_position(train, tracks.length, current_time);
 
-    let train_tint = get_cart_color(global_data.player.train.route_id == train.route_id, train.is_bot);
+    let train_tint = get_cart_color(train.is_own, train.is_bot);
 
-    for (cart_index = 0; cart_index < train.length; cart_index++) {
-        tile_index = (train.position_in_route - cart_index + rails.tiles.length) % rails.tiles.length;
-        rail_tile = rails.tiles[tile_index];
-        next_rail_tile = rails.tiles[(tile_index + 1) % rails.tiles.length];
-        rail_angle = get_cart_angle_by_tile(rail_tile);
-        next_rail_angle = get_cart_angle_by_tile(next_rail_tile);
-        if (rail_angle == 305 && next_rail_angle == 0) {
-            next_rail_angle = 360;
+    for (let cart_index = 0; cart_index < train.length; cart_index++) {
+        let tile_index = (train.position_in_route - cart_index + tracks.length) % tracks.length;
+        let track = tracks[tile_index];
+        let next_track = tracks[(tile_index + 1) % tracks.length];
+        let track_angle = directions_to_cart_angle(track.direction_from, track.direction_to);
+        let next_track_angle = directions_to_cart_angle(next_track.direction_from, next_track.direction_to);
+        if (track_angle == 305 && next_track_angle == 0) {
+            next_track_angle = 360;
         }
-        else if (rail_angle == 0 && next_rail_angle == 305) {
-            rail_angle = 360;
+        else if (track_angle == 0 && next_track_angle == 305) {
+            track_angle = 360;
         }
-        position_x = rail_tile.x * (1 - train.position_fraction) + next_rail_tile.x * train.position_fraction;
-        position_y = rail_tile.y * (1 - train.position_fraction) + next_rail_tile.y * train.position_fraction;
-        angle = rail_angle * (1 - train.position_fraction) + next_rail_angle * train.position_fraction;
+        let position_x = track.x * (1 - train.position_fraction) + next_track.x * train.position_fraction;
+        let position_y = track.y * (1 - train.position_fraction) + next_track.y * train.position_fraction;
+        let angle = track_angle * (1 - train.position_fraction) + next_track_angle * train.position_fraction;
         update_grid_sprite(train.sprites[cart_index], position_x, position_y, angle, train_tint, train.alpha);
     }
 }
-
-function update_trains() {
-    for (const route_id in trains) {
-        update_train(trains[route_id]);
-    }
-}
-
-
-function update_server_train_state(route_id, server_location) {
-    let cur_time = window.performance.now();
-    let train = trains[route_id];
-
-    if (!train) {
-        train = build_train(route_id, server_location);
-    }
-
-    let rails = get_rails_by_id(train.route_id);
-    let server_shadow_train = {
-        position_fraction: server_location.position_fraction,
-        position_in_route: server_location.position_in_route,
-        speed: server_location.speed,
-        is_speed_up: server_location.is_speed_up,
-        is_speed_down: server_location.is_speed_down,
-        last_position_update: cur_time,
-        server_time: server_location.server_time,
-    }
-
-    train.is_stopped = server_location.is_stopped;
-    train.is_bot = server_location.is_bot;
-
-    if (train.invincibility_state != server_location.invincibility_state) {
-        stop_blinking(train);
-        switch (server_location.invincibility_state) {
-            case constants.PLAYER_NOT_INVINCIBLE:
-                train.alpha = NORMAL_TRAIN_ALPHA;
-                break;
-            case constants.PLAYER_BLINKING:
-                start_blinking(train);
-                break;
-            case constants.PLAYER_FULLY_INVISIBLE:
-                train.alpha = INVINCIBLE_TRAIN_ALPHA;
-                break;
-            default:
-                console.error('Server sent bad invincibility state');
-                break;
-        }
-    
-        train.invincibility_state = server_location.invincibility_state;
-    }
-        
-    if (!train.server_shadow_train && global_data.latency != 0) {
-        train.position_fraction = server_shadow_train.position_fraction;
-        train.position_in_route = server_shadow_train.position_in_route;
-        train.last_position_update = cur_time;
-    }
-
-    /* proceed client-side calculation */
-    calculate_speed_and_position(train, rails.tiles.length, cur_time);
-
-    if (global_data.latency != 0) {
-        train.server_shadow_train = server_shadow_train;
-    }
-}
-
-exports.draw_all_trains = draw_all_trains;
-exports.build_train = build_train;
-exports.update_trains = update_trains;
-exports.get_train_by_id = get_train_by_id;
-exports.update_server_train_state = update_server_train_state;
-exports.remove_train = remove_train;
-exports.get_number_of_trains = get_number_of_trains;

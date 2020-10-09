@@ -328,6 +328,7 @@ function union_routes(killer_route_id, killee_route_id) {
     map[killer_route_id].leftover_tiles = leftover_tiles;
     if (leftover_tiles.length > 0) {
         map[killer_route_id].player.is_in_leftover = true;
+        console.log(`Route ${killer_route_id} in leftover`)
     }
     map[killee_route_id].tiles = [];
 
