@@ -28,7 +28,10 @@ const game = new Phaser.Game({
 function update_routes(routes) {
     for (let route of routes) {
         update_rail(route.route_id, route.tiles, global_data.player.train.route_id);
-        get_train_by_id(route.route_id).position_in_route = 0;
+        let train = get_train_by_id(route.route_id);
+        if (train) {
+            train.position_in_route = 0;
+        }
     }
 }
 
@@ -70,14 +73,14 @@ event_handlers.kill = (event) => {
         return;
     }
 
-    update_routes(event.routes);
-
     let kills = event.kills.map(kill => ({
         killed: Number(kill.killed_route_id),
         killer: Number(kill.killer_route_id)
-    }));
+    })); 
+
     let killed = kills.map(kill => kill.killed);
     if (killed.includes(global_data.player.train.route_id)) {
+        /* The client's player was killed */
         if (global_data.game_scene.bg_music) {
             global_data.game_scene.bg_music.mute = true;
         }
@@ -91,6 +94,8 @@ event_handlers.kill = (event) => {
     for (let route_id of killed) {
         remove_train(route_id);
     }
+
+    update_routes(event.routes);    
 };
 
 event_handlers.win = (event) => {

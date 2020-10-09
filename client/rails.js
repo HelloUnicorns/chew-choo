@@ -59,9 +59,12 @@ function draw_rail(route_id, player_route_id) {
 }
 
 function remove_rail(route_id, delete_route=false) {
-    map[route_id].tiles.forEach((tile) => {
-        tile.sprite.destroy();
-    });
+    if (map[route_id]) {
+        map[route_id].tiles.forEach((tile) => {
+            tile.sprite.destroy();
+        });
+    }
+
     if (delete_route) {
         delete map[route_id];
     }   
@@ -105,7 +108,11 @@ function get_rails_by_id(route_id) {
 
 function update_rail(route_id, tiles, player_route_id) {
     remove_rail(route_id, tiles.length == 0);
+
     if (tiles.length > 0) {
+        if (!map[route_id]) {
+            map[route_id] = {};
+        }
         map[route_id].tiles = tiles;
         draw_rail(route_id, player_route_id);
     }

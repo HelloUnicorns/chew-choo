@@ -178,7 +178,11 @@ setInterval(() => {
     console.log(`Printing kill list`);
     updates.kill.forEach(kill => {
         console.log(`killed: ${kill.killed_route_id}, killer: ${kill.killer_route_id}`);
-        delete map.map[kill.killed_route_id];
+        if (!map.map[kill.killer_route_id].player.is_bot) {
+            /* If the killer is a player, the killee's route gets merged into the killer's one */
+            delete map.map[kill.killed_route_id];
+        }
+        /* If the killer is  bot, we just deconstruct the killee's route and spawn new bots */
     });
 
     /* Update kills */

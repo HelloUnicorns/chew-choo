@@ -34,7 +34,7 @@ function build_train(route_id, server_player) {
         speed: server_player.speed,
         position_fraction: server_player.position_fraction,
         server_shadow_train: undefined,
-        acceleration: server_player.acceleration,
+        acceleration: constants.DEFAULT_START_ACCELERATION,
         is_stopped: server_player.is_stopped,
         invincibility_state: server_player.invincibility_state,
         is_bot: server_player.is_bot,
@@ -209,6 +209,14 @@ function update_trains() {
 function update_server_train_state(route_id, server_location) {
     let cur_time = window.performance.now();
     let train = trains[route_id];
+
+    if (!train) {
+        /* Train got deleted probably since bot killed regular player */
+        train = build_train(route_id, server_location);
+        /* Your own train is never deleted, so it's another player's/bot's train */
+        draw_train(train, false);
+    }
+
     let rails = get_rails_by_id(train.route_id);
     let server_shadow_train = {
         position_fraction: server_location.position_fraction,
