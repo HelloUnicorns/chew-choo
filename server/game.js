@@ -44,7 +44,6 @@ function remove_blink_start_timeout(player) {
 }
 
 event_handlers.start_playing = (player) => {
-    player.start_playing_event_timeout = undefined;
     player.is_stopped = false;
 
     remove_start_playing_timeout(player);
@@ -111,8 +110,9 @@ function remove_player_and_replace_with_bot(route_id) {
 
 function register_start_playing_event_timeout(route_id) {
     let player = map.map[route_id].player;
+    let client = player.client;
     player.start_playing_event_timeout = setTimeout(() => {
-        console.log(`Client ${player.client.id} did not send start game event`);
+        console.log(`Client ${client.id} did not send start game event`);
         remove_player_and_replace_with_bot(route_id);
     }, constants.START_PLAYING_EVENT_TIMEOUT_MS);
 }
