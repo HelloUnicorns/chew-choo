@@ -4,12 +4,10 @@ const constants = require('../common/constants.js');
 const e = require('express');
 const { exception } = require('console');
 
-let route_start_positions = [
-
-];
-
-let directions = ['right', 'down', 'left', 'up']
+const DIRECTIONS = ['right', 'down', 'left', 'up'];
 const MAX_PLAYERS = 65;
+
+let route_start_positions = get_start_positions();
 
 let map = {};
 let x_map = {};
@@ -36,7 +34,7 @@ const NEW_PLAYER = {
     acceleration: constants.DEFAULT_START_ACCELERATION /* Isn't passed to the client, but required for calculate_speed_and_position */
 };
 
-function compute_start_positions() {
+function get_start_positions() {
     /*  
             25      14      15      16
                 13      6       7
@@ -46,12 +44,13 @@ function compute_start_positions() {
                 11      10      9
             22      21      20      19                
     */
-    route_start_positions.push({x: constants.START_X, y: constants.START_Y});
-    let direction = directions[0];
+   let start_positions = [];
+    start_positions.push({x: constants.START_X, y: constants.START_Y});
+    let direction = DIRECTIONS[0];
     let count = 1;
     let current_count = 1;
     for (let i = 1; i < MAX_PLAYERS; i++) {
-        last = route_start_positions[i - 1];
+        last = start_positions[i - 1];
         switch (direction) {
             case 'right':
                 if (current_count == count) {
@@ -75,19 +74,20 @@ function compute_start_positions() {
                 y = last.y - (constants.TRACK_HEIGHT * 2 / 3)  * 2;
                 break;
         }
-        route_start_positions.push({
+        start_positions.push({
             x,
             y
         });
         current_count -= 1;
         if (current_count == 0) {
-            direction = directions[(directions.indexOf(direction) + 1) % (directions.length)];
+            direction = DIRECTIONS[(DIRECTIONS.indexOf(direction) + 1) % (DIRECTIONS.length)];
             if (direction == 'right') {
                 count += 1;
             }
             current_count = count;
         }
     }
+    return start_positions;
 }
 
 function build_rectangular_route(grid_x, grid_y, width, height, route_id) {
@@ -120,10 +120,6 @@ function build_rectangular_route(grid_x, grid_y, width, height, route_id) {
 }
 
 function init_route(route_id) {
-    if (route_start_positions.length == 0) {
-        compute_start_positions();
-    }
-
     let start_position = route_start_positions[route_id];
     map[route_id] = {
         tiles: build_rectangular_route(start_position.x, start_position.y, constants.TRACK_WIDTH, constants.TRACK_HEIGHT, route_id),
