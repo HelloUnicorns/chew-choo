@@ -1,8 +1,11 @@
 const global_data = require('./global_data.js');
-const { GameSocket } = require('./game_socket.js');
+const _ = require('lodash');
 const constants = require('../common/constants.js');
+const { Track } = require('./track.js');
+const { Train } = require('./train.js');
+const { Route } = require('./routes.js');
+const { GameSocket } = require('./game_socket.js');
 const { GRID_PIECE_WIDTH } = require('./grid.js');
-const { draw_all_routes, update_all_routes, update_server_route, get_route_by_player_id, update_tracks_from_server, update_server_train_state } = require('./routes.js');
 
 const VERTICAL_GRID_TILES_PER_PLAYER_TRAIN_TILES = 2;
 
@@ -17,6 +20,7 @@ export class GameScene extends Phaser.Scene {
         this.game_socket = undefined;
         this.last_server_time = undefined;
         this.player_route = undefined;
+        this.routes = {};
     }
 
     preload() {
@@ -39,7 +43,7 @@ export class GameScene extends Phaser.Scene {
     draw_map() {
         this.cameras.main.setBackgroundColor(0xf7f1da);
 
-        draw_all_routes();
+        _.values(this.routes).forEach(route => route.draw());
         this.cameras.main.startFollow(this.player_route.train.sprites[0], true);
         this.up_key = this.input.keyboard.addKey('up');
         this.down_key = this.input.keyboard.addKey('down');
@@ -98,16 +102,16 @@ export class GameScene extends Phaser.Scene {
             return;
         }
         this.update_player();
-        update_all_routes();
+        _.values(this.routes).forEach(route => route.update());
         this.update_camera();
     }
 
     handle_connection_event(event) {
         global_data.player_route_id = event.route_id;
         for (const [route_id, route] of Object.entries(event.map)) {
-            update_server_route(Number(route_id), route, route_id == event.route_id);
+            this.update_server_route(Number(route_id), route, route_id == event.route_id);
         }
-        this.player_route = get_route_by_player_id(global_data.player_route_id);
+        this.player_route = this.routes[event.route_id];
         this.client_loaded();
     };
     
@@ -116,7 +120,7 @@ export class GameScene extends Phaser.Scene {
             return;
         }
         event.changed_routes.forEach(route => {
-            update_tracks_from_server(route.route_id, route.tiles);
+            this.update_tracks_from_server(route.route_id, route.tiles);
         });
     
         if (event.server_time < this.last_server_time) {
@@ -126,11 +130,8 @@ export class GameScene extends Phaser.Scene {
         }
         this.last_server_time = event.server_time;
         for (let route_id in event.locations) {
-            let route = get_route_by_player_id(route_id);
-            if (!route || !route.train) {
-                debugger;
-            }
-            update_server_train_state(route.train, event.locations[route_id]);
+            let route = this.routes[route_id];
+            route.train.update_server_train_state(event.locations[route_id]);
         }
     };
     
@@ -149,7 +150,6 @@ export class GameScene extends Phaser.Scene {
             if (this.bg_music) {
                 this.bg_music.mute = true;
             }
-            console.log('we are dead')
             this.stopped = true;
             global_data.game.scene.start('GameoverScene');
             global_data.game.scene.stop('GameOverlayScene');
@@ -157,13 +157,13 @@ export class GameScene extends Phaser.Scene {
         }
     
         for (let route_id of killed) {
-            let route = get_route_by_player_id(route_id);
+            let route = this.routes[route_id];
             if (!route.is_own) {
                 route.remove_train();
             }
         }
         event.routes.forEach(route => {
-            update_tracks_from_server(route.route_id, route.tiles);
+            this.update_tracks_from_server(route.route_id, route.tiles);
         });
     };
     
@@ -185,4 +185,31 @@ export class GameScene extends Phaser.Scene {
         global_data.game.scene.stop('GameScene');
     };
     
+    update_tracks_from_server(player_id, server_tracks) {
+        if (server_tracks.length == 0) {
+            if (player_id in this.routes) {
+                this.routes[player_id].remove();
+                delete this.routes[player_id];
+            }
+            return;
+        }
+        if (!(player_id in this.routes)) {
+            this.routes[player_id] = new Route(player_id, undefined, false); /* server will not re-build own tracks */
+        }
+        let route = this.routes[player_id];
+        route.remove_tracks();
+        route.tracks = server_tracks.map(server_track => Track.from_server_track(server_track, route.is_own));
+        route.draw_tracks();
+    }
+    
+    update_server_route(player_id, server_route, is_own) {
+        if (!(player_id in this.routes)) {
+            let train = new Train(server_route.player, is_own);
+            this.routes[player_id] = new Route(player_id, train, is_own);
+            train.set_route(this.routes[player_id]);
+        }
+        let route = this.routes[player_id];
+        this.update_tracks_from_server(player_id, server_route.tiles);
+        route.train.update_server_train_state(server_route.player);
+    }    
 }
