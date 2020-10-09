@@ -70,8 +70,6 @@ event_handlers.kill = (event) => {
         return;
     }
 
-    update_routes(event.routes);
-
     let kills = event.kills.map(kill => ({
         killed: Number(kill.killed_route_id),
         killer: Number(kill.killer_route_id)
@@ -87,6 +85,8 @@ event_handlers.kill = (event) => {
         game.scene.stop('GameOverlayScene');
         return;
     }
+
+    update_routes(event.routes);
 
     for (let route_id of killed) {
         remove_train(route_id);
