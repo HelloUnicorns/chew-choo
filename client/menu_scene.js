@@ -16,29 +16,37 @@ class MenuScene extends Phaser.Scene {
 
     }
 
-    startGame(){
+    startGame() {
         this.scene.start('GameScene');
         this.scene.start('GameOverlayScene');
         this.scene.stop('MenuScene');
         this.menu_music.stop();
     }
-    
+
 
     create() {
 
-        this.menu_music = this.sound.add('menu_music', { loop: true });
+        this.menu_music = this.sound.add('menu_music', {
+            loop: true
+        });
+
         this.menu_music.play();
 
-        this.background = this.add.image(constants.CANVAS_WIDTH/2, constants.CANVAS_HEIGHT/1.5, "pic");
-        this.logo = this.add.sprite(constants.CANVAS_WIDTH/4, constants.CANVAS_HEIGHT/8, "logo");
+        this.background = this.add.image(constants.CANVAS_WIDTH / 1.8, constants.CANVAS_HEIGHT / 1.5, "pic");
+        this.logo = this.add.sprite(constants.CANVAS_WIDTH / 4, constants.CANVAS_HEIGHT / 8, "logo");
 
-        this.start = this.add.text(constants.CANVAS_WIDTH/2.25, constants.CANVAS_HEIGHT/2, 'START', { font: '60px Arial', fill: out_color });
+        this.start = this.add.text(constants.CANVAS_WIDTH / 2.25, constants.CANVAS_HEIGHT / 1.5, 'START', {
+            font: '60px Inconsolata, monospace',
+            color: out_color,
+            stroke: '#000000',
+            strokeThickness: 6
+        });
 
         this.startGame = this.startGame.bind(this)
         this.start.setInteractive()
-        .on('pointerover',() => this.start.setFill(over_color))
-        .on('pointerout',() => this.start.setFill(out_color))
-        .on('pointerdown', this.startGame)
+            .on('pointerover', () => this.start.setFill(over_color))
+            .on('pointerout', () => this.start.setFill(out_color))
+            .on('pointerdown', this.startGame)
 
 
         var tween = this.tweens.add({
@@ -53,11 +61,11 @@ class MenuScene extends Phaser.Scene {
         let scaleY = constants.CANVAS_WIDTH / this.background.height
         let scale = Math.max(scaleX, scaleY)
         this.background.setScale(scale).setScrollFactor(0)
-        
+
         this.logo.setOrigin(0, 0);
 
     }
-    
+
     update() {
         // if (this.background.fillAlpha < 0.7) {
         //     this.background.fillAlpha += Math.min(0.1, 0.7 - this.background.fillAlpha);

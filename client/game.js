@@ -45,7 +45,7 @@ event_handlers.connection = (event) => {
     }
     global_data.player.train = get_train_by_id(event.route_id);
     global_data.game_scene.game_inited += 1;
-    
+
     global_data.game_scene.client_loaded();
 };
 
@@ -73,6 +73,10 @@ event_handlers.position = (event) => {
 };
 
 event_handlers.kill = (event) => {
+
+    let crash = global_data.game_scene.sound.add("crash")
+    let up = global_data.game_scene.sound.add("up")
+
     if (global_data.game_scene.game_inited != global_data.game_scene.game_inited_target) {
         return;
     }
@@ -93,6 +97,7 @@ event_handlers.kill = (event) => {
         }
         
         global_data.game_scene.stopped = true;
+        crash.play()
         game.scene.start('GameoverScene');
         game.scene.stop('GameOverlayScene');
         return;
@@ -101,6 +106,8 @@ event_handlers.kill = (event) => {
     for (let route_id of killed) {
         remove_train(route_id);
     }
+
+    up.play()
 
     update_routes(event.routes);    
 };
