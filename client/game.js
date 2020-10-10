@@ -1,18 +1,15 @@
 const Phaser = require('phaser');
-const global_data = require('./global_data.js');
-const { event_handlers } = require('./websockets.js');
 const constants = require('../common/constants.js');
+const global_data = require('./global_data.js');
 const { MenuScene } = require('./menu_scene.js');
 const { GameScene } = require('./game_scene.js');
 const { GameOverlayScene } = require('./game_overlay_scene.js');
 const { GameoverScene } = require('./gameover_scene.js');
 const { WinScene } = require('./win_scene.js');
-const { set_rails, update_rail } = require('./rails.js');
-const { build_train, get_train_by_id, update_server_train_state, remove_train } = require('./train.js');
 const { ErrorScene } = require('./error_scene.js');
 
 
-const game = new Phaser.Game({
+global_data.game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game-container',
     width: constants.CANVAS_WIDTH,
@@ -25,107 +22,3 @@ const game = new Phaser.Game({
     },
     scene: [ MenuScene,GameScene, GameOverlayScene, GameoverScene, WinScene, ErrorScene ]
 });
-
-function update_routes(routes) {
-    for (let route of routes) {
-        update_rail(route.route_id, route.tiles, global_data.player.train.route_id);
-        let train = get_train_by_id(route.route_id);
-        if (train) {
-            train.position_in_route = 0;
-        }
-    }
-}
-
-event_handlers.connection = (event) => {
-    set_rails(event.map);
-    for (const route_id in event.map) {
-        if ((!event.map[route_id].player.killed)) {
-            update_server_train_state(Number(route_id), event.map[route_id].player);
-        }
-    }
-    global_data.player.train = get_train_by_id(event.route_id);
-    global_data.game_scene.game_inited += 1;
-
-    global_data.game_scene.client_loaded();
-};
-
-let last_server_time = 0;
-
-event_handlers.position = (event) => {
-    if (global_data.game_scene.game_inited != global_data.game_scene.game_inited_target) {
-        return;
-    }
-    if (global_data.game_scene.stopped) {
-        return;
-    }
-
-    update_routes(event.changed_routes);
-
-    if (event.server_time < last_server_time) {
-        /* a newer update has already arrived */
-        console.log('got an out-of-order positions update')
-        return;
-    }
-    last_server_time = event.server_time;
-    for (let route_id in event.locations) {
-        update_server_train_state(route_id, event.locations[route_id]);
-    }
-};
-
-event_handlers.kill = (event) => {
-
-    let crash = global_data.game_scene.sound.add("crash")
-    let up = global_data.game_scene.sound.add("up")
-
-    if (global_data.game_scene.game_inited != global_data.game_scene.game_inited_target) {
-        return;
-    }
-    if (global_data.game_scene.stopped) {
-        return;
-    }
-
-    let kills = event.kills.map(kill => ({
-        killed: Number(kill.killed_route_id),
-        killer: Number(kill.killer_route_id)
-    })); 
-
-    let killed = kills.map(kill => kill.killed);
-    if (killed.includes(global_data.player.train.route_id)) {
-        /* The client's player was killed */
-        if (global_data.game_scene.bg_music) {
-            global_data.game_scene.bg_music.mute = true;
-        }
-        
-        global_data.game_scene.stopped = true;
-        crash.play()
-        game.scene.start('GameoverScene');
-        game.scene.stop('GameOverlayScene');
-        return;
-    }
-
-    for (let route_id of killed) {
-        remove_train(route_id);
-    }
-
-    up.play()
-
-    update_routes(event.routes);    
-};
-
-event_handlers.win = (event) => {
-    if (global_data.game_scene.game_inited != global_data.game_scene.game_inited_target) {
-        return;
-    }
-
-    if (global_data.game_scene.bg_music) {
-        global_data.game_scene.bg_music.mute = true;
-    }
-    game.scene.start('WinScene');
-    game.scene.stop('GameOverlayScene');
-};
-
-event_handlers.error = (event) => {
-    game.scene.start('ErrorScene', event.message);
-    game.scene.stop('GameOverlayScene');
-    game.scene.stop('GameScene');
-};
