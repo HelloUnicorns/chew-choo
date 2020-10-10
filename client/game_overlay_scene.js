@@ -80,7 +80,7 @@ class GameOverlayScene extends Phaser.Scene {
             return;
         }
 
-        this.speed_meter.setText(`${global_data.game_scene.player_route.train.speed.toFixed(2)} tps`);
+        this.speed_meter.setText(`${global_data.game_scene.player_route.train.speed.toFixed(0)} tps`);
         let angle = SPEED_METER_ARROW_MIN_ANGLE + (SPEED_METER_ARROW_MAX_ANGLE - SPEED_METER_ARROW_MIN_ANGLE) * (global_data.game_scene.player_route.train - constants.MIN_SPEED) / (constants.MAX_SPEED - constants.MIN_SPEED);
         this.speed_meter_arrow.setAngle(angle);
         

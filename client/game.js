@@ -7,6 +7,8 @@ const { GameOverlayScene } = require('./game_overlay_scene.js');
 const { GameoverScene } = require('./gameover_scene.js');
 const { WinScene } = require('./win_scene.js');
 const { ErrorScene } = require('./error_scene.js');
+const { GuideScene } = require('./guide_scene.js');
+
 
 
 global_data.game = new Phaser.Game({
@@ -20,5 +22,5 @@ global_data.game = new Phaser.Game({
             gravity: { y: 200 }
         }
     },
-    scene: [ MenuScene,GameScene, GameOverlayScene, GameoverScene, WinScene, ErrorScene ]
+    scene: [ MenuScene,GuideScene,GameScene, GameOverlayScene, GameoverScene, WinScene, ErrorScene ]
 });

@@ -24,3 +24,13 @@ exports.START_PLAYING_EVENT_TIMEOUT_MS = 60 * 1000;
 exports.PLAYER_NOT_INVINCIBLE = 0;
 exports.PLAYER_BLINKING = 1;
 exports.PLAYER_FULLY_INVISIBLE = 2;
+
+exports.HOW_TO=`Chew Choo! is a multiplayer/singleplayer web-game where the player controls a train on a cyclic route.  
+The routes of trains of different players cross each other,  
+and the goal of the game is to be the last one standing by running over other trains.  
+The player's route will expand and merge with the routes of the trains it runs over.
+
+CONTROLS:
+Press up arrow key to speed up.  
+Press down arrow key to slow down.  
+Press m to toggle music.`
