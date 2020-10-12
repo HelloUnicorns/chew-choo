@@ -217,7 +217,6 @@ export class GameScene extends Phaser.Scene {
         if (!(player_id in this.routes)) {
             let train = new Train(server_route.player, is_own);
             this.routes[player_id] = new Route(player_id, train, is_own);
-            train.set_route(this.routes[player_id]);
         }
         let route = this.routes[player_id];
         this.update_tracks_from_server(player_id, server_route.tiles);
