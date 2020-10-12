@@ -1,7 +1,7 @@
 const { get_active_clients } = require('./server.js');
 const constants = require('../common/constants.js');
 
-const { handover_route } = require('./map.js');
+const { handover_route, start_playing, update_speed_change } = require('./map.js');
 
 /* Player handlers */
 class Player {
@@ -31,11 +31,11 @@ class Player {
     /* Events */
     start_playing() {
         this.remove_start_playing_timeout();
-        map.start_playing(this.route_id);
+        start_playing(this.route_id);
     }
 
     update_speed_change(event) {
-        map.update_speed_change(this.route_id, event.value);
+        update_speed_change(this.route_id, event.value);
     }
 }
 

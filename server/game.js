@@ -64,6 +64,12 @@ wss.on('connection', (client) => {
     client.on('message', (json_data) => {
         const message = JSON.parse(json_data);
 
+        /* TODO: Delete after we change it in the client */
+        if (message.type == "resume_player") {
+            /* Change old name to new name */
+            message.type = "start_playing";
+        }
+
         if (client.removed) {
             console.warn(`Removed client ${client.id} sent message ${message.type}`)
             return;
@@ -71,7 +77,7 @@ wss.on('connection', (client) => {
         if (message.type in client_event_handlers) {
             client_event_handlers[message.type](client, message);
         }
-        if (message.type in player) {
+        else if (message.type in player) {
             if (player.client != client) {
                 console.warning(`Client ${client.id} sent message ${message.type} but is no longer controlling ${route_id}`);
                 return;

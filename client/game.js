@@ -39,7 +39,7 @@ event_handlers.connection = (event) => {
     set_rails(event.map);
     for (const route_id in event.map) {
         if ((!event.map[route_id].player.killed)) {
-            build_train(Number(route_id), event.map[route_id].player);
+            build_train(route_id, event.map[route_id].player);
         }
     }
     global_data.player.train = get_train_by_id(event.route_id);
@@ -74,8 +74,8 @@ event_handlers.kill = (event) => {
     }
 
     let kills = event.kills.map(kill => ({
-        killed: Number(kill.killed_route_id),
-        killer: Number(kill.killer_route_id)
+        killed: kill.killed_route_id,
+        killer: kill.killer_route_id
     })); 
 
     let killed = kills.map(kill => kill.killed);

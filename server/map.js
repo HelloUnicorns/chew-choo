@@ -278,7 +278,8 @@ function get_state_update() {
                     invincibility_state: route.train.invincibility_state,
                     is_speed_up: route.train.is_speed_up,
                     is_speed_down: route.train.is_speed_down,
-                    is_bot: route.train.is_bot
+                    is_bot: route.train.is_bot,
+                    killed: !route.train.active,
                 },
                 tracks: route.rail.tracks
             }
