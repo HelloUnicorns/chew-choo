@@ -65,11 +65,13 @@ export class GameScene extends Phaser.Scene {
 
     create() {
         this.game_socket = new GameSocket();
+
         this.game_socket.register_event_handler('position', event => this.handle_position_event(event));
         this.game_socket.register_event_handler('win', event => this.handle_win_event(event));
         this.game_socket.register_event_handler('kill', event => this.handle_kill_event(event));
         this.game_socket.register_event_handler('error', event => this.handle_error_event(event));
         this.game_socket.register_event_handler('connection', event => this.handle_connection_event(event));
+
         this.start_music();
         this.crash = this.sound.add("crash")
         this.up = this.sound.add("up")
@@ -143,6 +145,7 @@ export class GameScene extends Phaser.Scene {
             route.train.update_server_train_state(event.locations[route_id]);
         }
         for (const route_id of routes_to_delete) {
+            console.log(`Remove route in ${route_id}`);
             this.remove_route(route_id);
         }
     };
