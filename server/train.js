@@ -57,7 +57,7 @@ class Train {
         this.#make_vincible();
     }
 
-    collisionable() {
+    get collidable() {
         return this.active && this.invincibility_state == constants.TRAIN_NOT_INVINCIBLE;
     }
 
