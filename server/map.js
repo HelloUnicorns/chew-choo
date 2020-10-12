@@ -60,6 +60,7 @@ function allocate_route() {
         route = handover_route(_r.id);
         route.allocatable = false;
         route.train.is_stopped = true;
+        route.reported = false;
         route.train.allocate();
 
         break;
@@ -245,19 +246,6 @@ function update() {
         collision_updates.push(abandon_route(route));        
     }
 
-    /* TODO: DELETE THIS
-        DEBUG - CHECK ALL BOTS ARE IN SYNC */
-    for (const route of Object.values(map)) {
-        if (route.train.active && !route.train.is_stopped && route.train.is_bot) {
-            let current_pos = route.train.position_in_route + route.train.position_fraction;
-            let bot_pos = Object.values(bot_position()).reduce((a, b) => a + b , 0);
-            let delta = Math.abs(current_pos - bot_pos);
-            if (delta != 0) {
-                throw new Excpetion(`Bot ${route.id} in rail ${route.rail.id} drifted off`);
-            }
-        }
-    }
-
     let route_ids = Object.keys(map);
 
     for (const route_id of route_ids) {
@@ -293,8 +281,34 @@ function update() {
         }
     }
 
+    let new_routes = [];
+    for (const route of Object.values(map)) {
+        if(!route.train.active) {
+            continue;
+        }
+
+        if (route.train.active && !route.train.is_stopped && route.train.is_bot) {
+            /* TODO: DELETE THIS LATER AFTER WE SOLVE THE BUG
+                DEBUG - CHECK ALL BOTS ARE IN SYNC */
+            let current_pos = route.train.position_in_route + route.train.position_fraction;
+            let bot_pos = Object.values(bot_position()).reduce((a, b) => a + b , 0);
+            let delta = Math.abs(current_pos - bot_pos);
+            if (delta != 0) {
+                throw new Exception(`Bot ${route.id} in rail ${route.rail.id} drifted off`);
+            }
+        }
+
+        if (!route.reported) {
+            new_routes.push({
+                route_id: route.id,
+                tiles: route.rail.tracks
+            });
+            route.reported = true;
+        }
+    }
+
     return {
-        removed_leftover: routes_removed_leftover, 
+        changed_routes: routes_removed_leftover.concat(new_routes), 
         collision_updates: collision_updates.reduce(
             (updates, _update) => {
                 updates.kills.push(_update.kill);

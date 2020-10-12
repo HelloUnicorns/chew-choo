@@ -92,11 +92,11 @@ setInterval(() => {
 
 /* Position and kill */
 setInterval(() => {
-    let {removed_leftover, collision_updates} = map.update();
+    let {changed_routes, collision_updates} = map.update();
     let state = map.get_state_update();
     let trains = Object.entries(state).reduce((result, [route_id, route]) => (result[route_id] = route.train, result), {});
 
-    broadcast_event({ locations: trains, changed_routes: removed_leftover, type: 'position' });
+    broadcast_event({ locations: trains, changed_routes, type: 'position' });
 
     if (collision_updates.kills.length == 0) {
         return;

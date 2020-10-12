@@ -71,7 +71,7 @@ class Train {
                 /* Train has just left the leftover */
                 set_train_position(this, this.position_in_route - rail.leftover_length(), rail.length());
                 rail.clear_leftover();
-                train.is_in_leftover = false;
+                this.is_in_leftover = false;
                 return true;
             }
         }
