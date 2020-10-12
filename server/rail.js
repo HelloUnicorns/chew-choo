@@ -190,6 +190,7 @@ class Rail {
         this.dead_crossings.push(...merged_rail.dead_crossings);
 
         /* We then update the new crossings of the merger rail */
+        flatten(update.crossings).forEach(crossing => crossing.rail_id = this.id);
         this.crossings = update.crossings;
 
         /* OPTIONAL: check all of the non dead crossings are now owned by the merger */
@@ -201,6 +202,7 @@ class Rail {
 
         /* Update merged rail ids */
         this.merged_rail_ids.push(merged_rail.id, ...merged_rail.merged_rail_ids);
+        assert([...new Set(this.merged_rail_ids)].length === this.merged_rail_ids.length);
 
         console.log(`Rail ${merged_rail.id} got merged with ${this.id}`);
         merged_rail.empty();
@@ -215,6 +217,8 @@ class Rail {
     separate() {
         /* Achieve list of rails to re-initialize */
         let new_rails = this.merged_rail_ids;
+        assert([...new Set(new_rails)].length === new_rails.length);
+
         new_rails.push(this.id);
 
         /* Get all crossings */

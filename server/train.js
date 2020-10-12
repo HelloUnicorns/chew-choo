@@ -9,7 +9,7 @@ class Train {
         this.id = id;
         this.position_in_route = 0;
         this.position_fraction = 0;
-        this.last_position_update = performance.now();
+        this.last_position_update = Train.time;
         this.is_in_leftover = false;
         this.length = 3;
         this.speed = constants.MIN_SPEED; /* in tiles per second */
@@ -84,15 +84,15 @@ class Train {
     }
 
     static bot_position(all_trains) {
-        for (const train in all_trains) {
-            if (train.is_bot && train.is_active) {
-                return {
-                    position_in_route: train.position_in_route,
-                    position_fraction: train.position_fraction
-                };
-            }
-            return 0;
+        let bot = all_trains.find((train) => train.is_bot && train.active);
+        if (bot) {
+            return {
+                position_in_route: bot.position_in_route,
+                position_fraction: bot.position_fraction
+            };
         }
+
+        return {position_fraction: 0, position_fraction: 0};
     }
 }
 

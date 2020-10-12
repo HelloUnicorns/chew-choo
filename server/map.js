@@ -1,5 +1,3 @@
-const { performance } = require('perf_hooks');
-
 const constants = require('../common/constants.js');
 const {get_rails, init_rails} = require('./rail.js');
 const { exception, assert } = require('console');
@@ -99,7 +97,7 @@ function abandon_route(route) {
     };
 
 
-    let {position_in_route, position_fraction} = Train.bot_position(Object.values(map).map((route) => route.train));
+    let {position_in_route, position_fraction} = bot_position();
 
     let rail_ids = route.rail.separate();
     for (const rail_id of rail_ids) {
@@ -123,8 +121,13 @@ function start_playing(route_id) {
     map[route_id].train.is_stopped = false;
 }
 
+function bot_position() {
+    return Train.bot_position(Object.values(map).map((route) => route.train));
+}
+
 function init() {
     init_rails();
+    Train.update_time();
     for (let i = 0; i < constants.NUMBER_OF_ROUTES; ++i) {
         init_route(i);
     }
@@ -245,7 +248,20 @@ function update() {
 
     /* Handle abandoned routes first */
     for (const route of Object.values(map).filter(route => route.train.abandoned)) {
-        collision_updates.push(abandon_route(route));
+        collision_updates.push(abandon_route(route));        
+    }
+
+    /* TODO: DELETE THIS
+        DEBUG - CHECK ALL BOTS ARE IN SYNC */
+    for (const route of Object.values(map)) {
+        if (route.train.active && !route.train.is_stopped && route.train.is_bot) {
+            let current_pos = route.train.position_in_route + route.train.position_fraction;
+            let bot_pos = Object.values(bot_position()).reduce((a, b) => a + b , 0);
+            let delta = Math.abs(current_pos - bot_pos);
+            if (delta != 0) {
+                throw new Excpetion(`Bot ${route.id} in rail ${route.rail.id} drifted off`);
+            }
+        }
     }
 
     let route_ids = Object.keys(map);
