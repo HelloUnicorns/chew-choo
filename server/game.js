@@ -58,14 +58,14 @@ wss.on('connection', (client) => {
         }
 
         console.log(`Client ${client.id} disconnected`);
-        map.handover_route(route_id);
+        map.abandon_route(route_id);
     });
 
     client.on('message', (json_data) => {
         const message = JSON.parse(json_data);
 
         if (client.removed) {
-            console.warn(`Removed client ${client.id} sent message ${message.type}`)
+            // console.warn(`Removed client ${client.id} sent message ${message.type}`)
             return;
         }
         if (message.type in client_event_handlers) {

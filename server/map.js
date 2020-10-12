@@ -56,15 +56,8 @@ function handover_route(route_id) {
     new_route.train.position_in_route = old_train_position_in_route;
     new_route.train.position_fraction = old_train_position_fraction;
 
-    return new_route;
-}
+    console.log(`Rail ${new_route.rail.id} is now owned by route ${new_route.id}`);
 
-/* A human player was killed and all the routes it killed now come back to life */
-function revive_route(route) {
-    let new_route = handover_route(route.id);
-    let {position_in_route, position_fraction} = Train.bot_position(Object.values(map).map((route) => route.train));
-    new_route.position_in_route = position_in_route;
-    new_route.position_fraction = position_fraction;
     return new_route;
 }
 
@@ -92,6 +85,36 @@ function disable_route(route) {
     route.train.free();
     route.train.active = false;
     route.allocatable = false;
+}
+
+/* A human player was killed or left the game */
+function abandon_route(route) {
+    let _update = {
+        routes: [],
+        kill: {
+            killed_route_id: route.id,
+            killer_route_id: undefined
+        }
+    };
+
+
+    let {position_in_route, position_fraction} = Train.bot_position(Object.values(map).map((route) => route.train));
+
+    let rail_ids = route.rail.separate();
+    for (const rail_id of rail_ids) {
+        let new_route = handover_route(rail_id_to_route[rail_id].id);
+        new_route.position_in_route = position_in_route;
+        new_route.position_fraction = position_fraction;
+        _update.routes.push({route_id: new_route.id, tiles: new_route.rail.tracks});
+    }
+
+    return _update;
+}
+
+function register_abandon_route(route_id) {
+    if (map[route_id]) {
+        map[route_id].train.abandoned = true;
+    }
 }
 
 function start_playing(route_id) {
@@ -161,7 +184,7 @@ function handle_collision(routes, coordinates) {
 
     if (routes.every(route => route.train.is_bot)) {
         /* Should not happen */
-        console.log(`WARN: bot ${routes[0].id} and bot ${routes[1].id} collided`);
+        // console.log(`WARN: bot ${routes[0].id} and bot ${routes[1].id} collided`);
         return undefined;
     }
 
@@ -183,16 +206,12 @@ function handle_collision(routes, coordinates) {
         killee = routes[0]
     }
 
-    _update.kill.killer_route_id = killer.id;
-    _update.kill.killed_route_id = killee.id;
+    let killer_id = killer.id;
+    let killee_id = killee.id;
 
     if (killer.train.is_bot) {
         console.log(`Train in rail ${killee.rail.id} got killed by a bot`);
-        let new_rails = killer.rail.separate();
-        for (const rail_id of new_rails) {
-            revive_route(rail_id_to_route[rail_id]);
-            _update.routes.push({route_id: rail_id_to_route[rail_id].id, tiles: rail_id_to_route[rail_id].rail.tracks});
-        }
+        _update = abandon_route(killee);
     } else {
         console.log(`Train in rail ${killee.rail.id} got killed by a human player`);
         let {position, old_rails} = killer.rail.merge(killee.rail, killer.train.position_in_route);
@@ -206,6 +225,9 @@ function handle_collision(routes, coordinates) {
         _update.routes.push({route_id : killer.id, tiles: killer.rail.tracks});
     }
 
+    _update.kill.killer_route_id = killer_id;
+    _update.kill.killed_route_id = killee_id;
+
     return _update;
 }
 
@@ -216,7 +238,20 @@ function update() {
 
     Train.update_time();
 
-    for (const route of Object.values(map)) {
+    /* Handle abandoned routes first */
+    for (const route of Object.values(map).filter(route => route.train.abandoned)) {
+        collision_updates.push(abandon_route(route));
+    }
+
+    let route_ids = Object.keys(map);
+
+    for (const route_id of route_ids) {
+        let route = map[route_id];
+        if (!route) {
+            /* This route no longer exists, skip it */
+            continue;
+        }
+
         if (!route.train.active || route.train.is_stopped) {
             continue;
         }
@@ -307,8 +342,8 @@ exports.get_state_update = get_state_update;
 exports.allocate_route = allocate_route;
 exports.update = update;
 exports.update_speed_change = update_speed_change;
-exports.handover_route = handover_route;
 exports.start_playing = start_playing;
+exports.abandon_route = register_abandon_route;
 
 
 exports.winner = winner;

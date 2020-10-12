@@ -39,6 +39,7 @@ function build_train(route_id, server_player) {
         invincibility_state: server_player.invincibility_state,
         is_bot: server_player.is_bot,
         route_id: route_id,
+        abandoned: false,
     };
 }
 

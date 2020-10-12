@@ -1,7 +1,7 @@
 const { get_active_clients } = require('./server.js');
 const constants = require('../common/constants.js');
 
-const { handover_route, start_playing, update_speed_change } = require('./map.js');
+const { abandon_route, start_playing, update_speed_change } = require('./map.js');
 
 /* Player handlers */
 class Player {
@@ -19,7 +19,7 @@ class Player {
         this.start_playing_event_timeout = setTimeout(() => {
             console.log(`Client ${this.client.id} did not send start game event - got removed`);
             this.client.removed = true;
-            handover_route(this.route_id);
+            abandon_route(this.route_id);
         }, constants.START_PLAYING_EVENT_TIMEOUT_MS);
     }
 
