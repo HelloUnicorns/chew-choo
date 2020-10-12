@@ -1,542 +1,255 @@
 const { performance } = require('perf_hooks');
-const { calculate_speed_and_position, set_train_position } = require('../common/position.js');
+
 const constants = require('../common/constants.js');
-const e = require('express');
-const { exception } = require('console');
-
-let route_start_positions = [
-
-];
-
-let directions = ['right', 'down', 'left', 'up']
-const MAX_PLAYERS = 65;
+const {rails, init_rails} = require('./rail.js');
+const { exception, assert } = require('console');
+const { Train } = require('./train.js');
+const {makeid} = require('../common/id.js');
 
 let map = {};
-let x_map = {};
+let rail_id_to_route = {};
 
-
-/* Perform shallow copy, all types should be primitive */
-const NEW_PLAYER = {
-    position_in_route: 0,
-    last_position_update: 0,
-    position_fraction: 0,
-    is_in_leftover: false,
-    length: 3,
-    speed: constants.MIN_SPEED, /* in tiles per second */
-    is_speed_up: false,
-    is_speed_down: false,
-    killed: false,
-    is_stopped: false,
-    invincibility_state: constants.PLAYER_NOT_INVINCIBLE,
-    killer: -1,
-    kill_notified: false,
-    assignable: true,
-    is_bot: true,
-    killing_list: undefined,
-    acceleration: constants.DEFAULT_START_ACCELERATION /* Isn't passed to the client, but required for calculate_speed_and_position */
-};
-
-function compute_start_positions() {
-    /*  
-            25      14      15      16
-                13      6       7
-            24      5       2       17
-                12      1       8
-            23      4       3       18
-                11      10      9
-            22      21      20      19                
-    */
-    route_start_positions.push({x: constants.START_X, y: constants.START_Y});
-    let direction = directions[0];
-    let count = 1;
-    let current_count = 1;
-    for (let i = 1; i < MAX_PLAYERS; i++) {
-        last = route_start_positions[i - 1];
-        switch (direction) {
-            case 'right':
-                if (current_count == count) {
-                    y = last.y - constants.TRACK_HEIGHT * 2 / 3;
-                    x = last.x + constants.TRACK_WIDTH * 2 / 3;
-                } else {
-                    y = last.y;
-                    x = last.x + (constants.TRACK_WIDTH * 2 / 3) * 2;
-                }
-                break;
-            case 'down':
-                x = last.x;
-                y = last.y + (constants.TRACK_HEIGHT * 2 / 3)  * 2;
-                break;
-            case 'left':
-                x = last.x - (constants.TRACK_WIDTH * 2 / 3)  * 2;
-                y = last.y;
-                break;
-            case 'up':
-                x = last.x;
-                y = last.y - (constants.TRACK_HEIGHT * 2 / 3)  * 2;
-                break;
-        }
-        route_start_positions.push({
-            x,
-            y
-        });
-        current_count -= 1;
-        if (current_count == 0) {
-            direction = directions[(directions.indexOf(direction) + 1) % (directions.length)];
-            if (direction == 'right') {
-                count += 1;
-            }
-            current_count = count;
-        }
-    }
+function print_bordering_routes(route_id) {
+    let id = route_id;
+    let f = routes.get_bordering_routes;
+    console.log(`
+        ${f(id, 'up-left')}  ${f(id, 'up-right')}        
+          ${id}
+        ${f(id, 'down-left')}  ${f(id, 'down-right')}
+    `);
 }
 
-function build_rectangular_route(grid_x, grid_y, width, height, route_id) {
-    let route = [];
-    for (let i = 1; i < width - 1; i++) {
-        route.push({x: grid_x + i, y: grid_y, direction_from: 'left', direction_to: 'right', route_id});
-    }
+function init_route(rail_id) {
+    let id = makeid();
+    
+    map[id] = {
+        id: id,
+        allocatable: true, /* Whether a human player can allocate this route or not */
+        train: new Train(id),
+        rail: rails[rail_id]
+    };
 
-    route.push({x: grid_x + width - 1, y: grid_y, direction_from: 'left', direction_to: 'bottom', route_id});
-    
-    for (let i = 1; i < height - 1; i++) {
-        route.push({x: grid_x + width - 1, y: grid_y + i, direction_from: 'top', direction_to: 'bottom', route_id});
-    }
+    rail_id_to_route[rail_id] = map[id];
+}
 
-    route.push({x: grid_x + width - 1, y: grid_y + height - 1, direction_from: 'top', direction_to: 'left', route_id});
-    
-    for (let i = width - 2; i > 0; i--) {
-        route.push({x: grid_x + i, y: grid_y + height - 1, direction_from: 'right', direction_to: 'left', route_id});
-    }
-    
-    route.push({x: grid_x, y: grid_y + height - 1, direction_from: 'right', direction_to: 'top', route_id});
-    
-    for (let i = height - 2; i > 0; i--) {
-        route.push({x: grid_x, y: grid_y + i, direction_from: 'bottom', direction_to: 'top', route_id});
-    }
+/* Hand the route over from a human to a bot or vice versa */
+function handover_route(route_id) {
+    let route = map[route_id];
+    let old_id = route.id;
+    let old_train_position_in_route = route.train.position_in_route;
+    let old_train_position_fraction = route.train.position_fraction;
+    let rail_id = route.rail.id;
 
-    route.push({x: grid_x, y: grid_y, direction_from: 'bottom', direction_to: 'right', route_id});
- 
+    /*  Deconstruct current route
+            in order to minimize the chances of old human/bot moves being registered */
+    route.train.free();
+    route.id = undefined;
+    route.allocatable = undefined;
+    route.train = undefined;
+    route.rail = undefined;
+    delete map[old_id];
+    delete rail_id_to_route[route.rail.id];
+
+    /* Construct the new route */
+    init_route(rail_id);
+    let new_route = rail_id_to_route[rail_id];
+    new_route.train.position_in_route = old_train_position_in_route;
+    new_route.train.position_fraction = old_train_position_fraction;
+
+    return new_route;
+}
+
+/* A human player was killed and all the routes it killed now come back to life */
+function revive_route(route) {
+    let route = handover_route(route.id);
+    let {position_in_route, position_fraction} = Train.bot_position(Object.values(map).map((route) => route.train));
+    route.position_in_route = position_in_route;
+    route.position_fraction = position_fraction;
     return route;
 }
 
-function init_route(route_id) {
-    if (route_start_positions.length == 0) {
-        compute_start_positions();
+/* Get a route for a human player */
+function allocate_route() {
+    let route = undefined;
+    for (const _r of map) {
+        if (!_r.allocatable) {
+            continue;  
+        }
+
+        route = handover_route(_r.id);
+        route.allocatable = true;
+        route.train.is_bot = false;
+        route.train.is_stopped = true;
+
+        break;
     }
 
-    let start_position = route_start_positions[route_id];
-    map[route_id] = {
-        tiles: build_rectangular_route(start_position.x, start_position.y, constants.TRACK_WIDTH, constants.TRACK_HEIGHT, route_id),
-        leftover_tiles: [],
-        player: {...NEW_PLAYER} // shallow copy
-    };
-    map[route_id].player.killing_list = [];
-    map[route_id].player.last_position_update = performance.now();
+    return route.id;
 }
 
-function init_map() {
-    x_map = {};
+/* A human player or a bot got killed */
+function disable_route(route) {
+    route.train.free();
+    route.train.active = false;
+    route.allocatable = false;
+}
 
-    for (let i = 0; i < MAX_PLAYERS; ++i) {
+function start_playing(route_id) {
+    map[route_id].train.is_stopped = false;
+}
+
+function init() {
+    init_rails();
+    for (let i = 0; i < constants.NUMMBER_OF_ROUTES; ++i) {
         init_route(i);
     }
 }
 
-function tile_to_player(tile) {
-    return map[tile.route_id].player;
-}
-
-function mark_tile_occupied(tile, entering=false) {
-    x_map[tile.x] = x_map[tile.x] || {};
-    x_map[tile.x][tile.y] = x_map[tile.x][tile.y] || [];
-
-    let matching_tiles = x_map[tile.x][tile.y].filter(t => t.route_id == tile.route_id);
-    if (matching_tiles.length > 0) {
-        for (let tile of matching_tiles) {
-            tile.entering = entering;
-        }
-        return;
-    }
-    tile.entering = entering;
-    x_map[tile.x][tile.y].push(tile);
-}
-
-function clear_tile_occupied(tile) {
-    if (!x_map[tile.x] || !x_map[tile.x][tile.y]) {
-        return;
-    }
-
-    x_map[tile.x][tile.y] = x_map[tile.x][tile.y].filter(t => t.route_id != tile.route_id);
-    if(x_map[tile.x][tile.y].length == 0) {
-        delete x_map[tile.x][tile.y];
-    }
-
-    if (Object.keys(x_map[tile.x]).length == 0) {
-        delete x_map[tile.x];
-    }
-}
-
-function find_crossings(tiles_array) {
-    crossings = [];
-    for (let tile_0_idx = 0; tile_0_idx < tiles_array[0].length; tile_0_idx++) {
-        for (let tile_1_idx = 0; tile_1_idx < tiles_array[1].length; tile_1_idx++) {
-            if (tiles_array[0][tile_0_idx].x == tiles_array[1][tile_1_idx].x &&
-                tiles_array[0][tile_0_idx].y == tiles_array[1][tile_1_idx].y) {
-                crossings.push({
-                    tile_indices: [tile_0_idx, tile_1_idx],
-                    x: tiles_array[0][tile_0_idx].x,
-                    y: tiles_array[0][tile_0_idx].y})
-            }
-        }    
-    }
-    return crossings;
-}
-
-function find_crossing_by_tile(crossings, tile) {
-    for (const crossing of crossings) {
-        if (crossing.x == tile.x && crossing.y == tile.y) {
-            return crossing;
-        }
-    }
-}
-
-function get_next_tile_index(tiles, tile_index) {
-    return (tile_index + 1) % tiles.length;
-}
-
-function walk_tiles_to_next_crossing(tiles, start_tile_index, crossings) {
-    let cur_index = start_tile_index;
-    let crossing = undefined;
-    let path = [];
-
-    do {
-        path.push(tiles[cur_index]);
-        cur_index = get_next_tile_index(tiles, cur_index);
-        crossing = find_crossing_by_tile(crossings, tiles[cur_index]);
-    } while (!crossing);
-    return { path, crossing, crossing_tile: tiles[cur_index] };
-}
-
-function find_top_left_tile_index(tiles) {
-    let top_left_tile_index = 0;
-    for (let tile_index = 0; tile_index < tiles.length; tile_index++) {
-        if ((tiles[tile_index].x < tiles[top_left_tile_index].x) || 
-            (tiles[tile_index].x == tiles[top_left_tile_index].x && tiles[tile_index].y <= tiles[top_left_tile_index].y)) {
-                top_left_tile_index = tile_index;
-        }
-    }
-    return top_left_tile_index;
-}
-
-function find_external_crossing(crossings, tiles_arrays) {
-    let external_tiles_indices = tiles_arrays.map(find_top_left_tile_index);
-    let external_tiles = tiles_arrays.map((tiles, idx) => tiles[external_tiles_indices[idx]]);
-    let top_left_tile_index = find_top_left_tile_index(external_tiles);
-    return { 
-        first_external_crossing: 
-            walk_tiles_to_next_crossing(tiles_arrays[top_left_tile_index],
-                                        external_tiles_indices[top_left_tile_index],
-                                        crossings).crossing, 
-        tiles_array_index: top_left_tile_index 
-    }
-}
-
-function separate_route(route_id) {
-    /* List of route ids to reconstruct */
-    let ids = map[route_id].player.killing_list.concat([route_id]);
-
-    /* Get current position of alive bots */
-    let position = 0;
-    let fraction = 0;
-    for (let [_id, route] of Object.entries(map)) {
-        if (route.player && route.player.is_bot && !route.player.killed) {
-            position = route.player.position_in_route;
-            fraction = route.player.position_fraction;
-            break;
-        }
-    }
-
-    for (let _id of ids) {
-        unload_player_from_x_map(_id);
-        init_route(_id);
-        map[_id].player.position_in_route = position;
-        map[_id].player.position_fraction = fraction;
-    }
-
-    let routes = [];
-    for (let route_id of ids) {
-        routes.push({
-            route_id,
-            tiles: map[route_id].tiles
-        });
-    }
-
-    return routes;
-}
-
-function union_routes(killer_route_id, killee_route_id) {
-    let killer_tiles = map[killer_route_id].tiles;
-    let killee_tiles = map[killee_route_id].tiles;
-    let tiles_arrays = [killer_tiles, killee_tiles];
-    let crossings = find_crossings(tiles_arrays);
-    const { first_external_crossing, tiles_array_index } = find_external_crossing(crossings, tiles_arrays);
-    let current_crossing = first_external_crossing;
-    let current_tiles_array_index = tiles_array_index;
-    let external_crossings = [];
-    let killer_player = map[killer_route_id].player;
-    let killee_player = map[killee_route_id].player
-    let killer_tile = map[killer_route_id].tiles[killer_player.position_in_route];
-    let closest_external_crossing = undefined;
-    let new_route_parts = []; 
-    let new_route = []; 
-    let leftover_tiles = [];
-
-    do {
-        current_tiles_array_index = 1 - current_tiles_array_index;
-        external_crossings.push(current_crossing);
-        const { crossing, path } = walk_tiles_to_next_crossing(
-            tiles_arrays[current_tiles_array_index],
-            current_crossing.tile_indices[current_tiles_array_index],
-            crossings);
-        path[0].direction_from = tiles_arrays[1 - current_tiles_array_index][current_crossing.tile_indices[1 - current_tiles_array_index]].direction_from;
-        path[0].direction_to = tiles_arrays[current_tiles_array_index][current_crossing.tile_indices[current_tiles_array_index]].direction_to;
-        current_crossing = crossing;
-        new_route_parts.push(path);
-        if (crossing.x == killer_tile.x && crossing.y == killer_tile.y) {
-            closest_external_crossing = crossing;
-        }
-    } while (current_crossing != first_external_crossing);
-    
-
-    if (!closest_external_crossing) {
-        const { crossing, path, crossing_tile } = walk_tiles_to_next_crossing(killer_tiles, killer_player.position_in_route, external_crossings);
-        closest_external_crossing = crossing;
-        /* add the last tile - it would be twice, both in the leftover and in the position in route */
-        path.push(crossing_tile);
-        leftover_tiles = path;
-    }
-
-    /* we always want the first tile in the route to be the route the player is at */
-    let closest_crossing_index = external_crossings.indexOf(closest_external_crossing);
-    for (let i = 0; i < new_route_parts.length; i++) {
-        new_route = new_route.concat(new_route_parts[(i + closest_crossing_index) % new_route_parts.length]);
-    }
-    
-    new_route.concat(leftover_tiles).forEach(tile => {
-        tile.entering = false;
-        tile.route_id = killer_route_id;
-    });
-
-    map[killer_route_id].tiles = new_route;
-    map[killer_route_id].player.position_in_route = 0;
-    map[killer_route_id].leftover_tiles = leftover_tiles;
-    if (leftover_tiles.length > 0) {
-        map[killer_route_id].player.is_in_leftover = true;
-    }
-    map[killee_route_id].tiles = [];
-
-    
-    unload_player_from_x_map(killer_route_id);
-    unload_player_from_x_map(killee_route_id);
-    update_occupied_tiles(map[killer_route_id]);
-
-    killer_player.killing_list = killer_player.killing_list.concat(killee_player.killing_list)
-    killer_player.killing_list.push(killee_route_id);
-
-    let routes = [];
-    for (let route_id of [killer_route_id, killee_route_id]) {
-        routes.push({
-            route_id,
-            tiles: map[route_id].tiles
-        });
-    }
-
-    return routes;
-}
-
-function new_player() {
-    for (const route_id in map) {
-        if (!map[route_id].player.is_bot || !map[route_id].player.assignable) {
-            continue;
-        }
-        console.log('assigning player', route_id);
-        map[route_id].player.is_bot = false;
-        return route_id;
-    }
-}
-
-function unload_player_from_x_map(route_id) {
-    /* Delete player from x_map */
-    for (const x in x_map) {
-        for (const y in x_map[x]) {
-            x_map[x][y] = x_map[x][y].filter(tile => tile.route_id != route_id);
-        }
-    }
-}
-
-function replace_player_with_bot(route_id) {
-    if (map[route_id]) {
-        map[route_id].player.is_bot = true;
-    }
-}
-
-function update_occupied_tiles(route) {
-    let player_position = route.player.position_in_route;
+function occupy_train_location(route) {
+    let locomotive_position = route.train.position_in_route;
+    let collisions = [];
 
     /* Locomotive */
-    mark_tile_occupied(route.tiles[player_position]);
+    let loco_collision = route.rail.occupy(locomotive_position);
+    if (loco_collision) {
+        collisions.push({
+            routes: [route, rail_id_to_route[loco_collision]],
+            coordinates: route.rail.coordinates(locomotive_position)
+        });
+    }
+    
 
     /* Last cart */
-    mark_tile_occupied(route.tiles[(player_position - route.player.length + 1 + route.tiles.length) % route.tiles.length]);
+    let last_cart_position = (locomotive_position - route.train.length + 1 + route.rail.length()) % route.rail.length();
+    let cart_collision = route.rail.occupy(last_cart_position);
+    if (cart_collision && cart_collision != locomotive_collision) {
+        collisions.push({
+            routes: [route, rail_id_to_route[cart_collision]],
+            coordinates: route.rail.coordinates(last_cart_position)
+        });
+    }
 
     /* Tile ahead of locomotive */
-    if (route.player.position_fraction) {
-        mark_tile_occupied(route.tiles[(player_position + 1) % route.tiles.length], entering=true);
+    if (route.train.position_fraction) {
+        /* I don't believe in this entering feature, let's try to not use it */
+        /* TODO: delete if proven right */
+        //collisions.push(route.rail.occupy((locomotive_position + 1) % route.rail.length(), entering=true));
     }
 
     /* Tile behind last cart */
-    clear_tile_occupied(route.tiles[(player_position - route.player.length + route.tiles.length) % route.tiles.length]);
+    route.rail.free((locomotive_position - route.train.length + route.rail.length()) % route.rail.length());
 
+    return collisions;
+}
+/***************************************************************** */
+
+function grid_distance(point0, point1) {
+    return Math.abs(point0.x - point1.x) + Math.abs(point0.y - point1.y);
 }
 
-function handle_collision(tiles) {
-    let update = {
+function handle_collision(routes, coordinates) {
+    let _update = {
         routes: [],
         kill: {
             killee_route_id: undefined,
             killer_route_id: undefined
         }
     };
-
-    if (tiles.length < 2) {
-        return undefined;
-    }
-    if (tiles.length > 2) {
-        throw new Error('More than 2 trains collided');
-    }
-
-    let players = tiles.map(tile_to_player);
         
-    if (players.some(player => (player.killed || player.invincibility_state != constants.PLAYER_NOT_INVINCIBLE))) {
+    if (routes.some(route => !route.train.collisionable())) {
         return undefined;
     }
-    
-    let killer_tile = undefined;
-    let entering_tiles = tiles.filter(tile => tile.entering);
 
-    switch (entering_tiles.length) {
-        case 0:
-            let position_delta = (tile) => {
-                let locomotive = map[tile.route_id].player.position_in_route;
-                let len = map[tile.route_id];
-                for (let i = locomotive;
-                        (locomotive - i + len) % len <= map[tile.route_id].player.length;
-                        i = (i - 1 + len) % len) {
-                    let t = map[tile.route_id].tiles[i];
-                    if (t.x == tile.x && t.y == tile.y) {
-                        return (locomotive - i + len) % len + map[tile.route_id].player.position_fraction;
-                    }
-                }
-                throw new exception('Could not find tile in route');
-            }
-
-            let deltas = entering_tiles.map(tile => position_delta(tile));
-            let killer_idx = deltas[0] < deltas[1] ? 0 : 1;
-            killer_tile = tiles[killer_idx];
-            break;
-        case 1:
-            killer_tile = entering_tiles[0];
-            break;
-        case 2:
-            console.log('player', players[0].position_fraction, players[1].position_fraction);
-            let killer_index = (players[0].position_fraction < players[1].position_fraction) ? 0 : 1;
-            killer_tile = tiles[killer_index];
-            break;
-        default:
-            throw new Error('More than 2 entering tiles');
-    }
-
-    let killee_tile = tiles.find(tile => tile != killer_tile);
-    let killee_player = tile_to_player(killee_tile);
-    let killer_player = tile_to_player(killer_tile);
-
-    let killer_route_id = killer_tile.route_id;
-    let killed_route_id = killee_tile.route_id;
-    
-    killee_player.killed = true;
-
-    console.log(`Player in route ${killed_route_id} got killed`);
-
-    if (killer_player.is_bot && killee_player.is_bot) {
+    if (routes.all(route => route.train.is_bot)) {
         /* Should not happen */
         console.log(`WARN: bot ${killer_route_id} and bot ${killed_route_id} collided`);
         return undefined;
     }
 
-    update.kill.killer_route_id = killer_route_id;
-    update.kill.killed_route_id = killed_route_id;
-
-    if (killer_player.is_bot) {
-        /* Bots don't expand, but can deconstruct regular players' routes */
-        update.routes = separate_route(killed_route_id);
-    } else {
-        /* Player killed another player/bot - expand the killer's route */
-        update.routes = union_routes(killer_route_id, killed_route_id);
+    /* We assume both trains passed the crossing point and the trains are not about as long as
+        the rail itself, so adding the position fraction to the distance should work */
+    const distances = routes.map((route) => 
+        grid_distance(coordinates,
+                      route.rail.coordinates(route.train.position_in_route))
+        + route.train.position_fraction);
     
-        killee_player.assignable = false;
-        killer_player.assignable = false;
+    let killer = undefined;
+    let killee = undefined;
+
+    if (distances[0] > distances[1]) {
+        killer = routes[0];
+        killee = routes[1]
+    } else {
+        killer = routes[1];
+        killee = routes[0]
     }
 
-    return update;
-}
+    _update.kill.killer_route_id = killer.id;
+    _update.kill.killee_route_id = killee.id;
 
-function detect_collisions() {
-    let updates = {
-        kill: [],
-        routes: [],
-    };
-
-    for (const x in x_map) {
-        for (const y in x_map[x]) {
-            let tiles = x_map[x][y];
-            if (tiles.length > 1) {
-                let update = handle_collision(tiles);
-                if (!update) {
-                    continue;
-                }
-
-                updates.routes = updates.routes.concat(update.routes);
-                updates.kill.push(update.kill);
-            } 
+    if (killer.train.is_bot) {
+        console.log(`Train in rail ${killee.rail.id} got killed by a bot`);
+        let new_rails = killer.rail.separate();
+        for (const rail_id of new_rails) {
+            revive_route(rail_id_to_route[rail_id]);
+            _update.routes.push({route_id: rail_id_to_route[rail_id].id, tiles: rail_id_to_route[rail_id].rail.tracks});
+        }
+    } else {
+        console.log(`Train in rail ${killee.rail.id} got killed by a human player`);
+        let {position, old_rails} = killer.rail.merge(killee, killer.train.position_in_route);
+        killer.train.position = position;
+        for (const rail_id of old_rails) {
+            disable_route(rail_id_to_route[rail_id]);
+            _update.routes.push({route_id: rail_id_to_route[rail_id].id, tiles: rail_id_to_route[rail_id].rail.tracks});
         }
     }
-    return updates;
+
+    return _update;
 }
 
-function update_map() {
-    let new_time = performance.now();
+/* Periodic update of the map */
+function update() {
     let routes_removed_leftover = [];
-    for (const route_id in map) {
-        const route = map[route_id];
-        if (route.player.killed) {
+    let collision_updates = [];
+
+    Train.update_time();
+
+    for (const route of map) {
+        if (!route.train.active || route.train.is_stopped) {
             continue;
         }
 
-        if (route.player.is_in_leftover) {
-            calculate_speed_and_position(route.player, Infinity, new_time);
-            if (route.player.position_in_route >= route.leftover_tiles.length) {
-                /* left the leftover */
-                set_train_position(route.player, route.player.position_in_route - route.leftover_tiles.length, route.tiles.length);
-                route.leftover_tiles = [];
-                route.player.is_in_leftover = false;
-                routes_removed_leftover.push({ route_id, tiles: route.tiles });
-            }
-        } else {
-            calculate_speed_and_position(route.player, route.tiles.length, new_time);
+        /* Periodic update of speed and position */
+        if (route.train.update(route.rail)) {
+            /* Update caused rail change */
+            routes_removed_leftover.push({route_id: route.id, tiles: route.rail.tracks});
+        };
+
+        
+        let collision = occupy_train_location(route);
+        /* Theoretically it's possible, but practically it should not happen.
+            Let's keep the assert for now */
+        assert(collision.length <= 1, '2 or more collisions occurred in the same rail');
+        
+        if (collision.length == 0) {
+            continue;
         }
-        update_occupied_tiles(route);
+
+        let collision_update = handle_collision(collision.routes, collision.coordinates);
+        if (collision_update) {
+            collision_updates.push(collision_updates);
+        }
     }
-    return routes_removed_leftover;
+
+    return {
+        removed_leftover: routes_removed_leftover, 
+        collision_updates: collision_updates.reduce(
+            (updates, _update) => {
+                updates.kills.push(_update.kill);
+                updates.routes = updates.routes.concat(_update.routes);
+                return updates;
+            }, {kills: [], routes: []})
+    };
 }
 
 function is_speed_up(speed_message_value) {
@@ -548,16 +261,50 @@ function is_speed_down(speed_message_value) {
 }
 
 function update_speed_change(route_id, speed_message_value) {
-    map[route_id].player.is_speed_up = is_speed_up(speed_message_value);
-    map[route_id].player.is_speed_down = is_speed_down(speed_message_value);
+    map[route_id].train.set = is_speed_up(speed_message_value);
+    map[route_id].train.is_speed_down = is_speed_down(speed_message_value);
 }
 
-init_map();
+function get_state_update() {
+    return Object.values(map).filter(
+        (route) => route.train.active).reduce(
+        (_update, route) => {
+            _update[route.id] = {
+                train: {
+                    position_in_route: route.train.position_in_route,
+                    position_fraction: route.train.position_fraction,
+                    length: route.train.length,
+                    speed: route.train.speed,
+                    is_stopped: route.train.is_stopped,
+                    invincibility_state: player.invincibility_state,
+                    is_speed_up: route.train.is_speed_up,
+                    is_speed_down: route.train.is_speed_down,
+                    is_bot: route.train.is_bot
+                },
+                tracks: route.rail.tracks
+            }
+            return _update;
+        }, {}
+    );
+}
 
-exports.map = map;
-exports.new_player = new_player;
-exports.update_map = update_map;
+function winner() {
+    let alive = Object.values(map).filter((route) => route.train.active);
+    if (alive.length > 1) {
+        return undefined;
+    } else if (alive.length == 0) {
+        throw new Exception('No active user alive!');
+    }
+
+    return alive[0].id;
+}
+
+exports.init = init;
+exports.get_state_update = get_state_update;
+exports.allocate_route = allocate_route;
+exports.update = update;
 exports.update_speed_change = update_speed_change;
-exports.replace_player_with_bot = replace_player_with_bot;
-exports.detect_collisions = detect_collisions;
-exports.init_map = init_map;
+exports.handover_route = handover_route;
+exports.start_playing = start_playing;
+
+exports.winner = winner;

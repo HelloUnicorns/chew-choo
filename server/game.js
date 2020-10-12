@@ -1,90 +1,101 @@
+const _ = require('lodash');
 const { wss } = require('./server.js');
 const constants = require('../common/constants.js');
 const { performance } = require('perf_hooks');
 const map = require('./map.js');
 
-WAIT_FOR_RESUME_PLAYER_TIMEOUT = 60;
+client_event_handlers = {}
 
-let resume_player_timeouts = {}; /* by client id */
-let invincibility_timeouts = {}; /* by route id */
-
-const ID_LEN = 8;
-
-function makeid(length) {
-    /* https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript */
-    var result = '';
-    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    var charactersLength = characters.length;
-    for (var i = 0; i < length; i++) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-    return result;
+/* Clients functions */
+function get_client(route_id) {
+    let client = wss.clients.filter((client) => client_route_id == route_id).filter(is_active_client);
+    return client.length == 0 ? undefined : client[0];
 }
 
-function start_invincibility_updates(route_id) {
-    if (invincibility_timeouts[route_id]) {
-        clearTimeout(invincibility_timeouts[route_id]);
+function is_active_client(client) {
+    return client.initialized || !client.removed;   
+}
+
+function get_active_clients() {
+    return wss.clients.filter(is_active_client);
+}
+
+/* Event sending functions */
+function send_event(client, event) {
+    client.send(JSON.stringify(event));
+}
+
+function broadcast_event(event) {
+    get_active_clients().forEach((client) => send_event(client, event));
+}
+
+/* Player handlers */
+class Player {
+    constructor (client, route_id) {
+        this.route_id = route_id;
+        this.client = client;
     }
 
-    /* Start fully invisible timer */
-    invincibility_timeouts[route_id] = setTimeout(
-        () => {
-            delete invincibility_timeouts[route_id];
-            map.map[route_id].player.invincibility_state = constants.PLAYER_BLINKING;
-            
-            /* Start blinking timer */
-            invincibility_timeouts[route_id] = setTimeout(
-                () => {
+    remove_start_playing_timeout() {
+        clearTimeout(this.start_playing_event_timeout);
+        this.start_playing_event_timeout = undefined;
+    }
 
-                    /* Player is not invincible anymore */
-                    delete invincibility_timeouts[route_id];
-                    map.map[route_id].player.invincibility_state = constants.PLAYER_NOT_INVINCIBLE;
-                }, constants.PLAYER_BLINKING_TIME * 1000);
-        }, constants.PLAYER_FULLY_INVISIBLE_TIME * 1000);
+    register_start_playing_event_timeout() {
+        this.start_playing_event_timeout = setTimeout(() => {
+            console.log(`Client ${this.client.id} did not send start game event - got removed`);
+            this.client.removed = true;
+            map.handover_route(this.route_id);
+        }, constants.START_PLAYING_EVENT_TIMEOUT_MS);
+    }
+
+    start_playing() {
+        this.remove_start_playing_timeout();
+        map.start_playing(this.route_id);
+    }
+
+    update_speed_change(event) {
+        map.update_speed_change(this.route_id, event.value);
+    }
 }
+
+client_event_handlers.latency_update = (client, event) => {
+    let latency = (performance.now() - event.prev_server_time) / 2;
+    send_event(client, { latency, type: 'latency' });
+}
+
+/* First thing first - init the map */
+map.init();
 
 wss.on('connection', (client) => {
-    client.id = makeid(ID_LEN);
-    route_id = map.new_player();
+    let route_id = map.allocate_route();
+    
     if (route_id == undefined) {
         // All routes are occupied
-        client.send(JSON.stringify({
+        send_event(client, {
             message: 'Server is full',
             type: 'error'
-        }));
+        });
         console.log('Server is full - refused new client');
         return;
     }
+
+    client.id = makeid();
     client.route_id = route_id;
     client.initialized = true;
     client.removed = false;
 
-    map.map[client.route_id].player.is_stopped = true;
-    resume_player_timeouts[client.id] = setTimeout(
-        () => {
-            delete resume_player_timeouts[client.id];
-            console.log(`Client ${client.id} removed`);
-            client.removed = true;
-            route_id = client.route_id;
-            client.route_id = undefined;
-            map.replace_player_with_bot(route_id);
-        }, WAIT_FOR_RESUME_PLAYER_TIMEOUT * 1000);
-
-    if (invincibility_timeouts[client.route_id]) {
-        clearTimeout(invincibility_timeouts[client.route_id]);
-        delete invincibility_timeouts[client.route_id];
-    }
-    map.map[client.route_id].player.invincibility_state = constants.PLAYER_FULLY_INVISIBLE;
+    let player = new Player(client, route_id);
+    player.register_start_playing_event_timeout();
 
     console.log(`Client ${client.id} connected`);
     console.log(`Client ${client.id} occupies route ${client.route_id}`);
-
-    client.send(JSON.stringify({
+    send_event(client, {
         client_id: client.id,
         type: 'connection',
-        map: map.map,
+        map: map.get_state_update().map(route => ({tiles: route.tracks, player: route.train})),
         route_id: client.route_id
-    }));
+    });
 
     client.on('close', () => {
         if (client.removed) {
@@ -93,137 +104,79 @@ wss.on('connection', (client) => {
         }
 
         console.log(`Client ${client.id} disconnected`);
-        if (resume_player_timeouts[client.id]) {
-            clearTimeout(resume_player_timeouts[client.id]);
-            delete resume_player_timeouts[client.id];
-        }
-        map.replace_player_with_bot(client.route_id);
+        map.handover_route(route_id);
     });
 
     client.on('message', (json_data) => {
+        const message = JSON.parse(json_data);
+
         if (client.removed) {
-            console.log(`Removed client ${client.id} sent message`)
+            console.warning(`Removed client ${client.id} sent message ${message.type}`)
             return;
         }
-
-        const message = JSON.parse(json_data);
-        if (message.type == 'speed_change') {
-            map.update_speed_change(client.route_id, message.value);
+        if (message.type in client_event_handlers) {
+            client_event_handlers[message.type](client, message);
         }
-        else if (message.type == 'latency_update') {
-            let latency = (performance.now() - message.prev_server_time) / 2;
-            client.send(JSON.stringify({ latency: latency, type: 'latency' }));
-        }
-        else if (message.type == 'resume_player') {
-            if (resume_player_timeouts[client.id]) {
-                clearTimeout(resume_player_timeouts[client.id]);
-                delete resume_player_timeouts[client.id];
+        if (message.type in player) {
+            if (player.client != client) {
+                console.warning(`Client ${client.id} sent message ${message.type} but is no longer controlling ${route_id}`);
+                return;
             }
-            map.map[route_id].player.is_stopped = false;
-            start_invincibility_updates(client.route_id);
+            /* JS is such a broken language */
+            player[message.type](message);
         }
     });
 });
 
+
 setInterval(() => {
-    let current_time = performance.now();
-    wss.clients.forEach((client) => {
-        if (!client.initialized || client.removed) {
-            return;
-        }
-        client.send(JSON.stringify({ time: current_time, type: 'time' }));
-    });
+    broadcast_event({ time: performance.now(), type: 'time' });
 }, 1000 / 10);
 
-/* Position */
+
+/* Position and kill */
 setInterval(() => {
-    let routes_removed_leftover = map.update_map();
-    let locations = {};
-    let server_time = performance.now();
+    let {removed_leftover, collision_updates} = map.update();
+    let state = map.get_state_update().map((state) => state.train);
 
-    for (const [route_id, route] of Object.entries(map.map)) {
-        if (!route.player.killed && !route.player.free) {
-            locations[route_id] = {
-                position_in_route: route.player.position_in_route,
-                position_fraction: route.player.position_fraction,
-                length: route.player.length,
-                speed: route.player.speed,
-                is_speed_up: route.player.is_speed_up,
-                is_speed_down: route.player.is_speed_down,
-                server_time: server_time,
-                is_stopped: route.player.is_stopped,
-                invincibility_state: route.player.invincibility_state,
-                is_bot: route.player.is_bot
-            };
-        }
-    }
+    broadcast_event({ locations: state, changed_routes: removed_leftover, type: 'position' });
 
-    wss.clients.forEach((client) => {
-        if (!client.initialized || client.removed) {
-            return;
-        }
-
-        client.send(JSON.stringify({ locations, changed_routes: routes_removed_leftover, type: 'position' }));
-    });
-}, 1000 / 60);
-
-/* Kills */
-setInterval(() => {
-    let updates = map.detect_collisions();
-
-    if (updates.kill.length == 0) {
+    if (collision_updates.kill.length == 0) {
         return;
     }
 
-    console.log(`Printing kill list`);
-    updates.kill.forEach(kill => {
+    broadcast_event({ routes: collision_updates.routes, kills: collision_updates.kill, type: 'kill' });
+
+    collision_updates.kill.forEach(kill => {
         console.log(`killed: ${kill.killed_route_id}, killer: ${kill.killer_route_id}`);
-        if (!map.map[kill.killer_route_id].player.is_bot) {
-            /* If the killer is a player, the killee's route gets merged into the killer's one */
-            delete map.map[kill.killed_route_id];
-        }
-        /* If the killer is  bot, we just deconstruct the killee's route and spawn new bots */
-    });
-
-    /* Update kills */
-    wss.clients.forEach((client) => {
-        if (!client.initialized || client.removed) {
-            return;
-        }
-
-        client.send(JSON.stringify({ routes: updates.routes, kills: updates.kill, type: 'kill' }));
-        
-        if (updates.kill.findIndex((a) => { return a.killed_route_id == client.route_id; }) != -1) {
+        let client = get_client(kill.route_id);
+        if (client) {
             client.removed = true;
-            client.route_id = undefined;
         }
     });
 }, 1000 / 60);
 
 /* Check win condition */
 setInterval(() => {
-    let route_ids = Object.keys(map.map);
-    if (route_ids.length > 1) {
-        /* More than 1 player remaining */
+    let winner = map.winner();
+    if (!winner) {
         return;
     }
 
     /* Victory! :) */
-    let winner_route_id = route_ids[0];
-    console.log(`Player in route ${winner_route_id} win!`);
+    console.log(`Player in route ${winner} win!`);
 
-    wss.clients.forEach((client) => {
-        if (!client.initialized || client.removed) {
-            return;
-        }
-        if (client.route_id == winner_route_id) {
-            client.send(JSON.stringify({ type: 'win' }));
-            client.removed = true;
-            client.route_id = undefined;
-        }
-    });
+    let client = get_client(winner);
+    if (client) {
+        send_event(client, { type: 'win' }); 
+        client.removed = true;
+        client.route_id = undefined;
+    }
+
+    assert(get_active_clients().length == 0, 'Found leaking clients');
 
     /* Reset map */
     console.log('Reseting map');
-    map.init_map();
+    map.init();
 }, 1000 / 10);
+
