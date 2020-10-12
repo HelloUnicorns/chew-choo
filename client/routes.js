@@ -1,7 +1,7 @@
 export class Route {
-     constructor(player_id, train, is_own) {
+     constructor(route_id, train, is_own) {
          this.is_own = is_own;
-         this.player_id = player_id;
+         this.route_id = route_id;
          this.train = train;
          this.train.set_route(this);
          this.tracks = [];
@@ -19,6 +19,7 @@ export class Route {
          this.remove_train();
          this.remove_tracks();
      }
+
 
      remove_train() {
         if (this.train) {

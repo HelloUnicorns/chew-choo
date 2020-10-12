@@ -92,7 +92,7 @@ class GameOverlayScene extends Phaser.Scene {
         }
         leaderboard_info.sort((info_a, info_b) => { return info_b.score - info_a.score })
 
-        let player_rank = leaderboard_info.findIndex((info) => { return info.route_id == global_data.game_scene.player_route.player_id });
+        let player_rank = leaderboard_info.findIndex((info) => { return info.route_id == global_data.game_scene.player_route.route_id });
         let player_found_in_top = false;
         for (let i = 0; i < LEADERBOARD_TOP_SIZE; i++) {
             if (i >= number_of_remaining_players) {
