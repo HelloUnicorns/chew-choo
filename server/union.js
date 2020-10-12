@@ -160,8 +160,7 @@ function union_tracks(controller, controllee, controller_position) {
 
     let updated_crossings = get_crossings_update(new_tracks, controller, controllee);
 
-    let update = {};
-    return update = {
+    return {
         tracks: new_tracks,
         leftover_tracks,
         crossings: updated_crossings.crossings,

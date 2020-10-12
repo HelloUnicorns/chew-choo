@@ -89,6 +89,7 @@ function disable_route(route) {
 
 /* A human player was killed or left the game */
 function abandon_route(route) {
+    
     let _update = {
         routes: [],
         kill: {
@@ -105,7 +106,8 @@ function abandon_route(route) {
         let new_route = handover_route(rail_id_to_route[rail_id].id);
         new_route.position_in_route = position_in_route;
         new_route.position_fraction = position_fraction;
-        _update.routes.push({route_id: new_route.id, tiles: new_route.rail.tracks});
+        /* TODO: separate tracks and leftover tracks after we update the server-client protocol */
+        _update.routes.push({route_id: new_route.id, tiles: new_route.rail.leftover_tracks.concat(new_route.rail.tracks)});
     }
 
     return _update;
@@ -218,11 +220,14 @@ function handle_collision(routes, coordinates) {
         killer.train.position = position;
         for (const rail_id of old_rails) {
             disable_route(rail_id_to_route[rail_id]);
-            _update.routes.push({route_id: rail_id_to_route[rail_id].id, tiles: rail_id_to_route[rail_id].rail.tracks});
+            let cur_route = rail_id_to_route[rail_id];
+            /* TODO: separate tracks and leftover tracks after we update the server-client protocol */
+            _update.routes.push({route_id: cur_route.id, tiles: cur_route.rail.leftover_tracks.concat(cur_route.rail.tracks)});
         }
 
         /* Also report update of the killer rail */
-        _update.routes.push({route_id : killer.id, tiles: killer.rail.tracks});
+        /* TODO: separate tracks and leftover tracks after we update the server-client protocol */
+        _update.routes.push({route_id : killer.id, tiles: killer.rail.leftover_tracks.concat(killer.rail.tracks)});
     }
 
     _update.kill.killer_route_id = killer_id;
