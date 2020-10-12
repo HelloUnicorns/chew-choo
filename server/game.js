@@ -64,12 +64,6 @@ wss.on('connection', (client) => {
     client.on('message', (json_data) => {
         const message = JSON.parse(json_data);
 
-        /* TODO: Delete after we change it in the client */
-        if (message.type == "resume_player") {
-            /* Change old name to new name */
-            message.type = "start_playing";
-        }
-
         if (client.removed) {
             console.warn(`Removed client ${client.id} sent message ${message.type}`)
             return;

@@ -29,12 +29,12 @@ class Player {
     }
 
     /* Events */
-    start_playing() {
+    resume_player() {
         this.remove_start_playing_timeout();
         start_playing(this.route_id);
     }
 
-    update_speed_change(event) {
+    speed_change(event) {
         update_speed_change(this.route_id, event.value);
     }
 }

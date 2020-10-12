@@ -260,7 +260,7 @@ function is_speed_down(speed_message_value) {
 }
 
 function update_speed_change(route_id, speed_message_value) {
-    map[route_id].train.set = is_speed_up(speed_message_value);
+    map[route_id].train.is_speed_up = is_speed_up(speed_message_value);
     map[route_id].train.is_speed_down = is_speed_down(speed_message_value);
 }
 
