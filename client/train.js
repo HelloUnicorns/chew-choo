@@ -25,15 +25,15 @@ const t1 = 0.1;
 const t2 = 0.1;
 
 export class Train {
-    constructor(server_player, is_own) {
-        this.position_in_route = server_player.position_in_route;
-        this.length = server_player.length;
-        this.is_speed_up = server_player.is_speed_up;
-        this.is_speed_down = server_player.is_speed_down;
-        this.speed = server_player.speed;
-        this.position_fraction = server_player.position_fraction;
-        this.is_stopped = server_player.is_stopped;
-        this.is_bot = server_player.is_bot;
+    constructor(is_own) {
+        this.position_in_route = 0;
+        this.position_fraction = 0;
+        this.length = 3;
+        this.speed = constants.MIN_SPEED; /* in tiles per second */
+        this.is_speed_up = false;
+        this.is_speed_down = false;
+        this.is_stopped = false;
+        this.is_bot = true;
         this.is_own = is_own;
         this.sprites = [];
         this.drawn = false;
@@ -189,6 +189,7 @@ export class Train {
             server_time: server_location.server_time,
         }
 
+        this.length = server_location.length;
         this.is_stopped = server_location.is_stopped;
         this.is_bot = server_location.is_bot;
 

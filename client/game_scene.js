@@ -214,7 +214,7 @@ export class GameScene extends Phaser.Scene {
             return;
         }
         if (!(route_id in this.routes)) {
-            this.routes[route_id] = new Route(route_id, undefined, false); /* server will not re-build own tracks */
+            this.routes[route_id] = new Route(route_id, new Train(false), false); /* server will not re-build own tracks */
         }
         let route = this.routes[route_id];
         route.remove_tracks();
@@ -224,7 +224,7 @@ export class GameScene extends Phaser.Scene {
     
     update_server_route(route_id, server_route, is_own) {
         if (!(route_id in this.routes)) {
-            let train = new Train(server_route.player, is_own);
+            let train = new Train(is_own);
             this.routes[route_id] = new Route(route_id, train, is_own);
         }
         let route = this.routes[route_id];
