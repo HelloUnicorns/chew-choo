@@ -150,7 +150,7 @@ function handle_collision(routes, coordinates) {
     let _update = {
         routes: [],
         kill: {
-            killee_route_id: undefined,
+            killed_route_id: undefined,
             killer_route_id: undefined
         }
     };
@@ -159,9 +159,9 @@ function handle_collision(routes, coordinates) {
         return undefined;
     }
 
-    if (routes.all(route => route.train.is_bot)) {
+    if (routes.every(route => route.train.is_bot)) {
         /* Should not happen */
-        console.log(`WARN: bot ${killer_route_id} and bot ${killed_route_id} collided`);
+        console.log(`WARN: bot ${routes[0].id} and bot ${routes[1].id} collided`);
         return undefined;
     }
 
@@ -175,7 +175,7 @@ function handle_collision(routes, coordinates) {
     let killer = undefined;
     let killee = undefined;
 
-    if (distances[0] > distances[1]) {
+    if (distances[0] < distances[1]) {
         killer = routes[0];
         killee = routes[1]
     } else {
@@ -184,7 +184,7 @@ function handle_collision(routes, coordinates) {
     }
 
     _update.kill.killer_route_id = killer.id;
-    _update.kill.killee_route_id = killee.id;
+    _update.kill.killed_route_id = killee.id;
 
     if (killer.train.is_bot) {
         console.log(`Train in rail ${killee.rail.id} got killed by a bot`);
@@ -195,12 +195,15 @@ function handle_collision(routes, coordinates) {
         }
     } else {
         console.log(`Train in rail ${killee.rail.id} got killed by a human player`);
-        let {position, old_rails} = killer.rail.merge(killee, killer.train.position_in_route);
+        let {position, old_rails} = killer.rail.merge(killee.rail, killer.train.position_in_route);
         killer.train.position = position;
         for (const rail_id of old_rails) {
             disable_route(rail_id_to_route[rail_id]);
             _update.routes.push({route_id: rail_id_to_route[rail_id].id, tiles: rail_id_to_route[rail_id].rail.tracks});
         }
+
+        /* Also report update of the killer rail */
+        _update.routes.push({route_id : killer.id, tiles: killer.rail.tracks});
     }
 
     return _update;
@@ -236,7 +239,7 @@ function update() {
 
         let collision_update = handle_collision(collision[0].routes, collision[0].coordinates);
         if (collision_update) {
-            collision_updates.push(collision_updates);
+            collision_updates.push(collision_update);
         }
     }
 

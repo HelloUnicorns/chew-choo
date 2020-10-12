@@ -58,7 +58,7 @@ class Train {
     }
 
     collisionable() {
-        return this.active && this.invincibility_state == constants.PLAYER_NOT_INVINCIBLE;
+        return this.active && this.invincibility_state == constants.TRAIN_NOT_INVINCIBLE;
     }
 
     /* Periodic updates */

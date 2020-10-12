@@ -65,9 +65,12 @@ function find_external_crossing(crossings, tracks_arrays) {
     }
 }
 
-function get_crossings_update(new_tracks, controller_old_crossings, controllee_old_crossings) {
+function get_crossings_update(new_tracks, controller, controllee) {
     let updated_crossings = {};
     let updated_dead_crossings = [];
+
+    let controller_old_crossings = controller.crossings;
+    let controllee_old_crossings = controllee.crossings;
 
     /* Iterate over tracks and and find the crossings of the new path */
     new_tracks.forEach((track) => {
@@ -153,7 +156,7 @@ function union_tracks(controller, controllee, controller_position) {
     }
     
 
-    let updated_crossings = get_crossings_update(new_tracks, controller.crossings, controllee.crossings);
+    let updated_crossings = get_crossings_update(new_tracks, controller, controllee);
 
     let update = {};
     return update = {

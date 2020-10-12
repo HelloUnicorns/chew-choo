@@ -125,9 +125,9 @@ function draw_cart(grid_x, grid_y, angle, is_engine, is_own, is_bot, invincibili
         is_engine ? ENGINE_SCALE : CART_SCALE, 
         CART_Z_INEDX, 
         get_cart_color(is_own, is_bot),
-        invincibility_state == constants.PLAYER_NOT_INVINCIBLE ? NORMAL_TRAIN_ALPHA : INVINCIBLE_TRAIN_ALPHA);
+        invincibility_state == constants.TRAIN_NOT_INVINCIBLE ? NORMAL_TRAIN_ALPHA : INVINCIBLE_TRAIN_ALPHA);
 
-    if (invincibility_state == constants.PLAYER_BLINKING) {
+    if (invincibility_state == constants.TRAIN_BLINKING) {
         sprite.start_blinking(MINIMUM_BLINKING_ALPHA);
     }
     return sprite;
@@ -164,13 +164,13 @@ function update_train(train) {
 
     let train_alpha = undefined;
     switch (train.invincibility_state) {
-        case constants.PLAYER_NOT_INVINCIBLE:
+        case constants.TRAIN_NOT_INVINCIBLE:
             train_alpha = NORMAL_TRAIN_ALPHA;
             break;
-        case constants.PLAYER_BLINKING:
+        case constants.TRAIN_BLINKING:
             train_alpha = train.sprites[0].alpha;
             break;
-        case constants.PLAYER_FULLY_INVISIBLE:
+        case constants.TRAIN_FULLY_INVISIBLE:
             train_alpha = INVINCIBLE_TRAIN_ALPHA;
             break;
     }
@@ -193,7 +193,7 @@ function update_train(train) {
         position_y = rail_tile.y * (1 - train.position_fraction) + next_rail_tile.y * train.position_fraction;
         angle = rail_angle * (1 - train.position_fraction) + next_rail_angle * train.position_fraction;
         update_grid_sprite(train.sprites[cart_index], position_x, position_y, angle, train_tint, train_alpha);
-        if (train.invincibility_state == constants.PLAYER_BLINKING) {
+        if (train.invincibility_state == constants.TRAIN_BLINKING) {
             train.sprites[cart_index].start_blinking(MINIMUM_BLINKING_ALPHA);
         }
     }

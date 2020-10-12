@@ -24,7 +24,7 @@ class Player {
     }
 
     static get(route_id) {
-        let client = get_active_clients((client) => client.player.route_id == route_id);
+        let client = get_active_clients().filter((client) => client.player.route_id == route_id);
         return client.length == 0 ? undefined : client[0].player;
     }
 

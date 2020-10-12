@@ -102,11 +102,11 @@ setInterval(() => {
 
     broadcast_event({ routes: collision_updates.routes, kills: collision_updates.kills, type: 'kill' });
 
-    collision_updates.kill.forEach(kill => {
+    collision_updates.kills.forEach(kill => {
         console.log(`killed: ${kill.killed_route_id}, killer: ${kill.killer_route_id}`);
-        let client = Player.get(kill.route_id).client;
-        if (client) {
-            client.removed = true;
+        let player = Player.get(kill.killed_route_id);
+        if (player) {
+            player.client.removed = true;
         }
     });
 }, 1000 / 60);

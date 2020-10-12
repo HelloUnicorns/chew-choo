@@ -179,7 +179,9 @@ class Rail {
         /* First let's kill all new dead crossings */
         for (const crossing of update.dead_crossings) {
             rails[crossing.rail_id].kill_crossing(crossing.x, crossing.y);
-            consume_suspects.push(crossing.rail_id);
+            if (crossing.rail_id != this.id  && crossing.rail_id != merged_rail.id) {
+                consume_suspects.push(crossing.rail_id);
+            }
         }
 
         /* Then we collect the dead crossings from the merged rail */
@@ -227,7 +229,7 @@ class Rail {
 
         /* Rebuild rail */
         for (const rail_id of new_rails) {
-            rail[rail_id] = new Rail(rail_id, all_crossings[rail_id])
+            rails[rail_id] = new Rail(rail_id, all_crossings[rail_id])
         }
 
         return new_rails;
