@@ -214,6 +214,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     update_tracks_from_server(route_id, server_tracks) {
+        if (server_tracks.length == 0) {
+            return this.remove_route(route_id);
+        }
         if (!(route_id in this.routes)) {
             this.routes[route_id] = new Route(route_id, new Train(false), false); /* server will not re-build own tracks */
         }
