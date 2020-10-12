@@ -158,9 +158,9 @@ export class GameScene extends Phaser.Scene {
     
         let killed = kills.map(kill => kill.killed);
     
-        player_died = false;
+        let player_died = false;
         for (let route_id of killed) {
-            player_died ||= this.remove_route(route_id);
+            player_died = player_died || this.remove_route(route_id);
         }
         if (player_died) {
             return;
