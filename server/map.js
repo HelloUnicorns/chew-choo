@@ -68,9 +68,9 @@ function allocate_route() {
         }
 
         route = handover_route(_r.id);
-        route.allocatable = true;
-        route.train.is_bot = false;
+        route.allocatable = false;
         route.train.is_stopped = true;
+        route.train.allocate();
 
         break;
     }
@@ -102,8 +102,8 @@ function abandon_route(route) {
     let rail_ids = route.rail.separate();
     for (const rail_id of rail_ids) {
         let new_route = handover_route(rail_id_to_route[rail_id].id);
-        new_route.position_in_route = position_in_route;
-        new_route.position_fraction = position_fraction;
+        new_route.train.position_in_route = position_in_route;
+        new_route.train.position_fraction = position_fraction;
         /* TODO: separate tracks and leftover tracks after we update the server-client protocol */
         _update.routes.push({route_id: new_route.id, tiles: new_route.rail.leftover_tracks.concat(new_route.rail.tracks)});
     }
@@ -220,7 +220,7 @@ function handle_collision(routes, coordinates) {
     } else {
         console.log(`Train in rail ${killee.rail.id} got killed by a human player`);
         let {position, old_rails} = killer.rail.merge(killee.rail, killer.train.position_in_route);
-        killer.train.position = position;
+        killer.train.position_in_route = position;
         for (const rail_id of old_rails) {
             disable_route(rail_id_to_route[rail_id]);
             let cur_route = rail_id_to_route[rail_id];
