@@ -74,19 +74,21 @@ function get_crossings_update(new_tracks, controller, controllee) {
 
     /* Iterate over tracks and and find the crossings of the new path */
     new_tracks.forEach((track) => {
-        let crossings_in_track = [];
-
-
         if (controller.has_crossing(track.x, track.y) ^ controllee.has_crossing(track.x, track.y)) {
             /*  If only one of the rails has a crossing in this position, add it to the crossings dict.
                 Otherwise, it either:
                 A. Does not exist
                 B. Is a shared crossing between the controller and the controllee, hence it should
                    not exist anymore and will be added later on to the dead crossings list. */
-            crossings_in_track.push(
-                (controller.crossings[x] && controller.crossings[x][y]) 
-                || (controllee.crossings[x] && controllee.crossings[x][y])
+            let _c = (
+                (controller.crossings[track.x] && controller.crossings[track.x][track.y]) 
+                || (controllee.crossings[track.x] && controllee.crossings[track.x][track.y])
             );
+
+            if (_c) {
+                updated_crossings[_c.x] = updated_crossings[_c.x] || {};
+                updated_crossings[_c.x][_c.y] = _c;
+            }
         }
     });
 

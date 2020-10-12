@@ -152,6 +152,8 @@ class Rail {
         crossing.occupied = true;
         crossing.entering = entering;
 
+        assert(crossing.neighbor.x == crossing.x && crossing.neighbor.y == crossing.y);
+
         if (crossing.neighbor.occupied) {
             return crossing.neighbor.rail_id;
         }
@@ -240,7 +242,7 @@ class Rail {
     }
 
     has_crossing(x, y) {
-        return this.crossings[x] && this.crossings[x][y];
+        return (this.crossings[x] && this.crossings[x][y]) != undefined;
     }
 
     length() {
@@ -324,7 +326,7 @@ class Rail {
             consumed.push(rail.id);
             console.log(`Rail ${rail.id} got consumed by ${this.id}`);
             
-            rail.emtpy();
+            rail.empty();
         }
 
         return consumed;
