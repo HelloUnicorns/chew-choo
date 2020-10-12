@@ -146,7 +146,7 @@ export class GameScene extends Phaser.Scene {
         }
         for (const route_id of routes_to_delete) {
             console.log(`Remove route in ${route_id}`);
-            this.remove_train(route_id);
+            this.remove_route(route_id);
         }
     };
     
@@ -160,23 +160,13 @@ export class GameScene extends Phaser.Scene {
         })); 
     
         let killed = kills.map(kill => kill.killed);
-        if (killed.includes(this.player_route.route_id)) {
-            /* The client's player was killed */
-            if (this.bg_music) {
-                this.bg_music.mute = true;
-            }
-            this.stopped = true;
-            this.crash.play()
-            global_data.game.scene.start('GameoverScene');
-            global_data.game.scene.stop('GameOverlayScene');
-            return;
-        }
     
+        let player_died = false;
         for (let route_id of killed) {
-            let route = this.routes[route_id];
-            if (!route.is_own) {
-                route.remove_train();
-            }
+            player_died = player_died || this.remove_route(route_id);
+        }
+        if (player_died) {
+            return;
         }
 
         this.up.play()
@@ -204,7 +194,19 @@ export class GameScene extends Phaser.Scene {
         global_data.game.scene.stop('GameScene');
     };
     
-    remove_train(route_id) {
+    remove_route(route_id) {
+        if (route_id == this.player_route.route_id) {
+            /* The client's player was killed */
+            if (this.bg_music) {
+                this.bg_music.mute = true;
+            }
+            this.stopped = true;
+            this.crash.play()
+            global_data.game.scene.start('GameoverScene');
+            global_data.game.scene.stop('GameOverlayScene');
+            return true;
+        }
+
         if (route_id in this.routes) {
             this.routes[route_id].remove();
             delete this.routes[route_id];
@@ -212,10 +214,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     update_tracks_from_server(route_id, server_tracks) {
-        if (server_tracks.length == 0) {
-            this.remove_train(route_id);
-            return;
-        }
         if (!(route_id in this.routes)) {
             this.routes[route_id] = new Route(route_id, new Train(false), false); /* server will not re-build own tracks */
         }
