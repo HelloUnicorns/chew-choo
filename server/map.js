@@ -48,7 +48,7 @@ function handover_route(route_id) {
     route.train = undefined;
     route.rail = undefined;
     delete map[old_id];
-    delete rail_id_to_route[route.rail.id];
+    delete rail_id_to_route[rail_id];
 
     /* Construct the new route */
     init_route(rail_id);
@@ -71,7 +71,7 @@ function revive_route(route) {
 /* Get a route for a human player */
 function allocate_route() {
     let route = undefined;
-    for (const _r of map) {
+    for (const _r of Object.values(map)) {
         if (!_r.allocatable) {
             continue;  
         }
@@ -122,7 +122,7 @@ function occupy_train_location(route) {
     /* Last cart */
     let last_cart_position = (locomotive_position - route.train.length + 1 + route.rail.length()) % route.rail.length();
     let cart_collision = route.rail.occupy(last_cart_position);
-    if (cart_collision && cart_collision != locomotive_collision) {
+    if (cart_collision && cart_collision != loco_collision) {
         collisions.push({
             routes: [route, rail_id_to_route[cart_collision]],
             coordinates: route.rail.coordinates(last_cart_position)
@@ -234,7 +234,7 @@ function update() {
             continue;
         }
 
-        let collision_update = handle_collision(collision.routes, collision.coordinates);
+        let collision_update = handle_collision(collision[0].routes, collision[0].coordinates);
         if (collision_update) {
             collision_updates.push(collision_updates);
         }

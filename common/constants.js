@@ -33,3 +33,5 @@ exports.TRAIN_BLINKING_TIME = 3; // In seconds
 exports.TRAIN_NOT_INVINCIBLE = 0;
 exports.TRAIN_BLINKING = 1;
 exports.TRAIN_FULLY_INVISIBLE = 2;
+
+exports.START_PLAYING_EVENT_TIMEOUT_MS = 60 * 1000;

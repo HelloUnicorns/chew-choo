@@ -2,6 +2,7 @@ const { wss, get_active_clients, send_event, broadcast_event } = require('./serv
 const { Player } = require('./player.js');
 const { performance } = require('perf_hooks');
 const map = require('./map.js');
+const { makeid } = require('../common/id.js');
 
 client_event_handlers = {};
 
@@ -37,10 +38,16 @@ wss.on('connection', (client) => {
 
     console.log(`Client ${client.id} connected`);
     console.log(`Client ${client.id} occupies route ${client.route_id}`);
+
+    let state = map.get_state_update();
+    let old_naming_convention_state = Object.entries(state).reduce((result, [route_id, route]) => (
+        result[route_id] = {tiles: route.tracks, player: route.train}, result
+    ), {});
+
     send_event(client, {
         client_id: client.id,
         type: 'connection',
-        map: map.get_state_update().map(route => ({tiles: route.tracks, player: route.train})),
+        map: old_naming_convention_state,
         route_id: client.route_id
     });
 
@@ -58,7 +65,7 @@ wss.on('connection', (client) => {
         const message = JSON.parse(json_data);
 
         if (client.removed) {
-            console.warning(`Removed client ${client.id} sent message ${message.type}`)
+            console.warn(`Removed client ${client.id} sent message ${message.type}`)
             return;
         }
         if (message.type in client_event_handlers) {
