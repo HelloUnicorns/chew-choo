@@ -246,6 +246,22 @@ function update() {
         collision_updates.push(abandon_route(route));        
     }
 
+<<<<<<< HEAD
+=======
+    /* TODO: DELETE THIS
+        DEBUG - CHECK ALL BOTS ARE IN SYNC */
+    for (const route of Object.values(map)) {
+        if (route.train.active && !route.train.is_stopped && route.train.is_bot) {
+            let current_pos = route.train.position_in_route + route.train.position_fraction;
+            let bot_pos = Object.values(bot_position()).reduce((a, b) => a + b , 0);
+            let delta = Math.abs(current_pos - bot_pos);
+            if (delta != 0) {
+                throw new Error(`Bot ${route.id} in rail ${route.rail.id} drifted off`);
+            }
+        }
+    }
+
+>>>>>>> 57fa9c8d2384b35759db5cabf601c7a3227fd4c6
     let route_ids = Object.keys(map);
 
     for (const route_id of route_ids) {

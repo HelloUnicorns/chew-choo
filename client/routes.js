@@ -3,6 +3,7 @@ export class Route {
          this.is_own = is_own;
          this.player_id = player_id;
          this.train = train;
+         this.train.set_route(this);
          this.tracks = [];
          this.leftover_tracks = [];
      }
