@@ -253,7 +253,7 @@ function update() {
             let bot_pos = Object.values(bot_position()).reduce((a, b) => a + b , 0);
             let delta = Math.abs(current_pos - bot_pos);
             if (delta != 0) {
-                throw new Excpetion(`Bot ${route.id} in rail ${route.rail.id} drifted off`);
+                throw new Error(`Bot ${route.id} in rail ${route.rail.id} drifted off`);
             }
         }
     }

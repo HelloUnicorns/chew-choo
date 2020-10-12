@@ -96,12 +96,6 @@ setInterval(() => {
     let state = map.get_state_update();
     let trains = Object.entries(state).reduce((result, [route_id, route]) => (result[route_id] = route.train, result), {});
 
-    broadcast_event({ locations: trains, changed_routes: removed_leftover, type: 'position' });
-
-    if (collision_updates.kills.length == 0) {
-        return;
-    }
-
     broadcast_event({ routes: collision_updates.routes, kills: collision_updates.kills, type: 'kill' });
 
     collision_updates.kills.forEach(kill => {
@@ -111,6 +105,12 @@ setInterval(() => {
             player.client.removed = true;
         }
     });
+
+    broadcast_event({ locations: trains, changed_routes: removed_leftover, type: 'position' });
+
+    if (collision_updates.kills.length == 0) {
+        return;
+    }
 }, 1000 / 60);
 
 /* Check win condition */

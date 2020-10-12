@@ -136,9 +136,14 @@ export class GameScene extends Phaser.Scene {
             return;
         }
         this.last_server_time = event.server_time;
+        let routes_to_delete = new Set(Object.keys(this.routes))
         for (let route_id in event.locations) {
+            routes_to_delete.delete(route_id);
             let route = this.routes[route_id];
             route.train.update_server_train_state(event.locations[route_id]);
+        }
+        for (const route_id of routes_to_delete) {
+            this.remove_train(route_id);
         }
     };
     
@@ -152,7 +157,7 @@ export class GameScene extends Phaser.Scene {
         })); 
     
         let killed = kills.map(kill => kill.killed);
-        if (killed.includes(this.player_route.player_id)) {
+        if (killed.includes(this.player_route.route_id)) {
             /* The client's player was killed */
             if (this.bg_music) {
                 this.bg_music.mute = true;
@@ -196,30 +201,34 @@ export class GameScene extends Phaser.Scene {
         global_data.game.scene.stop('GameScene');
     };
     
-    update_tracks_from_server(player_id, server_tracks) {
+    remove_train(route_id) {
+        if (route_id in this.routes) {
+            this.routes[route_id].remove();
+            delete this.routes[route_id];
+        }
+    }
+
+    update_tracks_from_server(route_id, server_tracks) {
         if (server_tracks.length == 0) {
-            if (player_id in this.routes) {
-                this.routes[player_id].remove();
-                delete this.routes[player_id];
-            }
+            this.remove_train(route_id);
             return;
         }
-        if (!(player_id in this.routes)) {
-            this.routes[player_id] = new Route(player_id, undefined, false); /* server will not re-build own tracks */
+        if (!(route_id in this.routes)) {
+            this.routes[route_id] = new Route(route_id, undefined, false); /* server will not re-build own tracks */
         }
-        let route = this.routes[player_id];
+        let route = this.routes[route_id];
         route.remove_tracks();
         route.tracks = server_tracks.map(server_track => Track.from_server_track(server_track, route.is_own));
         route.draw_tracks();
     }
     
-    update_server_route(player_id, server_route, is_own) {
-        if (!(player_id in this.routes)) {
+    update_server_route(route_id, server_route, is_own) {
+        if (!(route_id in this.routes)) {
             let train = new Train(server_route.player, is_own);
-            this.routes[player_id] = new Route(player_id, train, is_own);
+            this.routes[route_id] = new Route(route_id, train, is_own);
         }
-        let route = this.routes[player_id];
-        this.update_tracks_from_server(player_id, server_route.tiles);
+        let route = this.routes[route_id];
+        this.update_tracks_from_server(route_id, server_route.tiles);
         route.train.update_server_train_state(server_route.player);
     }    
 }
