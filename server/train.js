@@ -26,7 +26,7 @@ class Train {
         this.active = true;
     }
 
-    #invinciblize = () => {
+    #make_invincible = () => {
         clearTimeout(this.invincibility_timeout);
 
         this.invincibility_state = constants.TRAIN_FULLY_INVISIBLE_TIME;
@@ -43,18 +43,18 @@ class Train {
             }, constants.TRAIN_FULLY_INVISIBLE_TIME_MS);
     }
 
-    #vinciblize = () => {
+    #make_vincible = () => {
         clearTimeout(this.invincibility_timeout);
         this.invincibility_state = constants.TRAIN_NOT_INVINCIBLE
     }
 
     allocate() {
         this.is_bot = false;
-        this.#invinciblize();
+        this.#make_invincible();
     }
 
     free() {
-        this.#vinciblize();
+        this.#make_vincible();
     }
 
     collisionable() {

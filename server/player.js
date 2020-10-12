@@ -29,7 +29,7 @@ class Player {
     }
 
     /* Events */
-    resume_player() {
+    start_playing() {
         this.remove_start_playing_timeout();
         start_playing(this.route_id);
     }
