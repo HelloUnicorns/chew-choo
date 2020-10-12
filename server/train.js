@@ -39,8 +39,8 @@ class Train {
                     () => {
                         /* Train is not invincible anymore */
                         this.invincibility_state = constants.TRAIN_NOT_INVINCIBLE;
-                    }, constants.TRAIN_BLINKING_TIME * 1000);
-            }, constants.TRAIN_FULLY_INVISIBLE_TIME * 1000);
+                    }, constants.TRAIN_BLINKING_TIME_MS);
+            }, constants.TRAIN_FULLY_INVISIBLE_TIME_MS);
     }
 
     #vinciblize = () => {

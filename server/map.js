@@ -7,19 +7,9 @@ const {makeid} = require('../common/id.js');
 let map = {};
 let rail_id_to_route = {};
 
-function print_bordering_routes(route_id) {
-    let id = route_id;
-    let f = routes.get_bordering_routes;
-    console.log(`
-        ${f(id, 'up-left')}  ${f(id, 'up-right')}        
-          ${id}
-        ${f(id, 'down-left')}  ${f(id, 'down-right')}
-    `);
-}
-
 function init_route(rail_id) {
     let id = makeid();
-    
+
     map[id] = {
         id: id,
         allocatable: true, /* Whether a human player can allocate this route or not */
@@ -220,6 +210,10 @@ function handle_collision(routes, coordinates) {
     } else {
         console.log(`Train in rail ${killee.rail.id} got killed by a human player`);
         let {position, old_rails} = killer.rail.merge(killee.rail, killer.train.position_in_route);
+        if (killer.rail.leftover_tracks.length > 0) {
+            killer.train.is_in_leftover = true;
+            console.log(`Route ${killer.id} in leftover`);
+        }
         killer.train.position_in_route = position;
         for (const rail_id of old_rails) {
             disable_route(rail_id_to_route[rail_id]);

@@ -1,5 +1,6 @@
 const { wss, get_active_clients, send_event, broadcast_event } = require('./server.js');
 const { Player } = require('./player.js');
+
 const { performance } = require('perf_hooks');
 const map = require('./map.js');
 const { makeid } = require('../common/id.js');
@@ -16,7 +17,7 @@ map.init();
 
 wss.on('connection', (client) => {
     let route_id = map.allocate_route();
-    
+
     if (route_id == undefined) {
         // All routes are occupied
         send_event(client, {
@@ -76,6 +77,7 @@ wss.on('connection', (client) => {
                 console.warning(`Client ${client.id} sent message ${message.type} but is no longer controlling ${route_id}`);
                 return;
             }
+
             /* JS is such a broken language */
             player[message.type](message);
         }

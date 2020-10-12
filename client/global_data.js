@@ -1,5 +1,3 @@
 exports.game_scene = undefined;
-exports.player = {
-    train: undefined,
-};
+exports.game = undefined;
 exports.latency = 0;

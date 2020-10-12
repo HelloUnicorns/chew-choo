@@ -1,7 +1,6 @@
+const _ = require('lodash');
 const global_data = require('./global_data.js');
 const constants = require('../common/constants.js');
-const { get_train_by_id, get_number_of_trains } = require('./train.js');
-const { get_rails } = require('./rails.js');
 
 const SPEED_METER_SCALE = 0.5;
 
@@ -77,23 +76,23 @@ class GameOverlayScene extends Phaser.Scene {
     }
 
     update() {
-        if (global_data.player.train) {
-            this.speed_meter.setText(`${global_data.player.train.speed.toFixed(2)} tps`);
-            let angle = SPEED_METER_ARROW_MIN_ANGLE + (SPEED_METER_ARROW_MAX_ANGLE - SPEED_METER_ARROW_MIN_ANGLE) * (global_data.player.train.speed - constants.MIN_SPEED) / (constants.MAX_SPEED - constants.MIN_SPEED);
-            this.speed_meter_arrow.setAngle(angle);
+        if (!global_data.game_scene.player_route) {
+            return;
         }
 
-        let number_of_remaining_players = get_number_of_trains();
+        this.speed_meter.setText(`${global_data.game_scene.player_route.train.speed.toFixed(0)} tps`);
+        let angle = SPEED_METER_ARROW_MIN_ANGLE + (SPEED_METER_ARROW_MAX_ANGLE - SPEED_METER_ARROW_MIN_ANGLE) * (global_data.game_scene.player_route.train - constants.MIN_SPEED) / (constants.MAX_SPEED - constants.MIN_SPEED);
+        this.speed_meter_arrow.setAngle(angle);
+        
+        let number_of_remaining_players = Object.keys(global_data.game_scene.routes).length;
         this.remaining_players.setText(`Remaining: ${number_of_remaining_players}`);
-
-        let rails = get_rails();
         let leaderboard_info = [];
-        for (const route_id in rails) {
-            leaderboard_info.push({route_id, score: rails[route_id].tiles.length});
+        for (const [route_id, route] of Object.entries(global_data.game_scene.routes)) {
+            leaderboard_info.push({ route_id, score: route.score });
         }
         leaderboard_info.sort((info_a, info_b) => { return info_b.score - info_a.score })
 
-        let player_rank = leaderboard_info.findIndex((info) => { return info.route_id == global_data.player.train.route_id });
+        let player_rank = leaderboard_info.findIndex((info) => { return info.route_id == global_data.game_scene.player_route.player_id });
         let player_found_in_top = false;
         for (let i = 0; i < LEADERBOARD_TOP_SIZE; i++) {
             if (i >= number_of_remaining_players) {
@@ -109,7 +108,7 @@ class GameOverlayScene extends Phaser.Scene {
                     player_found_in_top = true;
                 }
                 else {
-                    if (get_train_by_id(leaderboard_info[i].route_id).is_bot) {
+                    if (global_data.game_scene.routes[leaderboard_info[i].route_id].is_bot) {
                         this.leaderboard_rows_bots[i].setText(`${i + 1}. Player ${leaderboard_info[i].route_id}: ${leaderboard_info[i].score}`)
                         this.leaderboard_rows_not_bots[i].setText('')
                     }
