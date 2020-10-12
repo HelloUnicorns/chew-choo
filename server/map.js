@@ -1,7 +1,7 @@
 const { performance } = require('perf_hooks');
 
 const constants = require('../common/constants.js');
-const {rails, init_rails} = require('./rail.js');
+const {get_rails, init_rails} = require('./rail.js');
 const { exception, assert } = require('console');
 const { Train } = require('./train.js');
 const {makeid} = require('../common/id.js');
@@ -26,7 +26,7 @@ function init_route(rail_id) {
         id: id,
         allocatable: true, /* Whether a human player can allocate this route or not */
         train: new Train(id),
-        rail: rails[rail_id]
+        rail: get_rails()[rail_id]
     };
 
     rail_id_to_route[rail_id] = map[id];
@@ -61,11 +61,11 @@ function handover_route(route_id) {
 
 /* A human player was killed and all the routes it killed now come back to life */
 function revive_route(route) {
-    let route = handover_route(route.id);
+    let new_route = handover_route(route.id);
     let {position_in_route, position_fraction} = Train.bot_position(Object.values(map).map((route) => route.train));
-    route.position_in_route = position_in_route;
-    route.position_fraction = position_fraction;
-    return route;
+    new_route.position_in_route = position_in_route;
+    new_route.position_fraction = position_fraction;
+    return new_route;
 }
 
 /* Get a route for a human player */
@@ -100,7 +100,7 @@ function start_playing(route_id) {
 
 function init() {
     init_rails();
-    for (let i = 0; i < constants.NUMMBER_OF_ROUTES; ++i) {
+    for (let i = 0; i < constants.NUMBER_OF_ROUTES; ++i) {
         init_route(i);
     }
 }
@@ -141,7 +141,6 @@ function occupy_train_location(route) {
 
     return collisions;
 }
-/***************************************************************** */
 
 function grid_distance(point0, point1) {
     return Math.abs(point0.x - point1.x) + Math.abs(point0.y - point1.y);
@@ -214,7 +213,7 @@ function update() {
 
     Train.update_time();
 
-    for (const route of map) {
+    for (const route of Object.values(map)) {
         if (!route.train.active || route.train.is_stopped) {
             continue;
         }
@@ -276,7 +275,7 @@ function get_state_update() {
                     length: route.train.length,
                     speed: route.train.speed,
                     is_stopped: route.train.is_stopped,
-                    invincibility_state: player.invincibility_state,
+                    invincibility_state: route.train.invincibility_state,
                     is_speed_up: route.train.is_speed_up,
                     is_speed_down: route.train.is_speed_down,
                     is_bot: route.train.is_bot
@@ -306,5 +305,6 @@ exports.update = update;
 exports.update_speed_change = update_speed_change;
 exports.handover_route = handover_route;
 exports.start_playing = start_playing;
+
 
 exports.winner = winner;

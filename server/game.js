@@ -1,63 +1,9 @@
-const _ = require('lodash');
-const { wss } = require('./server.js');
-const constants = require('../common/constants.js');
+const { wss, get_active_clients, send_event, broadcast_event } = require('./server.js');
+const { Player } = require('./player.js');
 const { performance } = require('perf_hooks');
 const map = require('./map.js');
 
-client_event_handlers = {}
-
-/* Clients functions */
-function get_client(route_id) {
-    let client = wss.clients.filter((client) => client_route_id == route_id).filter(is_active_client);
-    return client.length == 0 ? undefined : client[0];
-}
-
-function is_active_client(client) {
-    return client.initialized || !client.removed;   
-}
-
-function get_active_clients() {
-    return wss.clients.filter(is_active_client);
-}
-
-/* Event sending functions */
-function send_event(client, event) {
-    client.send(JSON.stringify(event));
-}
-
-function broadcast_event(event) {
-    get_active_clients().forEach((client) => send_event(client, event));
-}
-
-/* Player handlers */
-class Player {
-    constructor (client, route_id) {
-        this.route_id = route_id;
-        this.client = client;
-    }
-
-    remove_start_playing_timeout() {
-        clearTimeout(this.start_playing_event_timeout);
-        this.start_playing_event_timeout = undefined;
-    }
-
-    register_start_playing_event_timeout() {
-        this.start_playing_event_timeout = setTimeout(() => {
-            console.log(`Client ${this.client.id} did not send start game event - got removed`);
-            this.client.removed = true;
-            map.handover_route(this.route_id);
-        }, constants.START_PLAYING_EVENT_TIMEOUT_MS);
-    }
-
-    start_playing() {
-        this.remove_start_playing_timeout();
-        map.start_playing(this.route_id);
-    }
-
-    update_speed_change(event) {
-        map.update_speed_change(this.route_id, event.value);
-    }
-}
+client_event_handlers = {};
 
 client_event_handlers.latency_update = (client, event) => {
     let latency = (performance.now() - event.prev_server_time) / 2;
@@ -86,6 +32,7 @@ wss.on('connection', (client) => {
     client.removed = false;
 
     let player = new Player(client, route_id);
+    client.player = player;
     player.register_start_playing_event_timeout();
 
     console.log(`Client ${client.id} connected`);
@@ -137,19 +84,20 @@ setInterval(() => {
 /* Position and kill */
 setInterval(() => {
     let {removed_leftover, collision_updates} = map.update();
-    let state = map.get_state_update().map((state) => state.train);
+    let state = map.get_state_update();
+    let trains = Object.entries(state).reduce((result, [route_id, route]) => (result[route_id] = route.train, result), {});
 
-    broadcast_event({ locations: state, changed_routes: removed_leftover, type: 'position' });
+    broadcast_event({ locations: trains, changed_routes: removed_leftover, type: 'position' });
 
-    if (collision_updates.kill.length == 0) {
+    if (collision_updates.kills.length == 0) {
         return;
     }
 
-    broadcast_event({ routes: collision_updates.routes, kills: collision_updates.kill, type: 'kill' });
+    broadcast_event({ routes: collision_updates.routes, kills: collision_updates.kills, type: 'kill' });
 
     collision_updates.kill.forEach(kill => {
         console.log(`killed: ${kill.killed_route_id}, killer: ${kill.killer_route_id}`);
-        let client = get_client(kill.route_id);
+        let client = Player.get(kill.route_id).client;
         if (client) {
             client.removed = true;
         }
@@ -166,7 +114,7 @@ setInterval(() => {
     /* Victory! :) */
     console.log(`Player in route ${winner} win!`);
 
-    let client = get_client(winner);
+    let client = Player.get(winner).client;
     if (client) {
         send_event(client, { type: 'win' }); 
         client.removed = true;

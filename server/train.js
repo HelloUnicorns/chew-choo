@@ -1,5 +1,7 @@
 
 const { performance } = require('perf_hooks');
+
+const constants = require('../common/constants.js');
 const { calculate_speed_and_position, set_train_position } = require('../common/position.js');
 
 class Train {
@@ -24,7 +26,7 @@ class Train {
         this.active = true;
     }
 
-    #invinciblize() {
+    #invinciblize = () => {
         clearTimeout(this.invincibility_timeout);
 
         this.invincibility_state = constants.TRAIN_FULLY_INVISIBLE_TIME;
@@ -41,7 +43,7 @@ class Train {
             }, constants.TRAIN_FULLY_INVISIBLE_TIME * 1000);
     }
 
-    #vinciblize() {
+    #vinciblize = () => {
         clearTimeout(this.invincibility_timeout);
         this.invincibility_state = constants.TRAIN_NOT_INVINCIBLE
     }

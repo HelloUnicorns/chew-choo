@@ -1,8 +1,11 @@
 
 const constants = require('../common/constants.js');
-const {union_tracks, flatten} = erquire('./union.js')
+const {union_tracks, flatten} = require('./union.js')
 const assert  = require('assert');
 
+
+const directions = ['right', 'down', 'left', 'up'];
+const corners = ['up-left', 'up-right', 'down-right', 'down-left'];
 
 /*  Rail box is a group of rails which share the same
     grid distance from the center of the map (rail 0).
@@ -52,11 +55,11 @@ class RailBox {
         return boxes[this.id - 1];
     }
 
-    #calc_size() {
+    #calc_size = () => {
         return (4 * (this.id - 1)) || 1;
     }
 
-    #calc_max_rail() {
+    #calc_max_rail = () => {
         return 2 * this.id * (this.id - 1);
     }
 
@@ -102,24 +105,25 @@ class Rail {
                     continue;
                 }
 
+                let x = start_position.x + crossing.x;
+                let y = start_position.y + crossing.y;
+
                 let current_crossing = {
                     rail_id: this.id,
                     original_rail_id: this.id,
-                    x: start_position.x + crossing.x,
-                    y: start_position.y + crossing.y,
+                    x,
+                    y,
                     neighbor: undefined,
                     occupied: false,
                     entering: false,
                 };
 
                 let neighbor_rail = rails[neighbor_rail_id];
-                let neighbor_start_position = rail_start_positions[neighbor_rail_id];
-
                 let neighbor_crossing = {
                     rail_id: neighbor_rail_id,
                     original_rail_id: neighbor_rail_id,
-                    x: neighbor_start_position.x + crossing.x,
-                    y: neighbor_start_position.y + crossing.y,
+                    x,
+                    y,
                     neighbor: undefined,
                     occupied: false,
                     entering: false,
@@ -128,10 +132,10 @@ class Rail {
                 current_crossing.neighbor = neighbor_crossing;
                 neighbor_crossing.neighbor = current_crossing;
 
-                current_rail.crossings[x] = current_rail.crossings[x] || {};
+                this.crossings[x] = this.crossings[x] || {};
                 neighbor_rail.crossings[x] = neighbor_rail.crossings[x] || {};
 
-                current_rail.crossings[x][y] = current_crossing;
+                this.crossings[x][y] = current_crossing;
                 neighbor_rail.crossings[x][y] = neighbor_crossing;
             }
         }
@@ -298,7 +302,7 @@ class Rail {
         return -1;
     }
 
-    #handle_consume(consume_suspects) {
+    #handle_consume = (consume_suspects) => {
         let consumed = [];
         for (const suspect_id of consume_suspects) {
             let rail = rails[suspect_id];
@@ -325,6 +329,7 @@ class Rail {
     }
 }
 
+
 function get_start_positions() {
     /*  60      41      42      43      44      45
             40      25      26      27      28
@@ -345,7 +350,7 @@ function get_start_positions() {
     let count = 1;
     let current_count = 1;
 
-    for (let i = 1; i < MAX_PLAYERS; i++) {
+    for (let i = 1; i < constants.NUMBER_OF_ROUTES; i++) {
         last = start_positions[i - 1];
         switch (direction) {
             case 'right':
@@ -421,49 +426,49 @@ function get_crossing_positions() {
     len = crossings.push({
         x: S.x + (constants.TRACK_WIDTH / 3 - 2),
         y: S.y + (0),
-        corner: corners[Math.floor(len / 2)]
+        corner: corners[Math.floor((len + 1) / 2) % corners.length]
     }); // A0
 
     len = crossings.push({
         x: crossings[len - 1].x + (constants.TRACK_WIDTH / 3 + 1),
         y: crossings[len - 1].y + (0),
-        corner: corners[Math.floor(len / 2)]
+        corner: corners[Math.floor((len + 1) / 2) % corners.length]
     }); // B0
 
     len = crossings.push({
         x: crossings[len - 1].x + (constants.TRACK_WIDTH / 3 - 1),
         y: crossings[len - 1].y + (constants.TRACK_HEIGHT / 3 - 1),
-        corner: corners[Math.floor(len / 2)]
+        corner: corners[Math.floor((len + 1) / 2) % corners.length]
     }); // A1
 
     len = crossings.push({
         x: crossings[len - 1].x + (0),
         y: crossings[len - 1].y + (constants.TRACK_HEIGHT / 3 + 1),
-        corner: corners[Math.floor(len / 2)]
+        corner: corners[Math.floor((len + 1) / 2) % corners.length]
     }); // B1
 
     len = crossings.push({
         x: crossings[len - 1].x - (constants.TRACK_WIDTH / 3 - 1),
         y: crossings[len - 1].y + (constants.TRACK_HEIGHT / 3 - 1),
-        corner: corners[Math.floor(len / 2)]
+        corner: corners[Math.floor((len + 1) / 2) % corners.length]
     }); // A2
 
     len = crossings.push({
         x: crossings[len - 1].x - (constants.TRACK_WIDTH / 3 + 1),
         y: crossings[len - 1].y - (0),
-        corner: corners[Math.floor(len / 2)]
+        corner: corners[Math.floor((len + 1) / 2) % corners.length]
     }); // B2
 
     len = crossings.push({
         x: crossings[len - 1].x - (constants.TRACK_WIDTH / 3 - 1),
         y: crossings[len - 1].y - (constants.TRACK_HEIGHT / 3 - 1),
-        corner: corners[Math.floor(len / 2)]
+        corner: corners[Math.floor((len + 1) / 2) % corners.length]
     }); // A3
 
     len = crossings.push({
         x: crossings[len - 1].x + (0),
         y: crossings[len - 1].y - (constants.TRACK_HEIGHT / 3 + 1),
-        corner: corners[Math.floor(len / 2)]
+        corner: corners[Math.floor((len + 1) / 2) % corners.length]
     }); // B3
 
     for (const [index, c] of crossings.entries()) {
@@ -526,7 +531,7 @@ function get_boxes() {
     let _boxes = {};
     let current_box = 1;
     let current_rail = 0;
-    while (current_rail < constants.MAX_PLAYERS) {
+    while (current_rail < constants.NUMBER_OF_ROUTES) {
         _boxes[current_box] = new RailBox(current_box);
         current_rail = _boxes[current_box].max + 1;
         current_box += 1;
@@ -568,20 +573,23 @@ function build_rectangular_rail(grid_x, grid_y, width, height, rail_id) {
 }
 
 function init_rails() {
-    for (let i = 0; i < constants.MAX_PLAYERS; ++i) {
+    for (let i = 0; i < constants.NUMBER_OF_ROUTES; ++i) {
         rails[i] = new Rail(i);
     }
 }
 
+function get_rails() {
+    return rails;
+}
 
-const corners = ['up-left', 'up-right', 'down-right', 'down-left'];
+
 const crossing_positions = get_crossing_positions();
 const boxes = get_boxes();
 const rail_start_positions = get_start_positions();
-const corners = ['up-left', 'up-right', 'down-right', 'down-left'];
+
+
 
 let rails = {};
 
-exports.get_bordering_rails = get_bordering_rails;
 exports.init_rails = init_rails;
-exports.rails = rails;
+exports.get_rails = get_rails;

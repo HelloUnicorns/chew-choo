@@ -20,6 +20,7 @@
     "bufferutil": "^4.0.1",
     "compression": "^1.7.4",
     "express": "^4.17.1",
+    "lodash": "^4.17.20",
     "phaser": "^3.24.1",
     "utf-8-validate": "^5.0.2",
     "ws": "^7.3.1"
