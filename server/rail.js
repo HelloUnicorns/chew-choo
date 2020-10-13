@@ -529,7 +529,7 @@ function get_neighbor_rail(rail_id, corner) {
                 return box.next().rail(box.zero_index(idx));
 
             /* Rail found in the prev box */
-            return box.previous().rail(idx - box.id + 1);
+            return box.previous().rail(idx - 2);
     }
 
     throw new Error(`Cannot find ${corner} corner of rail ${rail_id}`);
