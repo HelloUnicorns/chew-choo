@@ -239,12 +239,13 @@ function update() {
     let routes_removed_leftover = [];
     let collision_updates = [];
 
-    Train.update_time();
-
     /* Handle abandoned routes first */
     for (const route of Object.values(map).filter(route => route.train.abandoned)) {
         collision_updates.push(abandon_route(route));        
     }
+
+    /* Update time only after abandoned routes are handed over */
+    Train.update_time();
 
     let route_ids = Object.keys(map);
 

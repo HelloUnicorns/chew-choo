@@ -16,7 +16,7 @@ const wss = new Server({ server });
 
 
 function is_active_client(client) {
-    return client.initialized || !client.removed;
+    return client.initialized && !client.removed;
 }
 
 function get_active_clients() {

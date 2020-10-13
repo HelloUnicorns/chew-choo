@@ -2,6 +2,7 @@ const { wss, get_active_clients, send_event, broadcast_event } = require('./serv
 const { Player } = require('./player.js');
 
 const { performance } = require('perf_hooks');
+const assert  = require('assert');
 const map = require('./map.js');
 const { makeid } = require('../common/id.js');
 
