@@ -28,14 +28,28 @@ class Player {
         return client.length == 0 ? undefined : client[0].player;
     }
 
-    /* Events */
-    start_playing() {
-        this.remove_start_playing_timeout();
-        start_playing(this.route_id);
+    #event_handlers = {
+        start_playing : () => {
+            this.remove_start_playing_timeout();
+            start_playing(this.route_id);
+            return true;
+        },
+
+        speed_change : (event) => {
+            update_speed_change(this.route_id, event.value);
+            return true;
+        }
     }
 
-    speed_change(event) {
-        update_speed_change(this.route_id, event.value);
+    has_event(type) {
+        return type in this.#event_handlers;
+    }
+
+    handle_event(type, message) {
+        if (this.has_event(type)) {
+            return this.#event_handlers[type](message);
+        }
+        return false;
     }
 }
 

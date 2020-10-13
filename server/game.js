@@ -72,15 +72,13 @@ wss.on('connection', (client) => {
         if (message.type in client_event_handlers) {
             client_event_handlers[message.type](client, message);
         }
-        else if (message.type in player) {
-            if (player.client != client) {
-                console.warning(`Client ${client.id} sent message ${message.type} but is no longer controlling ${route_id}`);
-                return;
-            }
 
-            /* JS is such a broken language */
-            player[message.type](message);
+        if (player.client != client) {
+            console.warning(`Client ${client.id} sent message ${message.type} but is no longer controlling ${route_id}`);
+            return;
         }
+
+        player.handle_event(message.type, message);
     });
 });
 
