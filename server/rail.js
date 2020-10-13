@@ -15,6 +15,64 @@ const corners = ['up-left', 'up-right', 'down-right', 'down-left'];
     Box 3: rails 5 - 12
     Box 4: rails 13 - 24
     etc...
+
+
+    Visually:
+    ┌────────────Box 4─────────────┐
+    │24       13        14       15│
+    │   ┌────────Box 3────────┐    │
+    │   │ 12       5        6 │    │
+    │   │   ┌────Box 2────┐   │    │
+    │23 │   │ 4         1 │   │  16│
+    │   │   │   ┌Box 1┐   │   │    │
+    │   │ 11│   │  0  │   │ 7 │    │
+    │   │   │   └─────┘   │   │    │
+    │22 │   │ 3         2 │   │  17│
+    │   │   └─────────────┘   │    │
+    │   │ 10       9        8 │    │
+    │   └─────────────────────┘    │
+    │21       20        19       18│
+    └──────────────────────────────┘
+
+    The maximum rail id in each box can be calculated using the following formula:
+    x = 2(n-1)n
+    Where x is the rail id and n is the box id.
+    We can therefore calculate the box id of any rail, even if it is not the maximum one:
+        ⌈  (1 + sqrt(1 + 2x))  ⌉
+    n = │ ───────────────────  │
+        │          2           │
+
+
+    We use 1-based index to generalize the position of a rail in a given box.
+    for example in box 3:
+    ┌──────────────────────Box 3──────────────────────┐
+    │                                                 │
+    │ index(12)=8       index(5)=1        index(6)=2  │
+    │                                                 │
+    │ index(11)=7                         index(7)=3  │
+    │                                                 │
+    │ index(10)=6       index(9)=5        index(8)=4  │
+    │                                                 │
+    └─────────────────────────────────────────────────┘
+    The function "rail" is the inverse function of the "index" function described above.
+
+    The size of the box is the number of rails in the box.
+    For example, for size of box 3 is 8, since it has 8 rails in it.
+
+    The middle index of a box is the index in the bottom right corner.
+    The index can be simply calculated: size / 2
+
+    Sometimes, it's useful to use negative index if the index is greather than the middle index.
+    For example:
+    ┌─────────────────────────────Box 3──────────────────────────────┐
+    │                                                                │
+    │ zero_index(8)=0        zero_index(1)=1        zero_index(2)=2  │
+    │                                                                │
+    │ zero_index(7)=-1                              zero_index(3)=3  │
+    │                                                                │
+    │ zero_index(6)=-2       zero_index(5)=-3       zero_index(4)=4  │
+    │                                                                │
+    └────────────────────────────────────────────────────────────────┘
 */
 class RailBox {
     constructor(box_id) {
@@ -47,10 +105,18 @@ class RailBox {
         return index < 1 ? (this.max + index) : (this.min + (index - 1) %  (this.max - this.min + 1));
     }
 
+    /*
+       Return box with id + 1
+       For example, if this is box 10, the next box is 1
+    */
     next() {
         return boxes[this.id + 1];
     }
     
+    /*
+        Return box with id - 1
+        For example, if this is box 10, the previous box is 9
+    */
     previous() {
         return boxes[this.id - 1];
     }
