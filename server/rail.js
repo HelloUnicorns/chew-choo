@@ -10,10 +10,10 @@ const corners = ['up-left', 'up-right', 'down-right', 'down-left'];
 /*  Rail box is a group of rails which share the same
     grid distance from the center of the map (rail 0).
     
-    For example, box 1 contains rail 0
-    Box 2: rails 1 - 4
-    Box 3: rails 5 - 12
-    Box 4: rails 13 - 24
+    For example, box #1 contains rail 0
+    Box #2: rails 1 - 4
+    Box #3: rails 5 - 12
+    Box #4: rails 13 - 24
     etc...
 
 
@@ -44,7 +44,7 @@ const corners = ['up-left', 'up-right', 'down-right', 'down-left'];
 
 
     We use 1-based index to generalize the position of a rail in a given box.
-    for example in box 3:
+    for example in box #3:
     ┌──────────────────────Box 3──────────────────────┐
     │                                                 │
     │ index(12)=8       index(5)=1        index(6)=2  │
@@ -56,13 +56,19 @@ const corners = ['up-left', 'up-right', 'down-right', 'down-left'];
     └─────────────────────────────────────────────────┘
     The function "rail" is the inverse function of the "index" function described above.
 
-    The size of the box is the number of rails in the box.
-    For example, for size of box 3 is 8, since it has 8 rails in it.
+    The size of a given box is the number of rails it contains.
+    For example, the size of box #3 is 8, since it has 8 rails in it.
 
-    The middle index of a box is the index in the bottom right corner.
-    The index can be simply calculated: size / 2
+    The middle index of a box is the index of the rail in the bottom right corner.
+    Its formula: size / 2
 
-    Sometimes, it's useful to use negative index if the index is greather than the middle index.
+    Sometimes, it's useful to use negative index intead of the 1-based index presented above.
+    We call this type of indexing "zero index".
+    In zero indexing, the rail in the top left corner of the box has zero index #0.
+    Starting at zero index #0, going clockwise increases the index, and going counter clockwise decreases it.
+    The middle index can be both positive or negative.
+
+    The function "zero_index", takes a 1-based index and converts it to the its zero index counterpart.
     For example:
     ┌─────────────────────────────Box 3──────────────────────────────┐
     │                                                                │
@@ -70,9 +76,10 @@ const corners = ['up-left', 'up-right', 'down-right', 'down-left'];
     │                                                                │
     │ zero_index(7)=-1                              zero_index(3)=3  │
     │                                                                │
-    │ zero_index(6)=-2       zero_index(5)=-3       zero_index(4)=4  │
+    │ zero_index(6)=-2       zero_index(5)=-3       zero_index(4)=±4 │
     │                                                                │
     └────────────────────────────────────────────────────────────────┘
+
 */
 class RailBox {
     constructor(box_id) {
@@ -165,7 +172,7 @@ class Rail {
         } else {
             /* Construct crossings */
             for (let crossing of crossing_positions) {
-                let neighbor_rail_id = get_neighbor_rail(this.id, crossing.corner);
+                let neighbor_rail_id = this.#get_neighbor(crossing.corner);
                 if (!rails[neighbor_rail_id]) {
                     /* The rail is not built */
                     continue;
@@ -401,8 +408,50 @@ class Rail {
 
         return consumed;
     }
-}
 
+    #get_neighbor = (corner) => {
+        let box = RailBox.rail_to_box(rail_id);
+
+        // Index of the rail in the box, 1-based
+        let idx = (rail_id - (box.min - 1));
+
+        switch (corner) {
+            case 'up-right':
+                if (idx % box.size <= box.size / 2)
+                    /* Rail found in next box */
+                    return box.next().rail(idx % box.size + 1);
+
+                /* Rail found in the prev box */
+                return box.previous().rail(box.zero_index(idx) + 1);
+
+            case 'down-right':
+                /* Rail found in next box */
+                if ((idx - (box.id - 1) + box.size) % box.size <= box.size / 2)
+                    return box.next().rail(idx + 1 + (box.id > 1 ? 1 : 0));
+
+                /* Rail found in the prev box */
+                return box.previous().rail(box.zero_index(idx));
+
+            case 'down-left':
+                 /* Rail found in next box */
+                if (idx >= box.size / 2)
+                    return box.next().rail(box.zero_index(idx, inclusive=true) - 1);
+
+                /* Rail found in the prev box */
+                return box.previous().rail(idx - 1);
+
+            case 'up-left':
+                /* Rail found in next box */
+                if ((idx + (box.id - 1)) % box.size <= box.size / 2)
+                    return box.next().rail(box.zero_index(idx));
+
+                /* Rail found in the prev box */
+                return box.previous().rail(idx - 2);
+        }
+
+        throw new Error(`Cannot find ${corner} corner of rail ${rail_id}`);
+    }
+}
 
 function get_start_positions() {
     /*  60      41      42      43      44      45
@@ -558,49 +607,6 @@ function get_crossing_positions() {
     return crossings;
 }
 
-function get_neighbor_rail(rail_id, corner) {
-    let box = RailBox.rail_to_box(rail_id);
-
-    // Index of the rail in the box, 1-based
-    let idx = (rail_id - (box.min - 1));
-
-    switch (corner) {
-        case 'up-right':     
-            if (idx % box.size <= box.size / 2)
-                /* Rail found in next box */
-                return box.next().rail(idx % box.size + 1);
-
-            /* Rail found in the prev box */
-            return box.previous().rail(box.zero_index(idx) + 1);
-
-        case 'down-right':
-            /* Rail found in next box */
-            if ((idx - (box.id - 1) + box.size) % box.size <= box.size / 2)
-                return box.next().rail(idx + 1 + (box.id > 1 ? 1 : 0));
-
-            /* Rail found in the prev box */
-            return box.previous().rail(box.zero_index(idx));
-
-        case 'down-left':
-             /* Rail found in next box */
-            if (idx >= box.size / 2)
-                return box.next().rail(box.zero_index(idx, inclusive=true) - 1);
-
-            /* Rail found in the prev box */
-            return box.previous().rail(idx - 1);
-
-        case 'up-left':
-            /* Rail found in next box */
-            if ((idx + (box.id - 1)) % box.size <= box.size / 2)
-                return box.next().rail(box.zero_index(idx));
-
-            /* Rail found in the prev box */
-            return box.previous().rail(idx - 2);
-    }
-
-    throw new Error(`Cannot find ${corner} corner of rail ${rail_id}`);
-}
-
 function get_boxes() {
     let _boxes = {};
     let current_box = 1;
@@ -660,8 +666,6 @@ function get_rails() {
 const crossing_positions = get_crossing_positions();
 const boxes = get_boxes();
 const rail_start_positions = get_start_positions();
-
-
 
 let rails = {};
 
