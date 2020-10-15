@@ -383,6 +383,15 @@ class Rail {
         return -1;
     }
 
+    get_neighbor_ids(degree=1) {
+        if (degree <= 0) {
+            return this.id;
+        }
+
+        let first_neighbors = corners.map(corner => this.#get_neighbor(corner));
+        return [...new Set(first_neighbors.map(id => rails[id].get_neighbor_ids(degree - 1)).concat(this.id).flat())];
+    }
+
     #handle_consume = (consume_suspects) => {
         let consumed = [];
         for (const suspect_id of consume_suspects) {
@@ -410,10 +419,10 @@ class Rail {
     }
 
     #get_neighbor = (corner) => {
-        let box = RailBox.rail_to_box(rail_id);
+        let box = RailBox.rail_to_box(this.id);
 
         // Index of the rail in the box, 1-based
-        let idx = (rail_id - (box.min - 1));
+        let idx = (this.id - (box.min - 1));
 
         switch (corner) {
             case 'up-right':
@@ -435,7 +444,7 @@ class Rail {
             case 'down-left':
                  /* Rail found in next box */
                 if (idx >= box.size / 2)
-                    return box.next().rail(box.zero_index(idx, inclusive=true) - 1);
+                    return box.next().rail(box.zero_index(idx, true) - 1);
 
                 /* Rail found in the prev box */
                 return box.previous().rail(idx - 1);
@@ -449,7 +458,7 @@ class Rail {
                 return box.previous().rail(idx - 2);
         }
 
-        throw new Error(`Cannot find ${corner} corner of rail ${rail_id}`);
+        throw new Error(`Cannot find ${corner} corner of rail ${this.id}`);
     }
 }
 
@@ -473,7 +482,7 @@ function get_start_positions() {
     let count = 1;
     let current_count = 1;
 
-    for (let i = 1; i < constants.NUMBER_OF_ROUTES; i++) {
+    for (let i = 1; i < constants.NUMBER_OF_TRAINS; i++) {
         last = start_positions[i - 1];
         switch (direction) {
             case 'right':
@@ -611,7 +620,7 @@ function get_boxes() {
     let _boxes = {};
     let current_box = 1;
     let current_rail = 0;
-    while (current_rail < constants.NUMBER_OF_ROUTES) {
+    while (current_rail < constants.NUMBER_OF_TRAINS) {
         _boxes[current_box] = new RailBox(current_box);
         current_rail = _boxes[current_box].max + 1;
         current_box += 1;
@@ -653,7 +662,7 @@ function build_rectangular_rail(grid_x, grid_y, width, height, rail_id) {
 }
 
 function init_rails() {
-    for (let i = 0; i < constants.NUMBER_OF_ROUTES; ++i) {
+    for (let i = 0; i < constants.NUMBER_OF_TRAINS; ++i) {
         rails[i] = new Rail(i);
     }
 }

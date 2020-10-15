@@ -3,7 +3,7 @@ const assert  = require('assert');
 exports.CANVAS_HEIGHT = 720;
 exports.CANVAS_WIDTH = 1280;
 
-exports.NUMBER_OF_ROUTES = 65;
+exports.NUMBER_OF_TRAINS = 65;
 
 exports.MIN_SPEED = 10;
 exports.MAX_SPEED = 30;

@@ -22,5 +22,5 @@ global_data.game = new Phaser.Game({
             gravity: { y: 200 }
         }
     },
-    scene: [ MenuScene,GuideScene,GameScene, GameOverlayScene, GameoverScene, WinScene, ErrorScene ]
+    scene: [ MenuScene, GuideScene, GameScene, GameOverlayScene, GameoverScene, WinScene, ErrorScene ]
 });
