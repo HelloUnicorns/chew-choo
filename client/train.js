@@ -192,7 +192,6 @@ export class Train {
             is_speed_up: server_location.is_speed_up,
             is_speed_down: server_location.is_speed_down,
             last_position_update: cur_time,
-            server_time: server_location.server_time,
         }
 
         this.length = server_location.length;

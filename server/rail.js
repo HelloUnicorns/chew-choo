@@ -275,7 +275,7 @@ class Rail {
 
         /* Update merged rail ids */
         this.merged_rail_ids.push(merged_rail.id, ...merged_rail.merged_rail_ids);
-        assert([...new Set(this.merged_rail_ids)].length === this.merged_rail_ids.length);
+        assert(new Set(this.merged_rail_ids).size === this.merged_rail_ids.length);
 
         console.log(`Rail ${merged_rail.id} got merged with ${this.id}`);
         merged_rail.empty();

@@ -66,13 +66,9 @@ const { makeid } = require('../common/id.js');
     }
 
     send_connection_event() {
-        let old_naming_convention_state = Object.entries(Train.state).reduce((result, [train_id, item]) => (
-            result[train_id] = {tiles: item.tracks, player: item.train_attributes}, result
-        ), {});
-
         this.send_event({
             type: 'connection',
-            map: old_naming_convention_state,
+            routes: Train.state,
             route_id: this.player.id
         });
     }
