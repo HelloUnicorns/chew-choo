@@ -30,7 +30,7 @@ enum Direction {
 message Train {
     float position = 1;
     uint32 length = 2;
-    uint32 speed = 3;
+    float speed = 3;
     bool is_stopped = 4;
     InvincibilityState invincibility_state = 5;
     bool is_speed_up = 6;
@@ -40,8 +40,8 @@ message Train {
 }
 
 message Track {
-    required uint32 x = 1;
-    required uint32 y = 2;
+    required int32 x = 1;
+    required int32 y = 2;
     required uint32 rail_id = 3;
     required Direction direction_from = 4;
     required Direction direction_to = 5;
@@ -76,7 +76,7 @@ message PositionMessage {
 }
 
 message ServerMessage {
-    oneof server_message {
+    oneof type {
         LatencyMessage latency = 1;
         ErrorMessage error = 2;
         WinMessage win = 3;
@@ -84,5 +84,26 @@ message ServerMessage {
         KillMessage kill = 5;
         ConnectionMessage connection = 6;
         PositionMessage position = 7;
+    }
+}
+
+
+message StartPlayingMessage {
+
+}
+
+message LatencyUpdateMessage {
+    float prev_server_time = 1;
+}
+
+message SpeedChangeMessage {
+    float value = 1;
+}
+
+message ClientMessage {
+    oneof type {
+        StartPlayingMessage start_playing = 1;
+        LatencyUpdateMessage latency_update = 2;
+        SpeedChangeMessage speed_change = 3;
     }
 }

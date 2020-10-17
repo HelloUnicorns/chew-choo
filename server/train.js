@@ -58,7 +58,7 @@ class Train {
     #make_invincible = () => {
         clearTimeout(this.invincibility_timeout);
 
-        this.invincibility_state = constants.TRAIN_FULLY_INVISIBLE_TIME;
+        this.invincibility_state = constants.TRAIN_FULLY_INVISIBLE;
         /* Start fully invisible timer */
         this.invincibility_timeout = setTimeout(
             () => {

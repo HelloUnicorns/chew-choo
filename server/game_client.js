@@ -2,14 +2,9 @@ const { performance } = require('perf_hooks');
 const { Train } = require('./train.js');
 const { Player } = require('./player.js');
 const { makeid } = require('../common/id.js');
+const { ClientMessage, ServerMessage } = require('../common/proto.js');
 
-
-const protobuf = require("protobufjs/light");
-var messages_description = require("../common/jsons/messages.json");
-var pb_root = protobuf.Root.fromJSON(messages_description);
-var ServerMessage = pb_root.lookupType("chewchoo.ServerMessage");
-
- class GameClient {
+class GameClient {
     constructor(ws_client, train) {
         this.ws_client = ws_client;
         this.removed = false;
@@ -57,16 +52,17 @@ var ServerMessage = pb_root.lookupType("chewchoo.ServerMessage");
         this.leave();
     }
 
-    handle_message(json_data) {
-        const message = JSON.parse(json_data);
-
+    handle_message(buffer) {
         if (this.removed) {
             return;
         }
+
+        let message = ClientMessage.decode(buffer);
+        
         if (message.type in this.#event_handlers) {
-            this.#event_handlers[message.type](message);
+            this.#event_handlers[message.type](message[message.type]);
         } else {
-            this.player.handle_event(message.type, message);
+            this.player.handle_event(message.type, message[message.type]);
         }
     }
 

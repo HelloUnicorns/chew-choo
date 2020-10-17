@@ -29,8 +29,8 @@ class Player {
         },
 
         speed_change : (event) => {
-            this.train.is_speed_up = event.value & constants.SPEED_UP_FLAG;
-            this.train.is_speed_down = event.value & constants.SPEED_DOWN_FLAG;
+            this.train.is_speed_up = !!(event.value & constants.SPEED_UP_FLAG);
+            this.train.is_speed_down = !!(event.value & constants.SPEED_DOWN_FLAG);
             return true;
         }
     }

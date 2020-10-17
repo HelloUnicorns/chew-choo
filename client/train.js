@@ -80,29 +80,29 @@ export class Train {
     }
 
     static directions_to_cart_angle(direction_from, direction_to) {
-        if (direction_from == 'bottom' && direction_to == 'top') {
+        if (direction_from == constants.BOTTOM && direction_to == constants.TOP) {
             return 270;
-        } else if (direction_from == 'bottom' && direction_to == 'left') {
+        } else if (direction_from == constants.BOTTOM && direction_to == constants.LEFT) {
             return 225;
-        } else if (direction_from == 'bottom' && direction_to == 'right') {
+        } else if (direction_from == constants.BOTTOM && direction_to == constants.RIGHT) {
             return 305;
-        } else if (direction_from == 'top' && direction_to == 'bottom') {
+        } else if (direction_from == constants.TOP && direction_to == constants.BOTTOM) {
             return 90;
-        } else if (direction_from == 'top' && direction_to == 'left') {
+        } else if (direction_from == constants.TOP && direction_to == constants.LEFT) {
             return 135;
-        } else if (direction_from == 'top' && direction_to == 'right') {
+        } else if (direction_from == constants.TOP && direction_to == constants.RIGHT) {
             return 45;
-        } else if (direction_from == 'left' && direction_to == 'top') {
+        } else if (direction_from == constants.LEFT && direction_to == constants.TOP) {
             return 305;
-        } else if (direction_from == 'left' && direction_to == 'bottom') {
+        } else if (direction_from == constants.LEFT && direction_to == constants.BOTTOM) {
             return 45;
-        } else if (direction_from == 'left' && direction_to == 'right') {
+        } else if (direction_from == constants.LEFT && direction_to == constants.RIGHT) {
             return 0;
-        } else if (direction_from == 'right' && direction_to == 'left') {
+        } else if (direction_from == constants.RIGHT && direction_to == constants.LEFT) {
             return 180;
-        } else if (direction_from == 'right' && direction_to == 'top') {
+        } else if (direction_from == constants.RIGHT && direction_to == constants.TOP) {
             return 225;
-        } else if (direction_from == 'right' && direction_to == 'bottom') {
+        } else if (direction_from == constants.RIGHT && direction_to == constants.BOTTOM) {
             return 135;
         }
         throw new Error('Cannot calculate cart angle');

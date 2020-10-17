@@ -1,3 +1,4 @@
+const constants = require('../common/constants.js');
 const { draw_grid_sprite, TRACK_SCALE, NORMAL_TRACK_Z_INDEX, OWN_TRACK_Z_INEDX } = require('./grid.js');
 
 export class Track {
@@ -14,29 +15,29 @@ export class Track {
     }
 
     static get_piece_orientation(direction_from, direction_to) {
-        if (direction_from == 'bottom' && direction_to == 'top') {
+        if (direction_from == constants.BOTTOM && direction_to == constants.TOP) {
             return { is_corner: false, angle: 270 };
-        } else if (direction_from == 'bottom' && direction_to == 'left') {
+        } else if (direction_from == constants.BOTTOM && direction_to == constants.LEFT) {
             return { is_corner: true, angle: 0 };
-        } else if (direction_from == 'bottom' && direction_to == 'right') {
+        } else if (direction_from == constants.BOTTOM && direction_to == constants.RIGHT) {
             return { is_corner: true, angle: 270 };
-        } else if (direction_from == 'top' && direction_to == 'bottom') {
+        } else if (direction_from == constants.TOP && direction_to == constants.BOTTOM) {
             return { is_corner: false, angle: 90 };
-        } else if (direction_from == 'top' && direction_to == 'left') {
+        } else if (direction_from == constants.TOP && direction_to == constants.LEFT) {
             return { is_corner: true, angle: 90 };
-        } else if (direction_from == 'top' && direction_to == 'right') {
+        } else if (direction_from == constants.TOP && direction_to == constants.RIGHT) {
             return { is_corner: true, angle: 180 };
-        } else if (direction_from == 'left' && direction_to == 'top') {
+        } else if (direction_from == constants.LEFT && direction_to == constants.TOP) {
             return { is_corner: true, angle: 90 };
-        } else if (direction_from == 'left' && direction_to == 'bottom') {
+        } else if (direction_from == constants.LEFT && direction_to == constants.BOTTOM) {
             return { is_corner: true, angle: 0 };
-        } else if (direction_from == 'left' && direction_to == 'right') {
+        } else if (direction_from == constants.LEFT && direction_to == constants.RIGHT) {
             return { is_corner: false, angle: 0 };
-        } else if (direction_from == 'right' && direction_to == 'left') {
+        } else if (direction_from == constants.RIGHT && direction_to == constants.LEFT) {
             return { is_corner: false, angle: 180 };
-        } else if (direction_from == 'right' && direction_to == 'top') {
+        } else if (direction_from == constants.RIGHT && direction_to == constants.TOP) {
             return { is_corner: true, angle: 180 };
-        } else if (direction_from == 'right' && direction_to == 'bottom') {
+        } else if (direction_from == constants.RIGHT && direction_to == constants.BOTTOM) {
             return { is_corner: true, angle: 270 };
         }
         throw new Error(`Unknown rail type: ${rail_tile.direction_from}->${rail_tile.direction_to}`);

@@ -1,11 +1,7 @@
 let global_data = require('./global_data.js');
+const { ClientMessage, ServerMessage } = require('../common/proto.js');
 
 const HOST = location.origin.replace(/^http/, 'ws');
-
-const protobuf = require("protobufjs/light");
-var messages_description = require("../common/jsons/messages.json");
-var pb_root = protobuf.Root.fromJSON(messages_description);
-var ServerMessage = pb_root.lookupType("chewchoo.ServerMessage");
 
 export class GameSocket {
     constructor() {
@@ -24,37 +20,42 @@ export class GameSocket {
         }
     }
     message_handler(event_obj) {
-        let event = JSON.parse(event_obj.data);
-        if (event.type in this.event_handlers) {
-            this.event_handlers[event.type](event);
-        }
+        event_obj.data.arrayBuffer().then(array_buffer => { 
+            let message = ServerMessage.decode(Buffer.from(array_buffer,'binary'));
+            if (message.type in this.event_handlers) {
+                this.event_handlers[message.type](message[message.type]);
+            } else {
+                debugger;
+            }
+        });
     }
-    send_event(event) {
+    
+    send_event(event_type, event={}) {
         if (this.ws.readyState !== WebSocket.OPEN) {
             return;
         }
-        this.ws.send(JSON.stringify(event));
-     }
+
+        let message = {};
+        message[event_type] = event;
+        let err = ClientMessage.verify(message);
+        if (err) {
+            throw Error(err);
+        }
+
+        this.ws.send(ClientMessage.encode(ClientMessage.create(message)).finish());
+    }
 
     register_event_handler(type, callback) {
         this.event_handlers[type] = callback;
     }
 
     handle_time_message(event) {
-        this.send_event({type: 'latency_update', prev_server_time: event.time});
+        this.send_event('latency_update', {prev_server_time: event.time});
     }
     
     handle_latency_message(event) {
-        let latency_message;
-        try {
-            let message = ServerMessage.decode(Buffer.from(event.pb, 'base64'));
-            latency_message = message[message.server_message];
-        } catch (err) {
-            console.log('parse error', err)
-            return;
-        }
-        document.getElementById('server-latency').innerHTML = 'Latency: ' + latency_message.latency + ' ms';
-        global_data.latency = latency_message.latency;
+        document.getElementById('server-latency').innerHTML = 'Latency: ' + event.latency + ' ms';
+        global_data.latency = event.latency;
     }
     
 }

@@ -49,7 +49,7 @@
               "id": 2
             },
             "speed": {
-              "type": "uint32",
+              "type": "float",
               "id": 3
             },
             "is_stopped": {
@@ -82,12 +82,12 @@
           "fields": {
             "x": {
               "rule": "required",
-              "type": "uint32",
+              "type": "int32",
               "id": 1
             },
             "y": {
               "rule": "required",
-              "type": "uint32",
+              "type": "int32",
               "id": 2
             },
             "rail_id": {
@@ -182,7 +182,7 @@
         },
         "ServerMessage": {
           "oneofs": {
-            "server_message": {
+            "type": {
               "oneof": [
                 "latency",
                 "error",
@@ -222,6 +222,50 @@
             "position": {
               "type": "PositionMessage",
               "id": 7
+            }
+          }
+        },
+        "StartPlayingMessage": {
+          "fields": {}
+        },
+        "LatencyUpdateMessage": {
+          "fields": {
+            "prev_server_time": {
+              "type": "float",
+              "id": 1
+            }
+          }
+        },
+        "SpeedChangeMessage": {
+          "fields": {
+            "value": {
+              "type": "float",
+              "id": 1
+            }
+          }
+        },
+        "ClientMessage": {
+          "oneofs": {
+            "type": {
+              "oneof": [
+                "start_playing",
+                "latency_update",
+                "speed_change"
+              ]
+            }
+          },
+          "fields": {
+            "start_playing": {
+              "type": "StartPlayingMessage",
+              "id": 1
+            },
+            "latency_update": {
+              "type": "LatencyUpdateMessage",
+              "id": 2
+            },
+            "speed_change": {
+              "type": "SpeedChangeMessage",
+              "id": 3
             }
           }
         }

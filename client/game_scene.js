@@ -53,7 +53,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     send_start_playing_event() {
-        this.game_socket.send_event({type: 'start_playing'});
+        this.game_socket.send_event('start_playing');
     }
 
     client_loaded() {
@@ -85,12 +85,12 @@ export class GameScene extends Phaser.Scene {
         let is_up_pressed = this.input.keyboard.checkDown(this.up_key);
         if (this.player_route.train.is_speed_up != is_up_pressed) {
             this.player_route.train.is_speed_up = is_up_pressed;
-            this.game_socket.send_event({type: 'speed_change', value: this.get_speed_message_value(is_up_pressed, this.player_route.train.is_speed_down)});
+            this.game_socket.send_event('speed_change', { value: this.get_speed_message_value(is_up_pressed, this.player_route.train.is_speed_down)});
         }
         let is_down_pressed = this.input.keyboard.checkDown(this.down_key);
         if (this.player_route.train.is_speed_down != is_down_pressed) {
             this.player_route.train.is_speed_down = is_down_pressed;
-            this.game_socket.send_event({type: 'speed_change', value: this.get_speed_message_value(this.player_route.train.is_speed_up, is_down_pressed)});
+            this.game_socket.send_event('speed_change', { value: this.get_speed_message_value(this.player_route.train.is_speed_up, is_down_pressed)});
         }
     }
 
@@ -116,8 +116,8 @@ export class GameScene extends Phaser.Scene {
 
     handle_connection_event(event) {
         global_data.player_route_id = event.route_id;
-        for (const [route_id, route] of Object.entries(event.routes)) {
-            this.update_server_route(route_id, route, route_id == event.route_id);
+        for (const route of event.routes) {
+            this.update_server_route(route.id, route, route.id == event.route_id);
         }
         this.player_route = this.routes[event.route_id];
         this.client_loaded();
@@ -129,13 +129,12 @@ export class GameScene extends Phaser.Scene {
         }
 
         let routes_to_delete = new Set(Object.keys(this.routes))
-        for (let route_id in event.routes) {
-            routes_to_delete.delete(route_id);
-            let route_from_server = event.routes[route_id];
-            if (route_from_server.tracks) {
-                this.update_tracks_from_server(route_id, route_from_server.tracks);
+        for (const route of event.routes) {
+            routes_to_delete.delete(route.id);
+            if (route.tracks.length) {
+                this.update_tracks_from_server(route.id, route.tracks);
             }
-            this.routes[route_id].train.update_server_train_state(route_from_server.train_attributes);
+            this.routes[route.id].train.update_server_train_state(route.train_attributes);
         }
 
         for (const route_id of routes_to_delete) {
