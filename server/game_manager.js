@@ -45,6 +45,9 @@ class GameManager {
             return;
         }
 
+        /* removed non-active players */
+        this.game_clients = this.active_clients;
+
         let { changed_routes, collision_updates } = Train.update();
         let state = Train.state;
         let trains = _.mapValues(state, train => train.train_attributes);
