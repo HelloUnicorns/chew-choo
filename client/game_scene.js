@@ -116,7 +116,7 @@ export class GameScene extends Phaser.Scene {
 
     handle_connection_event(event) {
         global_data.player_route_id = event.route_id;
-        for (const [route_id, route] of Object.entries(event.map)) {
+        for (const [route_id, route] of Object.entries(event.routes)) {
             this.update_server_route(route_id, route, route_id == event.route_id);
         }
         this.player_route = this.routes[event.route_id];
@@ -133,7 +133,7 @@ export class GameScene extends Phaser.Scene {
             routes_to_delete.delete(route_id);
             let route_from_server = event.routes[route_id];
             if (route_from_server.tracks) {
-                this.update_tracks_from_server(route_from_server.route_id, route_from_server.tracks);
+                this.update_tracks_from_server(route_id, route_from_server.tracks);
             }
             this.routes[route_id].train.update_server_train_state(route_from_server.train_attributes);
         }
@@ -222,7 +222,7 @@ export class GameScene extends Phaser.Scene {
             this.routes[route_id] = new Route(route_id, train, is_own);
         }
         let route = this.routes[route_id];
-        this.update_tracks_from_server(route_id, server_route.tiles);
-        route.train.update_server_train_state(server_route.player);
+        this.update_tracks_from_server(route_id, server_route.tracks);
+        route.train.update_server_train_state(server_route.train_attributes);
     }    
 }

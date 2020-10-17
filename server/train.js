@@ -156,7 +156,7 @@ class Train {
             new_train.position_in_route = position_in_route;
             new_train.position_fraction = position_fraction;
             /* TODO: separate tracks and leftover tracks after we update the server-client protocol */
-            _update.routes.push({route_id: new_train.id, tiles: new_train.rail.leftover_tracks.concat(new_train.rail.tracks)});
+            _update.routes.push({route_id: new_train.id, tracks: new_train.rail.leftover_tracks.concat(new_train.rail.tracks)});
         }
     
         return _update;
@@ -324,12 +324,12 @@ class Train {
                 let cur_train = rail_id_to_train[rail_id];
                 cur_train.kill();
                 /* TODO: separate tracks and leftover tracks after we update the server-client protocol */
-                _update.routes.push({route_id: cur_train.id, tiles: cur_train.rail.leftover_tracks.concat(cur_train.rail.tracks)});
+                _update.routes.push({route_id: cur_train.id, tracks: cur_train.rail.leftover_tracks.concat(cur_train.rail.tracks)});
             }
     
             /* Also report update of the killer rail */
             /* TODO: separate tracks and leftover tracks after we update the server-client protocol */
-            _update.routes.push({route_id : killer.id, tiles: killer.rail.leftover_tracks.concat(killer.rail.tracks)});
+            _update.routes.push({route_id : killer.id, tracks: killer.rail.leftover_tracks.concat(killer.rail.tracks)});
         }
     
         _update.kill.killer_route_id = killer_id;
@@ -338,14 +338,14 @@ class Train {
         return _update;
     }
 
-    static #update_before_movement = (changed_rails, collision_updates) => {
+    static #update_before_movement = (routes) => {
         /* Handle abandoned trains first */
         for (const train of Object.values(Train.all).filter(train => train.abandoned)) {
-            collision_updates.push(train.#abandon());        
+            routes.push(...train.#abandon().routes);        
         }
     }
 
-    static #update_movement = (changed_rails, collision_updates) => {
+    static #update_movement = (kills, routes) => {
         Train.update_time();
     
         let train_ids = Object.keys(Train.all);
@@ -365,7 +365,7 @@ class Train {
             /* Periodic update of speed and position */
             if (train.update()) {
                 /* Update caused rail change */
-                changed_rails.push({route_id: train.id, tiles: train.rail.tracks});
+                changed_rails.push({route_id: train.id, tracks: train.rail.tracks});
             };
     
             
@@ -380,12 +380,13 @@ class Train {
     
             let collision_update = Train.#handle_collision(collision[0].trains, collision[0].coordinates);
             if (collision_update) {
-                collision_updates.push(collision_update);
+                kills.push(collision_update.kill)
+                routes.push(...collision_update.routes);
             }
         }
     }
 
-    static #update_after_movement = (changed_rails, collision_updates) => {
+    static #update_after_movement = (routes) => {
         for (const train of Object.values(Train.all)) {
             if(!train.active) {
                 continue;
@@ -403,9 +404,9 @@ class Train {
             }
     
             if (!train.reported) {
-                changed_rails.push({
+                routes.push({
                     route_id: train.id,
-                    tiles: train.rail.tracks
+                    tracks: train.rail.tracks
                 });
                 train.reported = true;
             }
@@ -413,22 +414,20 @@ class Train {
     }
 
     static update() {
-        let changed_rails = [];
-        let collision_updates = [];
-    
-        Train.#update_before_movement(changed_rails, collision_updates);
-        Train.#update_movement(changed_rails, collision_updates);
-        Train.#update_after_movement(changed_rails, collision_updates);
-        
+        let kills = [];
+        let routes = [];
+
+        Train.#update_before_movement(routes);
+        Train.#update_movement(kills, routes);
+        Train.#update_after_movement( routes);
     
         return {
-            changed_routes: changed_rails, 
-            collision_updates: collision_updates.reduce(
-                (updates, _update) => {
-                    updates.kills.push(_update.kill);
-                    updates.routes = updates.routes.concat(_update.routes);
-                    return updates;
-                }, {kills: [], routes: []})
+            kills, 
+            routes: routes.reduce(
+                (updated_routes, route) => {
+                    updated_routes[route.route_id] = route.tracks;
+                    return updated_routes;
+                }, {})
         };
     }
 }

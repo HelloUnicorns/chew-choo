@@ -45,19 +45,19 @@ class GameManager {
             return;
         }
 
-        let { changed_routes, collision_updates } = Train.update();
-        let update = _.mapValues(Train.state, (value, key) => {
-            let update_obj = {train_attributes: value.train_attributes};
-            if (key in changed_routes) {
-                update_obj.tracks = changed_routes[key].tracks;
+        let { kills, routes } = Train.update();
+        let update = Train.state;
+        for (const train_id in update) {
+            delete update[train_id].tracks;
+            if (train_id in routes) {
+                update[train_id].tracks = routes[train_id];
             }
-            return update_obj;
-        });
+        }
 
-        if (collision_updates.kills.length > 0) {
-            this.broadcast_event({ kills: collision_updates.kills, type: 'kill' });
+        if (kills.length > 0) {
+            this.broadcast_event({ kills, type: 'kill' });
 
-            collision_updates.kills.forEach(kill => {
+            kills.forEach(kill => {
                 console.log(`killed: ${kill.killed_route_id}, killer: ${kill.killer_route_id}`);
                 let game_client = this.get_game_client(kill.killed_route_id);
                 if (game_client) {
