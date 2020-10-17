@@ -313,7 +313,7 @@ class Train {
                 killer.is_in_leftover = true;
                 console.log(`Route ${killer.id} in leftover`);
             }
-            killer.position_int = position;
+            killer.position = position;
             for (const rail_id of old_rails) {
                 let cur_train = rail_id_to_train[rail_id];
                 cur_train.kill();
