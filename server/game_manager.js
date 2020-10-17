@@ -46,11 +46,16 @@ class GameManager {
         }
 
         let { changed_routes, collision_updates } = Train.update();
-        let state = Train.state;
-        let trains = _.mapValues(state, train => train.train_attributes);
+        let update = _.mapValues(Train.state, (value, key) => {
+            let update_obj = {train_attributes: value.train_attributes};
+            if (key in changed_routes) {
+                update_obj.tracks = changed_routes[key].tracks;
+            }
+            return update_obj;
+        });
 
         if (collision_updates.kills.length > 0) {
-            this.broadcast_event({ routes: collision_updates.routes, kills: collision_updates.kills, type: 'kill' });
+            this.broadcast_event({ kills: collision_updates.kills, type: 'kill' });
 
             collision_updates.kills.forEach(kill => {
                 console.log(`killed: ${kill.killed_route_id}, killer: ${kill.killer_route_id}`);
@@ -65,7 +70,8 @@ class GameManager {
         for (const player of Player.all) {
             send_event(player.client, {locations: player.get_position_update(), changed_routes, type: 'position'});
         }*/
-        this.broadcast_event({ locations: trains, changed_routes, type: 'position' });
+
+        this.broadcast_event({ routes: update, type: 'position' });
 
         this.check_win_condition();
     }
