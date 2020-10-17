@@ -1,6 +1,4 @@
 const constants = require('../common/constants.js');
-
-const { get_active_clients } = require('./server.js');
 const { Train } = require('./train.js');
 
 /* Player handlers */
@@ -19,7 +17,7 @@ class Player {
     #register_start_playing_event_timeout = () => {
         this.start_playing_event_timeout = setTimeout(() => {
             console.log(`Client ${this.client.id} did not send start game event - got removed`);
-            this.leave();
+            this.client.leave();
         }, constants.START_PLAYING_EVENT_TIMEOUT_MS);
     }
 
@@ -38,9 +36,7 @@ class Player {
     }
 
     leave() {
-        this.client.removed = true;
         this.train.abandoned = true;
-        this.client.close();
     }
 
     has_event(type) {
@@ -60,21 +56,8 @@ class Player {
         return neighbor_entries.reduce((result, [train_id, item]) => (result[train_id] = item.train_attributes, result), {});
     }
 
-    static get all() {
-        return get_active_clients().map(client => client.player);
-    }
-
-    static get(client_id) {
-        let player = Player.all.filter((player) => player.client.id == client_id);
-        return player[0];
-    }
-
-    static get winner() {
-        let alive = Object.values(Train.all).filter(train => train.active).map(train => Player.get(train.id));
-        if (alive.length >= 2) {
-            return undefined;
-        }
-        return alive[0];
+    get id() {
+        return this.train.id;
     }
 }
 

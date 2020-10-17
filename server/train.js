@@ -1,12 +1,13 @@
 
 const { performance } = require('perf_hooks');
-const assert  = require('assert');
+const assert = require('assert');
+const _ = require('lodash');
 
-const {makeid} = require('../common/id.js');
+const { makeid } = require('../common/id.js');
 const constants = require('../common/constants.js');
 const { calculate_speed_and_position, set_train_position } = require('../common/position.js');
 
-const {get_rails, init_rails} = require('./rail.js');
+const { get_rails, init_rails } = require('./rail.js');
 
 let trains = {};
 let rail_id_to_train = {};
@@ -190,6 +191,24 @@ class Train {
         return collisions;
     }
 
+    get state() {
+        return {
+            train_attributes: {
+                position_in_route: this.position_in_route,
+                position_fraction: this.position_fraction,
+                length: this.length,
+                speed: this.speed,
+                is_stopped: this.is_stopped,
+                invincibility_state: this.invincibility_state,
+                is_speed_up: this.is_speed_up,
+                is_speed_down: this.is_speed_down,
+                is_bot: this.is_bot,
+                killed: !this.active,
+            },
+            tracks: this.rail.tracks
+        }
+    }
+
     static init() {
         Train.update_time();
         trains = {};
@@ -242,28 +261,12 @@ class Train {
         return {...trains};
     }
 
+    static get active_trains() {
+        return _.pickBy(Train.all, train => train.active);
+    }
+
     static get state() {
-        return Object.values(Train.all).filter(
-            (train) => train.active).reduce(
-            (_update, train) => {
-                _update[train.id] = {
-                    train_attributes: {
-                        position_in_route: train.position_in_route,
-                        position_fraction: train.position_fraction,
-                        length: train.length,
-                        speed: train.speed,
-                        is_stopped: train.is_stopped,
-                        invincibility_state: train.invincibility_state,
-                        is_speed_up: train.is_speed_up,
-                        is_speed_down: train.is_speed_down,
-                        is_bot: train.is_bot,
-                        killed: !train.active,
-                    },
-                    tracks: train.rail.tracks
-                }
-                return _update;
-            }, {}
-        );
+        return _.mapValues(Train.active_trains, train => train.state);
     }
 
     static #handle_collision = (trains_pair, coordinates) => {
