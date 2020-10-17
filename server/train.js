@@ -205,7 +205,8 @@ class Train {
                 is_bot: this.is_bot,
                 killed: !this.active,
             },
-            tracks: this.rail.tracks
+            tracks: this.rail.tracks,
+            id: this.id
         }
     }
 
@@ -259,11 +260,11 @@ class Train {
     }
 
     static get active_trains() {
-        return _.pickBy(Train.all, train => train.active);
+        return Object.values(Train.all).filter(train => train.active);
     }
 
     static get state() {
-        return _.mapValues(Train.active_trains, train => train.state);
+        return Train.active_trains.map(train => train.state);
     }
 
     static #handle_collision = (trains_pair, coordinates) => {
@@ -414,11 +415,7 @@ class Train {
     
         return {
             kills, 
-            routes: routes.reduce(
-                (updated_routes, route) => {
-                    updated_routes[route.route_id] = route.tracks;
-                    return updated_routes;
-                }, {})
+            routes: _.chain(routes).keyBy('route_id').mapValues('tracks').value()
         };
     }
 }

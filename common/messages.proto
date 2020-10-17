@@ -1,0 +1,88 @@
+// awesome.proto
+package chewchoo;
+syntax = "proto3";
+ 
+message LatencyMessage {
+    required double latency = 1;
+}
+
+message ErrorMessage {
+    required string message = 1;
+}
+
+message WinMessage {
+
+}
+
+enum InvincibilityState {
+    TRAIN_NOT_INVINCIBLE = 0;
+    TRAIN_BLINKING = 1;
+    TRAIN_FULLY_INVISIBLE = 2;
+}
+
+enum Direction {
+    LEFT = 0;
+    RIGHT = 1;
+    TOP = 2;
+    BOTTOM = 3;
+};
+
+message Train {
+    float position = 1;
+    uint32 length = 2;
+    uint32 speed = 3;
+    bool is_stopped = 4;
+    InvincibilityState invincibility_state = 5;
+    bool is_speed_up = 6;
+    bool is_speed_down = 7;
+    bool is_bot = 8;
+    bool killed = 9;
+}
+
+message Track {
+    required uint32 x = 1;
+    required uint32 y = 2;
+    required uint32 rail_id = 3;
+    required Direction direction_from = 4;
+    required Direction direction_to = 5;
+}
+
+message Route {
+    required Train train_attributes = 1;
+    repeated Track tracks = 2;
+    required string id = 3;
+}
+
+message Kill {
+    required string killed_route_id = 1;
+    required string killer_route_id = 2;
+}
+
+message TimeMessage {
+    required float time = 1;
+}
+
+message KillMessage {
+    repeated Kill kills = 1;
+}
+
+message ConnectionMessage {
+    string route_id = 1; /* route id of the connected player */
+    repeated Route routes = 2;
+}
+
+message PositionMessage {
+    repeated Route routes = 2;
+}
+
+message ServerMessage {
+    oneof server_message {
+        LatencyMessage latency = 1;
+        ErrorMessage error = 2;
+        WinMessage win = 3;
+        TimeMessage time = 4;
+        KillMessage kill = 5;
+        ConnectionMessage connection = 6;
+        PositionMessage position = 7;
+    }
+}

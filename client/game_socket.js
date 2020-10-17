@@ -2,6 +2,11 @@ let global_data = require('./global_data.js');
 
 const HOST = location.origin.replace(/^http/, 'ws');
 
+const protobuf = require("protobufjs/light");
+var messages_description = require("../common/jsons/messages.json");
+var pb_root = protobuf.Root.fromJSON(messages_description);
+var ServerMessage = pb_root.lookupType("chewchoo.ServerMessage");
+
 export class GameSocket {
     constructor() {
         this.ws = new WebSocket(HOST);
@@ -40,8 +45,16 @@ export class GameSocket {
     }
     
     handle_latency_message(event) {
-        document.getElementById('server-latency').innerHTML = 'Latency: ' + event.latency + ' ms';
-        global_data.latency = event.latency;
+        let latency_message;
+        try {
+            let message = ServerMessage.decode(Buffer.from(event.pb, 'base64'));
+            latency_message = message[message.server_message];
+        } catch (err) {
+            console.log('parse error', err)
+            return;
+        }
+        document.getElementById('server-latency').innerHTML = 'Latency: ' + latency_message.latency + ' ms';
+        global_data.latency = latency_message.latency;
     }
     
 }

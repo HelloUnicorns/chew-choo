@@ -3,6 +3,12 @@ const { Train } = require('./train.js');
 const { Player } = require('./player.js');
 const { makeid } = require('../common/id.js');
 
+
+const protobuf = require("protobufjs/light");
+var messages_description = require("../common/jsons/messages.json");
+var pb_root = protobuf.Root.fromJSON(messages_description);
+var ServerMessage = pb_root.lookupType("chewchoo.ServerMessage");
+
  class GameClient {
     constructor(ws_client, train) {
         this.ws_client = ws_client;
@@ -27,19 +33,18 @@ const { makeid } = require('../common/id.js');
     #event_handlers = {
         latency_update : (event) => {
             let latency = (performance.now() - event.prev_server_time) / 2;
-            this.send_event({ latency, type: 'latency' });
+            this.send_event('latency', {latency});
         }
     }
 
     send_server_is_full() {
-        this.send_event({
-            message: 'Server is full',
-            type: 'error'
+        this.send_event('error', {
+            message: 'Server is full'
         });
     }
 
     send_win_event() {
-        this.send_event({ type: 'win' });
+        this.send_event('win');
     }
 
     handle_close() {
@@ -66,18 +71,23 @@ const { makeid } = require('../common/id.js');
     }
 
     send_connection_event() {
-        this.send_event({
-            type: 'connection',
+        this.send_event('connection', {
             routes: Train.state,
             route_id: this.player.id
         });
     }
 
-    send_event(event) {
+    send_event(event_type, event={}) {
         if (this.removed) {
             return;
         }
-        this.ws_client.send(JSON.stringify(event));        
+        let message = {};
+        message[event_type] = event;
+        let err = ServerMessage.verify(message);
+        if (err) {
+            throw Error(err);
+        }
+        this.ws_client.send(ServerMessage.encode(ServerMessage.create(message)).finish());
     }
 
     leave() {

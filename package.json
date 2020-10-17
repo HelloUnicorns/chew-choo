@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node --use_strict server/server.js",
-    "build": "webpack --config client/webpack.config.js --mode development",
+    "build-pb": "pbjs -t json common/messages.proto --keep-case > common/jsons/messages.json",
+    "build": "pbjs -t json common/messages.proto --keep-case > common/jsons/messages.json && webpack --config client/webpack.config.js --mode development",
     "watch": "webpack --config client/webpack.config.js --mode development --watch",
     "heroku-postbuild": "webpack --config client/webpack.config.js --mode production",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -22,6 +23,7 @@
     "express": "^4.17.1",
     "lodash": "^4.17.20",
     "phaser": "^3.24.1",
+    "protobufjs": "^6.10.1",
     "utf-8-validate": "^5.0.2",
     "ws": "^7.3.1"
   },

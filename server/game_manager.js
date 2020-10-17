@@ -30,8 +30,8 @@ class GameManager {
         return this.active_clients.length > 0;
     }
 
-    broadcast_event(event) {
-        this.active_clients.forEach(game_client => game_client.send_event(event));
+    broadcast_event(event_type, event) {
+        this.active_clients.forEach(game_client => game_client.send_event(event_type, event));
     }
 
     get_game_client(id) {
@@ -50,15 +50,14 @@ class GameManager {
 
         let { kills, routes } = Train.update();
         let update = Train.state;
-        for (const train_id in update) {
-            delete update[train_id].tracks;
-            if (train_id in routes) {
-                update[train_id].tracks = routes[train_id];
+        for (const route of update) {
+            if (!(route.id in routes)) {
+                delete route.tracks;
             }
         }
 
         if (kills.length > 0) {
-            this.broadcast_event({ kills, type: 'kill' });
+            this.broadcast_event('kill', { kills });
 
             kills.forEach(kill => {
                 console.log(`killed: ${kill.killed_route_id}, killer: ${kill.killer_route_id}`);
@@ -74,13 +73,13 @@ class GameManager {
             send_event(player.client, {locations: player.get_position_update(), changed_routes, type: 'position'});
         }*/
 
-        this.broadcast_event({ routes: update, type: 'position' });
+        this.broadcast_event('position', { routes: update });
 
         this.check_win_condition();
     }
 
     check_win_condition() {
-        let alive_trains = Object.values(Train.active_trains);
+        let alive_trains = Train.active_trains;
         if (alive_trains.length != 1) {
             return;
         }
@@ -100,7 +99,7 @@ class GameManager {
         Train.init();
         /* Time updates */
         this.intervals.push(setInterval(() => {
-            this.broadcast_event({ time: performance.now(), type: 'time' });
+            this.broadcast_event('time', { time: performance.now() });
         }, 1000 / 10));
     
         /* Position and kill */

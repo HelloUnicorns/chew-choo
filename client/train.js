@@ -38,7 +38,7 @@ export class Train {
         this.drawn = false;
         this.blinking_interval = undefined;
         this.alpha = INVINCIBLE_TRAIN_ALPHA;
-        this.invincibility_state = constants.PLAYER_FULLY_INVISIBLE;
+        this.invincibility_state = constants.TRAIN_FULLY_INVISIBLE;
         this.last_position_update = performance.now();
         this.server_shadow_train = undefined;
         this.acceleration = constants.DEFAULT_START_ACCELERATION;

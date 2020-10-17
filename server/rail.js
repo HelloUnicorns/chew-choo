@@ -648,28 +648,28 @@ function get_boxes() {
 function build_rectangular_rail(grid_x, grid_y, width, height, rail_id) {
     let rail = [];
     for (let i = 1; i < width - 1; i++) {
-        rail.push({x: grid_x + i, y: grid_y, direction_from: 'left', direction_to: 'right', rail_id});
+        rail.push({x: grid_x + i, y: grid_y, direction_from: constants.LEFT, direction_to: constants.RIGHT, rail_id});
     }
 
-    rail.push({x: grid_x + width - 1, y: grid_y, direction_from: 'left', direction_to: 'bottom', rail_id});
+    rail.push({x: grid_x + width - 1, y: grid_y, direction_from: constants.LEFT, direction_to: constants.BOTTOM, rail_id});
     
     for (let i = 1; i < height - 1; i++) {
-        rail.push({x: grid_x + width - 1, y: grid_y + i, direction_from: 'top', direction_to: 'bottom', rail_id});
+        rail.push({x: grid_x + width - 1, y: grid_y + i, direction_from: constants.TOP, direction_to: constants.BOTTOM, rail_id});
     }
 
-    rail.push({x: grid_x + width - 1, y: grid_y + height - 1, direction_from: 'top', direction_to: 'left', rail_id});
+    rail.push({x: grid_x + width - 1, y: grid_y + height - 1, direction_from: constants.TOP, direction_to: constants.LEFT, rail_id});
     
     for (let i = width - 2; i > 0; i--) {
-        rail.push({x: grid_x + i, y: grid_y + height - 1, direction_from: 'right', direction_to: 'left', rail_id});
+        rail.push({x: grid_x + i, y: grid_y + height - 1, direction_from: constants.RIGHT, direction_to: constants.LEFT, rail_id});
     }
     
-    rail.push({x: grid_x, y: grid_y + height - 1, direction_from: 'right', direction_to: 'top', rail_id});
+    rail.push({x: grid_x, y: grid_y + height - 1, direction_from: constants.RIGHT, direction_to: constants.TOP, rail_id});
     
     for (let i = height - 2; i > 0; i--) {
-        rail.push({x: grid_x, y: grid_y + i, direction_from: 'bottom', direction_to: 'top', rail_id});
+        rail.push({x: grid_x, y: grid_y + i, direction_from: constants.BOTTOM, direction_to: constants.TOP, rail_id});
     }
 
-    rail.push({x: grid_x, y: grid_y, direction_from: 'bottom', direction_to: 'right', rail_id});
+    rail.push({x: grid_x, y: grid_y, direction_from: constants.BOTTOM, direction_to: constants.RIGHT, rail_id});
  
     return rail;
 }

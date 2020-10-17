@@ -52,8 +52,7 @@ class Player {
 
     get_position_update() {
         let neighbor_ids = this.train.rail.get_neighbor_ids(2); // first and second degree neighbors
-        let neighbor_entries = Object.entries(Train.state).filter(([train_id, item]) => neighbor_ids.includes(Train.get(train_id).rail.id));
-        return neighbor_entries.reduce((result, [train_id, item]) => (result[train_id] = item.train_attributes, result), {});
+        return Train.state.filter(train_state => neighbor_ids.includes(Train.get(train_state.id).rail.id));
     }
 
     get id() {

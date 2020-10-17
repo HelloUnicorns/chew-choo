@@ -1,0 +1,231 @@
+{
+  "nested": {
+    "chewchoo": {
+      "nested": {
+        "LatencyMessage": {
+          "fields": {
+            "latency": {
+              "rule": "required",
+              "type": "double",
+              "id": 1
+            }
+          }
+        },
+        "ErrorMessage": {
+          "fields": {
+            "message": {
+              "rule": "required",
+              "type": "string",
+              "id": 1
+            }
+          }
+        },
+        "WinMessage": {
+          "fields": {}
+        },
+        "InvincibilityState": {
+          "values": {
+            "TRAIN_NOT_INVINCIBLE": 0,
+            "TRAIN_BLINKING": 1,
+            "TRAIN_FULLY_INVISIBLE": 2
+          }
+        },
+        "Direction": {
+          "values": {
+            "LEFT": 0,
+            "RIGHT": 1,
+            "TOP": 2,
+            "BOTTOM": 3
+          }
+        },
+        "Train": {
+          "fields": {
+            "position": {
+              "type": "float",
+              "id": 1
+            },
+            "length": {
+              "type": "uint32",
+              "id": 2
+            },
+            "speed": {
+              "type": "uint32",
+              "id": 3
+            },
+            "is_stopped": {
+              "type": "bool",
+              "id": 4
+            },
+            "invincibility_state": {
+              "type": "InvincibilityState",
+              "id": 5
+            },
+            "is_speed_up": {
+              "type": "bool",
+              "id": 6
+            },
+            "is_speed_down": {
+              "type": "bool",
+              "id": 7
+            },
+            "is_bot": {
+              "type": "bool",
+              "id": 8
+            },
+            "killed": {
+              "type": "bool",
+              "id": 9
+            }
+          }
+        },
+        "Track": {
+          "fields": {
+            "x": {
+              "rule": "required",
+              "type": "uint32",
+              "id": 1
+            },
+            "y": {
+              "rule": "required",
+              "type": "uint32",
+              "id": 2
+            },
+            "rail_id": {
+              "rule": "required",
+              "type": "uint32",
+              "id": 3
+            },
+            "direction_from": {
+              "rule": "required",
+              "type": "Direction",
+              "id": 4
+            },
+            "direction_to": {
+              "rule": "required",
+              "type": "Direction",
+              "id": 5
+            }
+          }
+        },
+        "Route": {
+          "fields": {
+            "train_attributes": {
+              "rule": "required",
+              "type": "Train",
+              "id": 1
+            },
+            "tracks": {
+              "rule": "repeated",
+              "type": "Track",
+              "id": 2
+            },
+            "id": {
+              "rule": "required",
+              "type": "string",
+              "id": 3
+            }
+          }
+        },
+        "Kill": {
+          "fields": {
+            "killed_route_id": {
+              "rule": "required",
+              "type": "string",
+              "id": 1
+            },
+            "killer_route_id": {
+              "rule": "required",
+              "type": "string",
+              "id": 2
+            }
+          }
+        },
+        "TimeMessage": {
+          "fields": {
+            "time": {
+              "rule": "required",
+              "type": "float",
+              "id": 1
+            }
+          }
+        },
+        "KillMessage": {
+          "fields": {
+            "kills": {
+              "rule": "repeated",
+              "type": "Kill",
+              "id": 1
+            }
+          }
+        },
+        "ConnectionMessage": {
+          "fields": {
+            "route_id": {
+              "type": "string",
+              "id": 1
+            },
+            "routes": {
+              "rule": "repeated",
+              "type": "Route",
+              "id": 2
+            }
+          }
+        },
+        "PositionMessage": {
+          "fields": {
+            "routes": {
+              "rule": "repeated",
+              "type": "Route",
+              "id": 2
+            }
+          }
+        },
+        "ServerMessage": {
+          "oneofs": {
+            "server_message": {
+              "oneof": [
+                "latency",
+                "error",
+                "win",
+                "time",
+                "kill",
+                "connection",
+                "position"
+              ]
+            }
+          },
+          "fields": {
+            "latency": {
+              "type": "LatencyMessage",
+              "id": 1
+            },
+            "error": {
+              "type": "ErrorMessage",
+              "id": 2
+            },
+            "win": {
+              "type": "WinMessage",
+              "id": 3
+            },
+            "time": {
+              "type": "TimeMessage",
+              "id": 4
+            },
+            "kill": {
+              "type": "KillMessage",
+              "id": 5
+            },
+            "connection": {
+              "type": "ConnectionMessage",
+              "id": 6
+            },
+            "position": {
+              "type": "PositionMessage",
+              "id": 7
+            }
+          }
+        }
+      }
+    }
+  }
+}
