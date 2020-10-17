@@ -8,10 +8,12 @@ function my_mod(num, mod) {
 }
 
 function set_train_position(train, position, route_len) {
-    let mod_position = my_mod(position, route_len);
-    train.position_in_route = Math.floor(mod_position);
-    train.position_fraction = mod_position - train.position_in_route;
+    train.position = my_mod(position, route_len);
+    if (!train.position) {
+        debugger;
+    }
 }
+
 function calculate_speed_and_position(train, route_len, new_time) {
     let time_passed_in_seconds = (new_time - train.last_position_update) / 1000;
 
@@ -36,7 +38,7 @@ function calculate_speed_and_position(train, route_len, new_time) {
     average_speed = (old_speed + new_speed) * acceleration_time / time_passed_in_seconds / 2 + 
     new_speed * (time_passed_in_seconds - acceleration_time) / time_passed_in_seconds;
     train.last_position_update = new_time;
-    set_train_position(train, train.position_in_route + train.position_fraction + average_speed * time_passed_in_seconds, route_len);
+    set_train_position(train, train.position + average_speed * time_passed_in_seconds, route_len);
 
     train.speed = new_speed;
 }

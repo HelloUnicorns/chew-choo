@@ -373,6 +373,19 @@ class Rail {
         return {x: this.tracks[index].x, y: this.tracks[index].y};
     }
 
+    coordinates_by_position(position) {
+        let index = Math.floor(position);
+        let next_index = (index + 1) % this.tracks.length;
+        let fraction = position - index;
+        let first_coord = this.coordinates(index);
+        let second_coord = this.coordinates(next_index);
+
+        return { 
+            x: first_coord.x * (1 - fraction) + second_coord.x * fraction, 
+            y: first_coord.y * (1 - fraction) + second_coord.y * fraction, 
+        };
+    }
+
     index_of(x, y) {
         for (const [index, track] of tracks.entries()) {
             if (track.x == x && track.y == y) {
