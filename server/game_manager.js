@@ -45,6 +45,9 @@ class GameManager {
             return;
         }
 
+        /* removed non-active players */
+        this.game_clients = this.active_clients;
+
         let { kills, routes } = Train.update();
         let update = Train.state;
         for (const train_id in update) {

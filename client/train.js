@@ -26,8 +26,7 @@ const t2 = 0.1;
 
 export class Train {
     constructor(is_own) {
-        this.position_in_route = 0;
-        this.position_fraction = 0;
+        this.position = 0;
         this.length = 3;
         this.speed = constants.MIN_SPEED; /* in tiles per second */
         this.is_speed_up = false;
@@ -44,6 +43,15 @@ export class Train {
         this.server_shadow_train = undefined;
         this.acceleration = constants.DEFAULT_START_ACCELERATION;
         this.route = undefined;
+    }
+
+    get position_int() {
+        /* TODO: maybe move to round instead of floor? */
+        return Math.floor(this.position);
+    }
+
+    get position_fraction() {
+        return Math.floor(this.position) - this.position_int;
     }
 
     set_route(route) {
@@ -101,8 +109,8 @@ export class Train {
     }
 
     draw_cart_by_index(cart_index, is_engine) {
-        let position_in_route = (this.position_in_route - cart_index + this.route.tracks.length) % this.route.tracks.length;
-        let track = this.route.tracks[position_in_route];
+        let route_index = (this.position_int - cart_index + this.route.tracks.length) % this.route.tracks.length;
+        let track = this.route.tracks[route_index];
         let angle = this.constructor.directions_to_cart_angle(track.direction_from, track.direction_to);
 
         let cart_sprite = draw_grid_sprite(
@@ -137,9 +145,8 @@ export class Train {
     }
 
     update_train_acceleration_fix(track_len) {
-        let x_server = this.server_shadow_train.position_in_route + this.server_shadow_train.position_fraction;
-        let x_0 = this.position_in_route + this.position_fraction;
-        let delta_x = this.constructor.my_delta_mod(x_server + (this.server_shadow_train.speed * global_data.latency / 1000) - x_0, track_len)
+        let x_server = this.server_shadow_train.position;
+        let delta_x = this.constructor.my_delta_mod(x_server + (this.server_shadow_train.speed * global_data.latency / 1000) - this.position, track_len)
         this.acceleration = (this.server_shadow_train.speed + delta_x / t1 - this.speed) / t2;
     }
 
@@ -158,7 +165,7 @@ export class Train {
         let train_tint = this.get_cart_color(this.is_own, this.is_bot);
 
         for (let cart_index = 0; cart_index < this.length; cart_index++) {
-            let tile_index = (this.position_in_route - cart_index + this.route.tracks.length) % this.route.tracks.length;
+            let tile_index = (this.position_int - cart_index + this.route.tracks.length) % this.route.tracks.length;
             let track = this.route.tracks[tile_index];
             let next_track = this.route.tracks[(tile_index + 1) % this.route.tracks.length];
             let track_angle = this.constructor.directions_to_cart_angle(track.direction_from, track.direction_to);
@@ -180,8 +187,7 @@ export class Train {
         let cur_time = window.performance.now();
 
         let server_shadow_train = {
-            position_fraction: server_location.position_fraction,
-            position_in_route: server_location.position_in_route,
+            position: server_location.position,
             speed: server_location.speed,
             is_speed_up: server_location.is_speed_up,
             is_speed_down: server_location.is_speed_down,
@@ -213,8 +219,7 @@ export class Train {
         }
             
         if (!this.server_shadow_train && global_data.latency != 0) {
-            this.position_fraction = server_shadow_train.position_fraction;
-            this.position_in_route = server_shadow_train.position_in_route;
+            this.position = server_shadow_train.position;
             this.last_position_update = cur_time;
         }
 

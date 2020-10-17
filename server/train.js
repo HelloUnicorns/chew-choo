@@ -28,8 +28,7 @@ class Train {
         this.allocatable = true;
 
         /* Game attributes */
-        this.position_in_route = 0;
-        this.position_fraction = 0;
+        this.position = 0;
         this.last_position_update = Train.time;
         this.is_in_leftover = false;
         this.length = 3;
@@ -49,6 +48,11 @@ class Train {
         if (allocated) {
             this.#allocate();
         }
+    }
+    
+    get position_int() {
+        /* TODO: maybe move to round instead of floor? */
+        return Math.floor(this.position);
     }
 
     #make_invincible = () => {
@@ -100,9 +104,9 @@ class Train {
         calculate_speed_and_position(this, length, Train.time);
 
         if (this.is_in_leftover) {
-            if (this.position_in_route >= this.rail.leftover_length()) {
+            if (this.position >= this.rail.leftover_length()) {
                 /* Train has just left the leftover */
-                set_train_position(this, this.position_in_route - this.rail.leftover_length(), this.rail.length());
+                set_train_position(this, this.position - this.rail.leftover_length(), this.rail.length());
                 this.rail.clear_leftover();
                 this.is_in_leftover = false;
                 return true;
@@ -115,15 +119,13 @@ class Train {
     /* Hand the train over from a human to a bot or vice versa */
     handover(allocated=false) {
         let rail_id = this.rail.id;
-        let position_in_route = this.position_in_route;
-        let position_fration = this.position_fraction;
+        let position = this.position;
         this.#destruct();
 
         /* From this point we should not address 'this' at all */
 
         let new_train = new Train(get_rails()[rail_id], allocated=allocated);
-        new_train.position_in_route = position_in_route;
-        new_train.position_fraction = position_fration;
+        new_train.position = position;
 
         console.log(`Rail ${new_train.rail.id} is now owned by ${new_train.id}`);
 
@@ -148,13 +150,12 @@ class Train {
         };
     
     
-        let {position_in_route, position_fraction} = Train.bot_position();
+        let bot_position = Train.bot_position();
     
         let rail_ids = this.rail.separate();
         for (const rail_id of rail_ids) {
             let new_train = rail_id_to_train[rail_id].handover();
-            new_train.position_in_route = position_in_route;
-            new_train.position_fraction = position_fraction;
+            new_train.position = bot_position;
             /* TODO: separate tracks and leftover tracks after we update the server-client protocol */
             _update.routes.push({route_id: new_train.id, tracks: new_train.rail.leftover_tracks.concat(new_train.rail.tracks)});
         }
@@ -163,7 +164,7 @@ class Train {
     }
 
     occupy_location() {
-        let locomotive_position = this.position_in_route;
+        let locomotive_position = this.position_int;
         let collisions = [];
     
         /* Locomotive */
@@ -194,8 +195,7 @@ class Train {
     get state() {
         return {
             train_attributes: {
-                position_in_route: this.position_in_route,
-                position_fraction: this.position_fraction,
+                position: this.position,
                 length: this.length,
                 speed: this.speed,
                 is_stopped: this.is_stopped,
@@ -229,13 +229,10 @@ class Train {
     static bot_position() {
         let bot = Object.values(Train.all).find((train) => train.is_bot && train.active);
         if (bot) {
-            return {
-                position_in_route: bot.position_in_route,
-                position_fraction: bot.position_fraction
-            };
+            return bot.position;
         }
 
-        return {position_fraction: 0, position_fraction: 0};
+        return 0;
     }
 
     static allocate() {
@@ -288,12 +285,9 @@ class Train {
             return undefined;
         }
     
-        /* We assume both trains passed the crossing point and the trains are not about as long as
-            the rail itself, so adding the position fraction to the distance should work */
         const distances = trains_pair.map((train) => 
             grid_distance(coordinates,
-                          train.rail.coordinates(train.position_in_route))
-            + train.position_fraction);
+                          train.rail.coordinates_by_position(train.position)));
         
         let killer = undefined;
         let killee = undefined;
@@ -314,12 +308,12 @@ class Train {
             _update = killee.#abandon();
         } else {
             console.log(`Train in rail ${killee.rail.id} got killed by a human player`);
-            let {position, old_rails} = killer.rail.merge(killee.rail, killer.position_in_route);
+            let {position, old_rails} = killer.rail.merge(killee.rail, killer.position_int);
             if (killer.rail.leftover_tracks.length > 0) {
                 killer.is_in_leftover = true;
                 console.log(`Route ${killer.id} in leftover`);
             }
-            killer.position_in_route = position;
+            killer.position_int = position;
             for (const rail_id of old_rails) {
                 let cur_train = rail_id_to_train[rail_id];
                 cur_train.kill();
@@ -395,10 +389,7 @@ class Train {
             if (!train.is_stopped && train.is_bot) {
                 /* TODO: DELETE THIS LATER AFTER WE SOLVE THE BUG
                     DEBUG - CHECK ALL BOTS ARE IN SYNC */
-                let current_pos = train.position_in_route + train.position_fraction;
-                let bot_pos = Object.values(Train.bot_position()).reduce((a, b) => a + b , 0);
-                let delta = Math.abs(current_pos - bot_pos);
-                if (delta != 0) {
+                if (Train.bot_position() != train.position) {
                     throw new Exception(`Bot ${train.id} in rail ${train.rail.id} drifted off`);
                 }
             }
