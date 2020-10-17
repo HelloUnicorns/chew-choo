@@ -18,7 +18,6 @@ export class GameScene extends Phaser.Scene {
         this.down_key = undefined;
         this.stopped = false;
         this.game_socket = undefined;
-        this.last_server_time = undefined;
         this.player_route = undefined;
         this.routes = {};
     }
@@ -128,22 +127,17 @@ export class GameScene extends Phaser.Scene {
         if (this.stopped) {
             return;
         }
-        event.changed_routes.forEach(route => {
-            this.update_tracks_from_server(route.route_id, route.tiles);
-        });
-    
-        if (event.server_time < this.last_server_time) {
-            /* a newer update has already arrived */
-            console.log('got an out-of-order positions update')
-            return;
-        }
-        this.last_server_time = event.server_time;
+
         let routes_to_delete = new Set(Object.keys(this.routes))
-        for (let route_id in event.locations) {
+        for (let route_id in event.routes) {
             routes_to_delete.delete(route_id);
-            let route = this.routes[route_id];
-            route.train.update_server_train_state(event.locations[route_id]);
+            let route_from_server = event.routes[route_id];
+            if (route_from_server.tracks) {
+                this.update_tracks_from_server(route_from_server.route_id, route_from_server.tracks);
+            }
+            this.routes[route_id].train.update_server_train_state(route_from_server.train_attributes);
         }
+
         for (const route_id of routes_to_delete) {
             console.log(`Remove route in ${route_id}`);
             this.remove_route(route_id);
@@ -169,11 +163,7 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
-        this.up.play()
-
-        event.routes.forEach(route => {
-            this.update_tracks_from_server(route.route_id, route.tiles);
-        });
+        this.up.play();
     };
     
     handle_win_event(event) {
