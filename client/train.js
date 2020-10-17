@@ -51,7 +51,7 @@ export class Train {
     }
 
     get position_fraction() {
-        return Math.floor(this.position) - this.position_int;
+        return this.position - Math.floor(this.position);
     }
 
     set_route(route) {
