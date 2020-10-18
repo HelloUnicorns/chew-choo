@@ -134,7 +134,7 @@ export class GameScene extends Phaser.Scene {
             if (route.tracks.length) {
                 this.update_tracks_from_server(route.id, route.tracks);
             }
-            this.routes[route.id].train.update_server_train_state(route.train_attributes);
+            this.routes[route.id].train.update_server_train_state(route.train_attributes, route.tracks.length != 0);
         }
 
         for (const route_id of routes_to_delete) {
@@ -222,6 +222,6 @@ export class GameScene extends Phaser.Scene {
         }
         let route = this.routes[route_id];
         this.update_tracks_from_server(route_id, server_route.tracks);
-        route.train.update_server_train_state(server_route.train_attributes);
+        route.train.update_server_train_state(server_route.train_attributes, true);
     }    
 }

@@ -165,7 +165,7 @@ function union_tracks(controller, controllee, controller_position) {
         leftover_tracks,
         crossings: updated_crossings.crossings,
         dead_crossings: updated_crossings.dead_crossings,
-        position: 0
+        position: 0 /* TODO: position should have the fraction of the killer position's fraction */
     };
 }
 

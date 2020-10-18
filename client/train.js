@@ -148,9 +148,11 @@ export class Train {
         let x_server = this.server_shadow_train.position;
         let delta_x = this.constructor.my_delta_mod(x_server + (this.server_shadow_train.speed * global_data.latency / 1000) - this.position, track_len)
         this.acceleration = (this.server_shadow_train.speed + delta_x / t1 - this.speed) / t2;
+        if (Math.abs(this.acceleration) > 1500) {
+            new Error('Acceleration too big');
+        }
     }
 
-    
     update() {
         /* draw the drain if it isn't already drawn */
         this.draw();
@@ -183,7 +185,7 @@ export class Train {
         }
     }
 
-    update_server_train_state(server_location) {
+    update_server_train_state(server_location, new_route) {
         let cur_time = window.performance.now();
 
         let server_shadow_train = {
@@ -217,15 +219,17 @@ export class Train {
         
             this.invincibility_state = server_location.invincibility_state;
         }
-            
-        if (!this.server_shadow_train && global_data.latency != 0) {
+        
+        if (global_data.latency == 0) {
+            return;
+        }
+
+        if (!this.server_shadow_train || new_route) {
             this.position = server_shadow_train.position;
             this.last_position_update = cur_time;
         }
 
-        if (global_data.latency != 0) {
-            this.server_shadow_train = server_shadow_train;
-        }
+        this.server_shadow_train = server_shadow_train;
     }
 
 }
