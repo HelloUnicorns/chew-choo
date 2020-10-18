@@ -6,6 +6,13 @@ function my_mod(num, mod) {
     }
     return (mod + (num % mod)) % mod;
 }
+ 
+function my_delta_mod(number, mod) {
+    if (mod == Infinity) {
+        return number;
+    }
+    return (((number % mod) + mod + mod/2) % mod) - mod/2;
+}
 
 function set_train_position(train, position, route_len) {
     train.position = my_mod(position, route_len);
@@ -33,15 +40,16 @@ function calculate_speed_and_position(train, route_len, new_time) {
     new_speed = new_speed > constants.MAX_SPEED ? constants.MAX_SPEED : new_speed;
     new_speed = new_speed < constants.MIN_SPEED ? constants.MIN_SPEED : new_speed;
 
-    acceleration_time = (new_speed - old_speed) / constants.ACCELERATION;
-    acceleration_time *= acceleration_time < 0 ? -1: 1;
+    acceleration_time = Math.abs((new_speed - old_speed) / constants.ACCELERATION);
     average_speed = (old_speed + new_speed) * acceleration_time / time_passed_in_seconds / 2 + 
     new_speed * (time_passed_in_seconds - acceleration_time) / time_passed_in_seconds;
-    train.last_position_update = new_time;
+    
     set_train_position(train, train.position + average_speed * time_passed_in_seconds, route_len);
 
     train.speed = new_speed;
+    train.last_position_update = new_time;
 }
 
 exports.calculate_speed_and_position = calculate_speed_and_position;
 exports.set_train_position = set_train_position;
+exports.my_delta_mod = my_delta_mod;

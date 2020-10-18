@@ -1,7 +1,7 @@
 const constants = require('../common/constants.js');
 const global_data = require('./global_data.js')
 const { draw_grid_sprite, update_grid_sprite, GRID_PIECE_WIDTH, CART_Z_INEDX } = require('./grid.js');
-const { calculate_speed_and_position } = require('../common/position.js');
+const { calculate_speed_and_position, my_delta_mod } = require('../common/position.js');
 
 const CART_IMAGE_WIDTH = 100;
 const CART_WIDTH = GRID_PIECE_WIDTH;
@@ -140,17 +140,11 @@ export class Train {
     }
 
     
-    static my_delta_mod(number, mod) {
-        return (((number % mod) + mod + mod/2) % mod) - mod/2;
-    }
-
     update_train_acceleration_fix(track_len) {
         let x_server = this.server_shadow_train.position;
-        let delta_x = this.constructor.my_delta_mod(x_server + (this.server_shadow_train.speed * global_data.latency / 1000) - this.position, track_len)
+        let latency = Math.min(global_data.latency, 400);
+        let delta_x = my_delta_mod(x_server + (this.server_shadow_train.speed * latency / 1000) - this.position, track_len)
         this.acceleration = (this.server_shadow_train.speed + delta_x / t1 - this.speed) / t2;
-        if (Math.abs(this.acceleration) > 1500) {
-            new Error('Acceleration too big');
-        }
     }
 
     update() {
@@ -160,10 +154,11 @@ export class Train {
         let current_time = window.performance.now();
         if (this.server_shadow_train) {
             this.update_train_acceleration_fix(this.route.tracks.length);
+            this.server_shadow_train = undefined;
         }
 
         calculate_speed_and_position(this, this.route.tracks.length, current_time);
-
+       
         let train_tint = this.get_cart_color(this.is_own, this.is_bot);
 
         for (let cart_index = 0; cart_index < this.length; cart_index++) {
@@ -219,17 +214,16 @@ export class Train {
         
             this.invincibility_state = server_location.invincibility_state;
         }
-        
-        if (global_data.latency == 0) {
-            return;
-        }
 
-        if (!this.server_shadow_train || new_route) {
+        
+        if (new_route || this.server_shadow_train) {
             this.position = server_shadow_train.position;
             this.last_position_update = cur_time;
+            this.acceleration = 0;
+            this.server_shadow_train = undefined;
+        } else {
+            this.server_shadow_train = server_shadow_train;
         }
-
-        this.server_shadow_train = server_shadow_train;
     }
 
 }

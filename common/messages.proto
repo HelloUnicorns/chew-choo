@@ -73,7 +73,7 @@ message ConnectionMessage {
 }
 
 message PositionMessage {
-    repeated Route routes = 2;
+    repeated Route routes = 1;
 }
 
 message ServerMessage {
