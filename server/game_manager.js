@@ -48,10 +48,10 @@ class GameManager {
         /* removed non-active players */
         this.game_clients = this.active_clients;
 
-        let { kills, routes } = Train.update();
+        let { kills, route_ids } = Train.update();
         let update = Train.state;
         for (const route of update) {
-            if (!(route.id in routes)) {
+            if (!(route_ids.has(route.id))) {
                 delete route.tracks;
             }
         }

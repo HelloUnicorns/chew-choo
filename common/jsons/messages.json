@@ -119,10 +119,15 @@
               "type": "Track",
               "id": 2
             },
+            "leftover_tracks": {
+              "rule": "repeated",
+              "type": "Track",
+              "id": 3
+            },
             "id": {
               "rule": "required",
               "type": "string",
-              "id": 3
+              "id": 4
             }
           }
         },
@@ -134,7 +139,6 @@
               "id": 1
             },
             "killer_route_id": {
-              "rule": "required",
               "type": "string",
               "id": 2
             }

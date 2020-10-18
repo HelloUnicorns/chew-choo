@@ -50,12 +50,13 @@ message Track {
 message Route {
     required Train train_attributes = 1;
     repeated Track tracks = 2;
-    required string id = 3;
+    repeated Track leftover_tracks = 3;
+    required string id = 4;
 }
 
 message Kill {
     required string killed_route_id = 1;
-    required string killer_route_id = 2;
+    string killer_route_id = 2;
 }
 
 message TimeMessage {

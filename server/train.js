@@ -140,27 +140,17 @@ class Train {
     }
 
     /* Train was abandoned by a human player (killed by a bot or left the game) */
-    #abandon = () => {
-        let _update = {
-            routes: [],
-            kill: {
-                killed_route_id: this.id,
-                killer_route_id: undefined
-            }
-        };
-    
-    
+    #abandon(update_obj) {
+        update_obj.kills.push({ killed_route_id: this.id, killer_route_id: undefined });
+        
         let bot_position = Train.bot_position();
     
         let rail_ids = this.rail.separate();
         for (const rail_id of rail_ids) {
             let new_train = rail_id_to_train[rail_id].handover();
             new_train.position = bot_position;
-            /* TODO: separate tracks and leftover tracks after we update the server-client protocol */
-            _update.routes.push({route_id: new_train.id, tracks: new_train.rail.leftover_tracks.concat(new_train.rail.tracks)});
+            update_obj.route_ids.add(new_train.id);
         }
-    
-        return _update;
     }
 
     occupy_location() {
@@ -206,6 +196,7 @@ class Train {
                 killed: !this.active,
             },
             tracks: this.rail.tracks,
+            leftover_tracks: this.rail.leftover_tracks,
             id: this.id
         }
     }
@@ -267,15 +258,7 @@ class Train {
         return Train.active_trains.map(train => train.state);
     }
 
-    static #handle_collision = (trains_pair, coordinates) => {
-        let _update = {
-            routes: [],
-            kill: {
-                killed_route_id: undefined,
-                killer_route_id: undefined
-            }
-        };
-            
+    static #handle_collision = (trains_pair, coordinates, update_obj) => {
         if (trains_pair.some(train => !train.collidable)) {
             return undefined;
         }
@@ -292,21 +275,26 @@ class Train {
         
         let killer = undefined;
         let killee = undefined;
-    
-        if (distances[0] < distances[1]) {
+        if (!trains_pair[0].is_bot && trains_pair[1].is_bot) {
+            killer = trains_pair[0];
+            killee = trains_pair[1];
+        } else if (!trains_pair[1].is_bot && trains_pair[0].is_bot) {
+            killer = trains_pair[1];
+            killee = trains_pair[0];
+        } else if (distances[0] < distances[1]) {
             killer = trains_pair[0];
             killee = trains_pair[1]
         } else {
             killer = trains_pair[1];
             killee = trains_pair[0]
         }
-    
+        
         let killer_id = killer.id;
         let killee_id = killee.id;
     
         if (killer.is_bot) {
             console.log(`Train in rail ${killee.rail.id} got killed by a bot`);
-            _update = killee.#abandon();
+            killee.#abandon(update_obj);
         } else {
             console.log(`Train in rail ${killee.rail.id} got killed by a human player`);
             let {position, old_rails} = killer.rail.merge(killee.rail, killer.position_int);
@@ -319,28 +307,24 @@ class Train {
                 let cur_train = rail_id_to_train[rail_id];
                 cur_train.kill();
                 /* TODO: separate tracks and leftover tracks after we update the server-client protocol */
-                _update.routes.push({route_id: cur_train.id, tracks: cur_train.rail.leftover_tracks.concat(cur_train.rail.tracks)});
+                update_obj.route_ids.add(cur_train.id);
             }
     
             /* Also report update of the killer rail */
-            /* TODO: separate tracks and leftover tracks after we update the server-client protocol */
-            _update.routes.push({route_id : killer.id, tracks: killer.rail.leftover_tracks.concat(killer.rail.tracks)});
+            update_obj.route_ids.add(killer.id);
         }
     
-        _update.kill.killer_route_id = killer_id;
-        _update.kill.killed_route_id = killee_id;
-    
-        return _update;
+        update_obj.kills.push({ killer_route_id: killer_id, killed_route_id: killee_id });
     }
 
-    static #update_before_movement = (routes) => {
+    static #update_before_movement = (update_obj) => {
         /* Handle abandoned trains first */
         for (const train of Object.values(Train.all).filter(train => train.abandoned)) {
-            routes.push(...train.#abandon().routes);        
+            train.#abandon(update_obj);
         }
     }
 
-    static #update_movement = (kills, routes) => {
+    static #update_movement = (update_obj) => {
         Train.update_time();
     
         let train_ids = Object.keys(Train.all);
@@ -360,7 +344,7 @@ class Train {
             /* Periodic update of speed and position */
             if (train.update()) {
                 /* Update caused rail change */
-                routes.push(train.id);
+                update_obj.route_ids.add(train.id);
             };
     
             
@@ -373,15 +357,11 @@ class Train {
                 continue;
             }
     
-            let collision_update = Train.#handle_collision(collision[0].trains, collision[0].coordinates);
-            if (collision_update) {
-                kills.push(collision_update.kill)
-                routes.push(...collision_update.routes);
-            }
+            Train.#handle_collision(collision[0].trains, collision[0].coordinates, update_obj);
         }
     }
 
-    static #update_after_movement = (routes) => {
+    static #update_after_movement = (update_obj) => {
         for (const train of Object.values(Train.all)) {
             if(!train.active) {
                 continue;
@@ -396,27 +376,23 @@ class Train {
             }
     
             if (!train.reported) {
-                routes.push({
-                    route_id: train.id,
-                    tracks: train.rail.tracks
-                });
+                update_obj.route_ids.add(train.id);
                 train.reported = true;
             }
         }
     }
 
     static update() {
-        let kills = [];
-        let routes = [];
+        let update_obj = {
+            kills: [],
+            route_ids: new Set()
+        }
 
-        Train.#update_before_movement(routes);
-        Train.#update_movement(kills, routes);
-        Train.#update_after_movement( routes);
+        Train.#update_before_movement(update_obj);
+        Train.#update_movement(update_obj);
+        Train.#update_after_movement(update_obj);
     
-        return {
-            kills, 
-            routes: _.chain(routes).keyBy('route_id').mapValues('tracks').value()
-        };
+        return update_obj;
     }
 }
 
