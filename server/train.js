@@ -360,7 +360,7 @@ class Train {
             /* Periodic update of speed and position */
             if (train.update()) {
                 /* Update caused rail change */
-                changed_rails.push({route_id: train.id, tracks: train.rail.tracks});
+                routes.push(train.id);
             };
     
             
