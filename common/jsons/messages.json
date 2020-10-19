@@ -54,18 +54,22 @@
         "LatestSpeedUpdate": {
           "fields": {
             "update_type": {
+              "rule": "required",
               "type": "SpeedType",
               "id": 1
             },
             "update_time": {
+              "rule": "required",
               "type": "float",
               "id": 2
             },
             "update_position": {
+              "rule": "required",
               "type": "float",
               "id": 3
             },
             "update_time_speed": {
+              "rule": "required",
               "type": "float",
               "id": 4
             }
@@ -74,18 +78,22 @@
         "NewTrain": {
           "fields": {
             "length": {
+              "rule": "required",
               "type": "uint32",
               "id": 1
             },
             "is_bot": {
+              "rule": "required",
               "type": "bool",
               "id": 2
             },
             "invincibility_state": {
+              "rule": "required",
               "type": "InvincibilityState",
               "id": 3
             },
             "latest_speed_update": {
+              "rule": "required",
               "type": "LatestSpeedUpdate",
               "id": 4
             }
@@ -124,26 +132,15 @@
             }
           }
         },
-        "KillServerEvent": {
+        "SpeedServerEvent": {
           "fields": {
-            "killed_route_id": {
+            "id": {
               "rule": "required",
               "type": "string",
               "id": 1
             },
-            "killer_route_id": {
-              "type": "string",
-              "id": 2
-            }
-          }
-        },
-        "SpeedServerEvent": {
-          "fields": {
-            "id": {
-              "type": "string",
-              "id": 1
-            },
             "update": {
+              "rule": "required",
               "type": "LatestSpeedUpdate",
               "id": 2
             }
@@ -152,6 +149,7 @@
         "NewRouteServerEvent": {
           "fields": {
             "new_route": {
+              "rule": "required",
               "type": "NewRoute",
               "id": 1
             }
@@ -170,6 +168,7 @@
               "id": 2
             },
             "latest_speed_update": {
+              "rule": "required",
               "type": "LatestSpeedUpdate",
               "id": 3
             }
@@ -178,6 +177,7 @@
         "RouteRemovedServerEvent": {
           "fields": {
             "id": {
+              "rule": "required",
               "type": "string",
               "id": 1
             }
@@ -186,10 +186,12 @@
         "InvincibilityChangeServerEvent": {
           "fields": {
             "id": {
+              "rule": "required",
               "type": "string",
               "id": 1
             },
             "new_invincibility_state": {
+              "rule": "required",
               "type": "InvincibilityState",
               "id": 2
             }
@@ -238,10 +240,12 @@
         "ConnectionServerMessage": {
           "fields": {
             "server_time": {
+              "rule": "required",
               "type": "float",
               "id": 1
             },
             "route_id": {
+              "rule": "required",
               "type": "string",
               "id": 2
             },
@@ -255,6 +259,7 @@
         "UpdateServerMessage": {
           "fields": {
             "server_time": {
+              "rule": "required",
               "type": "float",
               "id": 1
             },
@@ -310,6 +315,7 @@
         "LatencyRequestClientMessage": {
           "fields": {
             "server_time": {
+              "rule": "required",
               "type": "float",
               "id": 1
             }
@@ -318,6 +324,7 @@
         "SpeedChangeClientMessage": {
           "fields": {
             "type": {
+              "rule": "required",
               "type": "SpeedType",
               "id": 1
             }
