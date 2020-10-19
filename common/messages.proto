@@ -1,18 +1,16 @@
 // awesome.proto
 package chewchoo;
 syntax = "proto3";
- 
-message LatencyMessage {
-    required double latency = 1;
-}
 
-message ErrorMessage {
-    required string message = 1;
-}
 
-message WinMessage {
 
-}
+
+/*********************************************************/
+/*                                                       */
+/*                         ENUMS                         */
+/*                                                       */
+/*********************************************************/
+
 
 enum InvincibilityState {
     TRAIN_NOT_INVINCIBLE = 0;
@@ -21,90 +19,177 @@ enum InvincibilityState {
 }
 
 enum Direction {
-    LEFT = 0;
-    RIGHT = 1;
-    TOP = 2;
-    BOTTOM = 3;
+    LEFT_TO_TOP = 0;
+    LEFT_TO_RIGHT = 1;
+    LEFT_TO_BOTTOM = 2;
+    RIGHT_TO_TOP = 3;
+    RIGHT_TO_LEFT = 4;
+    RIGHT_TO_BOTTOM = 5;
+    TOP_TO_LEFT = 6;
+    TOP_TO_RIGHT = 7;
+    TOP_TO_BOTTOM = 8;
+    BOTTOM_TO_TOP = 9;
+    BOTTOM_TO_LEFT = 10;
+    BOTTOM_TO_RIGHT = 11;
 };
 
-message Train {
-    float position = 1;
-    uint32 length = 2;
-    float speed = 3;
-    bool is_stopped = 4;
-    InvincibilityState invincibility_state = 5;
-    bool is_speed_up = 6;
-    bool is_speed_down = 7;
-    bool is_bot = 8;
-    bool killed = 9;
+enum SpeedType {
+    SPEED_CONSTANT = 0;
+    SPEED_ACCELERATING = 1;
+    SPEED_DECELERATING = 2;
 }
+
+
+/*********************************************************/
+/*                                                       */
+/*                        STRUCTS                        */
+/*                                                       */
+/*********************************************************/
 
 message Track {
     required int32 x = 1;
     required int32 y = 2;
-    required uint32 rail_id = 3;
-    required Direction direction_from = 4;
-    required Direction direction_to = 5;
+    required Direction direction = 3;
 }
 
-message Route {
-    required Train train_attributes = 1;
+message LatestSpeedUpdate {
+    SpeedType update_type = 1;
+    float update_time = 2;
+    float update_position = 3;
+    float update_time_speed = 4;
+}
+
+message NewTrain {
+    uint32 length = 1;
+    bool is_bot = 2;
+    InvincibilityState invincibility_state = 3;
+    LatestSpeedUpdate latest_speed_update = 4;
+}
+
+message NewRoute {
+    required NewTrain train = 1;
     repeated Track tracks = 2;
     repeated Track leftover_tracks = 3;
     required string id = 4;
 }
 
-message Kill {
+
+/*********************************************************/
+/*                                                       */
+/*                     SERVER EVENTS                     */
+/*                                                       */
+/*********************************************************/
+
+message LatencyServerEvent {
+    required double latency = 1;
+}
+
+message KillServerEvent {
     required string killed_route_id = 1;
     string killer_route_id = 2;
 }
 
-message TimeMessage {
-    required float time = 1;
+message SpeedServerEvent {
+    string id = 1;
+    LatestSpeedUpdate update = 2;
 }
 
-message KillMessage {
-    repeated Kill kills = 1;
+message NewRouteServerEvent {
+    NewRoute new_route = 1;
 }
 
-message ConnectionMessage {
-    string route_id = 1; /* route id of the connected player */
-    repeated Route routes = 2;
+message RouteUpdateServerEvent {
+    repeated Track tracks = 1;
+    repeated Track leftover_tracks = 2;
+    LatestSpeedUpdate latest_speed_update = 3;
 }
 
-message PositionMessage {
-    repeated Route routes = 1;
+message RouteRemovedServerEvent {
+    string id = 1;
 }
 
-message ServerMessage {
+message InvincibilityChangeServerEvent {
+    string id = 1;
+    InvincibilityState new_invincibility_state = 2;
+}
+
+message ServerEvent {
     oneof type {
-        LatencyMessage latency = 1;
-        ErrorMessage error = 2;
-        WinMessage win = 3;
-        TimeMessage time = 4;
-        KillMessage kill = 5;
-        ConnectionMessage connection = 6;
-        PositionMessage position = 7;
+        LatencyServerEvent latency = 1;
+        SpeedServerEvent speed = 2;
+        NewRouteServerEvent new_route = 3;
+        RouteUpdateServerEvent route_update = 4;
+        RouteRemovedServerEvent route_removed = 5;
+        InvincibilityChangeServerEvent invincibility_change = 6;
     }
 }
 
 
-message StartPlayingMessage {
+/*********************************************************/
+/*                                                       */
+/*                    SERVER MESSAGES                    */
+/*                                                       */
+/*********************************************************/
+
+message ConnectionServerMessage {
+    /* 
+    the goal of the connection message is: 
+       * send the player it's route_id
+       * get the player up to speed with the game state at the moment he joins.
+    the client has to save all the periodic _events_ that happenned along with the time that they happnned at,
+    and after receiving the connection message he shall discard events that happnned before the events,
+    and apply any events that happnned _after_ the time in this message.
+    */
+    float server_time = 1; /* the server time at the time of the latest server tick. */
+    string route_id = 2; /* route id of the connected player */
+    repeated NewRoute new_routes = 3;
+}
+
+message UpdateServerMessage {
+    float server_time = 1;
+    repeated ServerEvent events = 2;
+}
+
+message ErrorServerMessage {
+    required string message = 1;
+}
+
+message WinServerMessage {
 
 }
 
-message LatencyUpdateMessage {
-    float prev_server_time = 1;
+message ServerMessage {
+    oneof type {
+        ErrorServerMessage error = 2;
+        WinServerMessage win = 3;
+        ConnectionServerMessage connection = 6;
+        UpdateServerMessage update = 7;
+    }
 }
 
-message SpeedChangeMessage {
-    float value = 1;
+
+/*********************************************************/
+/*                                                       */
+/*                    CLIENT MESSAGES                    */
+/*                                                       */
+/*********************************************************/
+
+message LatencyRequestClientMessage {
+    float server_time = 1;
+}
+
+message SpeedChangeClientMessage {
+    SpeedType type = 1;
+}
+
+message StartPlayingClientMessage {
+
 }
 
 message ClientMessage {
     oneof type {
-        StartPlayingMessage start_playing = 1;
-        LatencyUpdateMessage latency_update = 2;
-        SpeedChangeMessage speed_change = 3;
+        StartPlayingClientMessage start_playing = 1;
+        LatencyRequestClientMessage latency_request = 2;
+        SpeedChangeClientMessage speed_change = 3;
     }
 }

@@ -2,27 +2,6 @@
   "nested": {
     "chewchoo": {
       "nested": {
-        "LatencyMessage": {
-          "fields": {
-            "latency": {
-              "rule": "required",
-              "type": "double",
-              "id": 1
-            }
-          }
-        },
-        "ErrorMessage": {
-          "fields": {
-            "message": {
-              "rule": "required",
-              "type": "string",
-              "id": 1
-            }
-          }
-        },
-        "WinMessage": {
-          "fields": {}
-        },
         "InvincibilityState": {
           "values": {
             "TRAIN_NOT_INVINCIBLE": 0,
@@ -32,50 +11,25 @@
         },
         "Direction": {
           "values": {
-            "LEFT": 0,
-            "RIGHT": 1,
-            "TOP": 2,
-            "BOTTOM": 3
+            "LEFT_TO_TOP": 0,
+            "LEFT_TO_RIGHT": 1,
+            "LEFT_TO_BOTTOM": 2,
+            "RIGHT_TO_TOP": 3,
+            "RIGHT_TO_LEFT": 4,
+            "RIGHT_TO_BOTTOM": 5,
+            "TOP_TO_LEFT": 6,
+            "TOP_TO_RIGHT": 7,
+            "TOP_TO_BOTTOM": 8,
+            "BOTTOM_TO_TOP": 9,
+            "BOTTOM_TO_LEFT": 10,
+            "BOTTOM_TO_RIGHT": 11
           }
         },
-        "Train": {
-          "fields": {
-            "position": {
-              "type": "float",
-              "id": 1
-            },
-            "length": {
-              "type": "uint32",
-              "id": 2
-            },
-            "speed": {
-              "type": "float",
-              "id": 3
-            },
-            "is_stopped": {
-              "type": "bool",
-              "id": 4
-            },
-            "invincibility_state": {
-              "type": "InvincibilityState",
-              "id": 5
-            },
-            "is_speed_up": {
-              "type": "bool",
-              "id": 6
-            },
-            "is_speed_down": {
-              "type": "bool",
-              "id": 7
-            },
-            "is_bot": {
-              "type": "bool",
-              "id": 8
-            },
-            "killed": {
-              "type": "bool",
-              "id": 9
-            }
+        "SpeedType": {
+          "values": {
+            "SPEED_CONSTANT": 0,
+            "SPEED_ACCELERATING": 1,
+            "SPEED_DECELERATING": 2
           }
         },
         "Track": {
@@ -90,28 +44,58 @@
               "type": "int32",
               "id": 2
             },
-            "rail_id": {
+            "direction": {
               "rule": "required",
-              "type": "uint32",
+              "type": "Direction",
               "id": 3
-            },
-            "direction_from": {
-              "rule": "required",
-              "type": "Direction",
-              "id": 4
-            },
-            "direction_to": {
-              "rule": "required",
-              "type": "Direction",
-              "id": 5
             }
           }
         },
-        "Route": {
+        "LatestSpeedUpdate": {
           "fields": {
-            "train_attributes": {
+            "update_type": {
+              "type": "SpeedType",
+              "id": 1
+            },
+            "update_time": {
+              "type": "float",
+              "id": 2
+            },
+            "update_position": {
+              "type": "float",
+              "id": 3
+            },
+            "update_time_speed": {
+              "type": "float",
+              "id": 4
+            }
+          }
+        },
+        "NewTrain": {
+          "fields": {
+            "length": {
+              "type": "uint32",
+              "id": 1
+            },
+            "is_bot": {
+              "type": "bool",
+              "id": 2
+            },
+            "invincibility_state": {
+              "type": "InvincibilityState",
+              "id": 3
+            },
+            "latest_speed_update": {
+              "type": "LatestSpeedUpdate",
+              "id": 4
+            }
+          }
+        },
+        "NewRoute": {
+          "fields": {
+            "train": {
               "rule": "required",
-              "type": "Train",
+              "type": "NewTrain",
               "id": 1
             },
             "tracks": {
@@ -131,7 +115,16 @@
             }
           }
         },
-        "Kill": {
+        "LatencyServerEvent": {
+          "fields": {
+            "latency": {
+              "rule": "required",
+              "type": "double",
+              "id": 1
+            }
+          }
+        },
+        "KillServerEvent": {
           "fields": {
             "killed_route_id": {
               "rule": "required",
@@ -144,131 +137,216 @@
             }
           }
         },
-        "TimeMessage": {
+        "SpeedServerEvent": {
           "fields": {
-            "time": {
-              "rule": "required",
-              "type": "float",
-              "id": 1
-            }
-          }
-        },
-        "KillMessage": {
-          "fields": {
-            "kills": {
-              "rule": "repeated",
-              "type": "Kill",
-              "id": 1
-            }
-          }
-        },
-        "ConnectionMessage": {
-          "fields": {
-            "route_id": {
+            "id": {
               "type": "string",
               "id": 1
             },
-            "routes": {
-              "rule": "repeated",
-              "type": "Route",
+            "update": {
+              "type": "LatestSpeedUpdate",
               "id": 2
             }
           }
         },
-        "PositionMessage": {
+        "NewRouteServerEvent": {
           "fields": {
-            "routes": {
-              "rule": "repeated",
-              "type": "Route",
+            "new_route": {
+              "type": "NewRoute",
               "id": 1
             }
           }
         },
-        "ServerMessage": {
+        "RouteUpdateServerEvent": {
+          "fields": {
+            "tracks": {
+              "rule": "repeated",
+              "type": "Track",
+              "id": 1
+            },
+            "leftover_tracks": {
+              "rule": "repeated",
+              "type": "Track",
+              "id": 2
+            },
+            "latest_speed_update": {
+              "type": "LatestSpeedUpdate",
+              "id": 3
+            }
+          }
+        },
+        "RouteRemovedServerEvent": {
+          "fields": {
+            "id": {
+              "type": "string",
+              "id": 1
+            }
+          }
+        },
+        "InvincibilityChangeServerEvent": {
+          "fields": {
+            "id": {
+              "type": "string",
+              "id": 1
+            },
+            "new_invincibility_state": {
+              "type": "InvincibilityState",
+              "id": 2
+            }
+          }
+        },
+        "ServerEvent": {
           "oneofs": {
             "type": {
               "oneof": [
                 "latency",
-                "error",
-                "win",
-                "time",
-                "kill",
-                "connection",
-                "position"
+                "speed",
+                "new_route",
+                "route_update",
+                "route_removed",
+                "invincibility_change"
               ]
             }
           },
           "fields": {
             "latency": {
-              "type": "LatencyMessage",
+              "type": "LatencyServerEvent",
               "id": 1
             },
+            "speed": {
+              "type": "SpeedServerEvent",
+              "id": 2
+            },
+            "new_route": {
+              "type": "NewRouteServerEvent",
+              "id": 3
+            },
+            "route_update": {
+              "type": "RouteUpdateServerEvent",
+              "id": 4
+            },
+            "route_removed": {
+              "type": "RouteRemovedServerEvent",
+              "id": 5
+            },
+            "invincibility_change": {
+              "type": "InvincibilityChangeServerEvent",
+              "id": 6
+            }
+          }
+        },
+        "ConnectionServerMessage": {
+          "fields": {
+            "server_time": {
+              "type": "float",
+              "id": 1
+            },
+            "route_id": {
+              "type": "string",
+              "id": 2
+            },
+            "new_routes": {
+              "rule": "repeated",
+              "type": "NewRoute",
+              "id": 3
+            }
+          }
+        },
+        "UpdateServerMessage": {
+          "fields": {
+            "server_time": {
+              "type": "float",
+              "id": 1
+            },
+            "events": {
+              "rule": "repeated",
+              "type": "ServerEvent",
+              "id": 2
+            }
+          }
+        },
+        "ErrorServerMessage": {
+          "fields": {
+            "message": {
+              "rule": "required",
+              "type": "string",
+              "id": 1
+            }
+          }
+        },
+        "WinServerMessage": {
+          "fields": {}
+        },
+        "ServerMessage": {
+          "oneofs": {
+            "type": {
+              "oneof": [
+                "error",
+                "win",
+                "connection",
+                "update"
+              ]
+            }
+          },
+          "fields": {
             "error": {
-              "type": "ErrorMessage",
+              "type": "ErrorServerMessage",
               "id": 2
             },
             "win": {
-              "type": "WinMessage",
+              "type": "WinServerMessage",
               "id": 3
             },
-            "time": {
-              "type": "TimeMessage",
-              "id": 4
-            },
-            "kill": {
-              "type": "KillMessage",
-              "id": 5
-            },
             "connection": {
-              "type": "ConnectionMessage",
+              "type": "ConnectionServerMessage",
               "id": 6
             },
-            "position": {
-              "type": "PositionMessage",
+            "update": {
+              "type": "UpdateServerMessage",
               "id": 7
             }
           }
         },
-        "StartPlayingMessage": {
+        "LatencyRequestClientMessage": {
+          "fields": {
+            "server_time": {
+              "type": "float",
+              "id": 1
+            }
+          }
+        },
+        "SpeedChangeClientMessage": {
+          "fields": {
+            "type": {
+              "type": "SpeedType",
+              "id": 1
+            }
+          }
+        },
+        "StartPlayingClientMessage": {
           "fields": {}
-        },
-        "LatencyUpdateMessage": {
-          "fields": {
-            "prev_server_time": {
-              "type": "float",
-              "id": 1
-            }
-          }
-        },
-        "SpeedChangeMessage": {
-          "fields": {
-            "value": {
-              "type": "float",
-              "id": 1
-            }
-          }
         },
         "ClientMessage": {
           "oneofs": {
             "type": {
               "oneof": [
                 "start_playing",
-                "latency_update",
+                "latency_request",
                 "speed_change"
               ]
             }
           },
           "fields": {
             "start_playing": {
-              "type": "StartPlayingMessage",
+              "type": "StartPlayingClientMessage",
               "id": 1
             },
-            "latency_update": {
-              "type": "LatencyUpdateMessage",
+            "latency_request": {
+              "type": "LatencyRequestClientMessage",
               "id": 2
             },
             "speed_change": {
-              "type": "SpeedChangeMessage",
+              "type": "SpeedChangeClientMessage",
               "id": 3
             }
           }
