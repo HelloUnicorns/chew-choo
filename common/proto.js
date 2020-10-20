@@ -4,10 +4,4 @@ var pb_root = protobuf.Root.fromJSON(messages_description);
 
 exports.ServerMessage = pb_root.lookupType("chewchoo.ServerMessage");
 exports.ClientMessage = pb_root.lookupType("chewchoo.ClientMessage");
-
-/* 
-TODO: use lookupEnum for enums. Example:
-
-SpeedType = Object.freeze(pb_root.lookupEnum('chewchoo.SpeedType').values);
-
- */
+exports.SpeedType = Object.freeze(pb_root.lookupEnum('chewchoo.SpeedType').values);

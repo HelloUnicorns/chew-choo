@@ -1,4 +1,4 @@
-
+const _ = require('lodash');
 const constants = require('../common/constants.js');
 const {union_tracks, flatten} = require('./union.js')
 const assert  = require('assert');
@@ -472,6 +472,13 @@ class Rail {
         }
 
         throw new Error(`Cannot find ${corner} corner of rail ${this.id}`);
+    }
+
+    new_tracks_for_event() {
+        return {
+            tracks: _.cloneDeep(this.tracks),
+            leftover_tracks: _.cloneDeep(this.tracks),
+        }
     }
 }
 

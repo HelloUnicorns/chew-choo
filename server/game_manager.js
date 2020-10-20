@@ -17,7 +17,7 @@ class GameManager {
             console.log('New client arrived - starting game');
             this.start();
         }
-        let train = Train.allocate();
+        let train = Train.allocate(performance.now());
         let game_client = new GameClient(ws_client, train);
         this.game_clients[game_client.id] = game_client;
     }
@@ -30,8 +30,8 @@ class GameManager {
         return this.active_clients.length > 0;
     }
 
-    broadcast_event(event_type, event) {
-        this.active_clients.forEach(game_client => game_client.send_event(event_type, event));
+    broadcast_message(message_type, message) {
+        this.active_clients.forEach(game_client => game_client.send_message(message_type, message));
     }
 
     get_game_client(id) {
@@ -47,33 +47,12 @@ class GameManager {
 
         /* removed non-active players */
         this.game_clients = this.active_clients;
+        let update_time = performance.now();
 
-        let { kills, route_ids } = Train.update();
-        let update = Train.state;
-        for (const route of update) {
-            if (!(route_ids.has(route.id))) {
-                delete route.tracks;
-            }
+        let events = Train.update(update_time);
+        if (events.length) {
+            console.log(events);
         }
-
-        if (kills.length > 0) {
-            this.broadcast_event('kill', { kills });
-
-            kills.forEach(kill => {
-                console.log(`killed: ${kill.killed_route_id}, killer: ${kill.killer_route_id}`);
-                let game_client = this.get_game_client(kill.killed_route_id);
-                if (game_client) {
-                    game_client.leave();
-                }
-            });
-        }
-
-        /* TODO: update server-client protocol to handle partial positions
-        for (const player of Player.all) {
-            send_event(player.client, {locations: player.get_position_update(), changed_routes, type: 'position'});
-        }*/
-
-        this.broadcast_event('position', { routes: update });
 
         this.check_win_condition();
     }
@@ -99,7 +78,7 @@ class GameManager {
         Train.init();
         /* Time updates */
         this.intervals.push(setInterval(() => {
-            this.broadcast_event('time', { time: performance.now() });
+            this.broadcast_message('time', { time: performance.now() });
         }, 1000 / 10));
     
         /* Position and kill */

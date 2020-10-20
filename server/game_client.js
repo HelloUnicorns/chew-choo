@@ -22,24 +22,24 @@ class GameClient {
         this.ws_client.on('close', () => this.handle_close());
         this.ws_client.on('message', (message) => this.handle_message(message));
 
-        this.send_connection_event();
+        this.send_connection_message();
     }
 
-    #event_handlers = {
-        latency_update : (event) => {
-            let latency = (performance.now() - event.prev_server_time) / 2;
-            this.send_event('latency', {latency});
+    #message_handlers = {
+        latency_update : (message) => {
+            let latency = (performance.now() - message.prev_server_time) / 2;
+            this.send_message('latency', {latency});
         }
     }
 
     send_server_is_full() {
-        this.send_event('error', {
+        this.send_message('error', {
             message: 'Server is full'
         });
     }
 
-    send_win_event() {
-        this.send_event('win');
+    send_win_message() {
+        this.send_message('win');
     }
 
     handle_close() {
@@ -59,26 +59,26 @@ class GameClient {
 
         let message = ClientMessage.decode(buffer);
         
-        if (message.type in this.#event_handlers) {
-            this.#event_handlers[message.type](message[message.type]);
+        if (message.type in this.#message_handlers) {
+            this.#message_handlers[message.type](message[message.type]);
         } else {
-            this.player.handle_event(message.type, message[message.type]);
+            this.player.handle_message(message.type, message[message.type]);
         }
     }
 
-    send_connection_event() {
-        this.send_event('connection', {
+    send_connection_message() {
+        this.send_message('connection', {
             routes: Train.state,
             route_id: this.player.id
         });
     }
 
-    send_event(event_type, event={}) {
+    send_message(message_type, message={}) {
         if (this.removed) {
             return;
         }
-        let message = {};
-        message[event_type] = event;
+        let full_message = {};
+        full_message[message_type] = message;
         let err = ServerMessage.verify(message);
         if (err) {
             throw Error(err);

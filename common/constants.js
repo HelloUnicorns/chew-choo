@@ -1,4 +1,7 @@
 const assert  = require('assert');
+const { SpeedType } = require('./proto.js');
+
+exports.SpeedType = SpeedType;
 
 exports.CANVAS_HEIGHT = 720;
 exports.CANVAS_WIDTH = 1280;

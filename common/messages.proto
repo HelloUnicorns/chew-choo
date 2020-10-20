@@ -11,6 +11,10 @@ syntax = "proto3";
 /*                                                       */
 /*********************************************************/
 
+/* 
+TODO:
+    
+*/
 
 enum InvincibilityState {
     TRAIN_NOT_INVINCIBLE = 0;
@@ -55,7 +59,7 @@ message Track {
 message LatestSpeedUpdate {
     required SpeedType update_type = 1;
     required float update_time = 2;
-    required float update_position = 3;
+    required float update_time_position = 3;
     required float update_time_speed = 4;
 }
 
@@ -66,13 +70,16 @@ message NewTrain {
     required LatestSpeedUpdate latest_speed_update = 4;
 }
 
-message NewRoute {
-    required NewTrain train = 1;
-    repeated Track tracks = 2;
-    repeated Track leftover_tracks = 3;
-    required string id = 4;
+message NewTracks {
+    repeated Track tracks = 1;
+    repeated Track leftover_tracks = 2;
 }
 
+message NewRoute {
+    required NewTrain train = 1;
+    repeated NewTracks tracks = 2;
+    required string id = 3;
+}
 
 /*********************************************************/
 /*                                                       */
@@ -90,12 +97,12 @@ message SpeedServerEvent {
 }
 
 message NewRouteServerEvent {
-    required NewRoute new_route = 1;
+    required NewRoute route = 1;
 }
 
 message RouteUpdateServerEvent {
-    repeated Track tracks = 1;
-    repeated Track leftover_tracks = 2;
+    required string id = 1;
+    required NewTracks tracks = 2;
     required LatestSpeedUpdate latest_speed_update = 3;
 }
 

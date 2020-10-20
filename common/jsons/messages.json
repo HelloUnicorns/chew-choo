@@ -63,7 +63,7 @@
               "type": "float",
               "id": 2
             },
-            "update_position": {
+            "update_time_position": {
               "rule": "required",
               "type": "float",
               "id": 3
@@ -99,6 +99,20 @@
             }
           }
         },
+        "NewTracks": {
+          "fields": {
+            "tracks": {
+              "rule": "repeated",
+              "type": "Track",
+              "id": 1
+            },
+            "leftover_tracks": {
+              "rule": "repeated",
+              "type": "Track",
+              "id": 2
+            }
+          }
+        },
         "NewRoute": {
           "fields": {
             "train": {
@@ -108,18 +122,13 @@
             },
             "tracks": {
               "rule": "repeated",
-              "type": "Track",
+              "type": "NewTracks",
               "id": 2
-            },
-            "leftover_tracks": {
-              "rule": "repeated",
-              "type": "Track",
-              "id": 3
             },
             "id": {
               "rule": "required",
               "type": "string",
-              "id": 4
+              "id": 3
             }
           }
         },
@@ -148,7 +157,7 @@
         },
         "NewRouteServerEvent": {
           "fields": {
-            "new_route": {
+            "route": {
               "rule": "required",
               "type": "NewRoute",
               "id": 1
@@ -157,14 +166,14 @@
         },
         "RouteUpdateServerEvent": {
           "fields": {
-            "tracks": {
-              "rule": "repeated",
-              "type": "Track",
+            "id": {
+              "rule": "required",
+              "type": "string",
               "id": 1
             },
-            "leftover_tracks": {
-              "rule": "repeated",
-              "type": "Track",
+            "tracks": {
+              "rule": "required",
+              "type": "NewTracks",
               "id": 2
             },
             "latest_speed_update": {

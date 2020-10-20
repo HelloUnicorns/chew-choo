@@ -21,17 +21,15 @@ class Player {
         }, constants.START_PLAYING_EVENT_TIMEOUT_MS);
     }
 
-    #event_handlers = {
+    #message_handlers = {
         start_playing : () => {
             this.#remove_start_playing_timeout();
             this.train.is_stopped = false;
-            return true;
         },
 
         speed_change : (event) => {
-            this.train.is_speed_up = !!(event.value & constants.SPEED_UP_FLAG);
-            this.train.is_speed_down = !!(event.value & constants.SPEED_DOWN_FLAG);
-            return true;
+            /* TODO: add code to avoid too many speed changes for the same player */
+            this.train.change_speed(!!(event.value & constants.SPEED_UP_FLAG), !!(event.value & constants.SPEED_DOWN_FLAG));
         }
     }
 
@@ -39,20 +37,10 @@ class Player {
         this.train.abandoned = true;
     }
 
-    has_event(type) {
-        return type in this.#event_handlers;
-    }
-
-    handle_event(type, message) {
-        if (this.has_event(type)) {
-            return this.#event_handlers[type](message);
+    handle_message(type, message) {
+        if (type in this.#message_handlers) {
+            this.#message_handlers[type](message);
         }
-        return false;
-    }
-
-    get_position_update() {
-        let neighbor_ids = this.train.rail.get_neighbor_ids(2); // first and second degree neighbors
-        return Train.state.filter(train_state => neighbor_ids.includes(Train.get(train_state.id).rail.id));
     }
 
     get id() {

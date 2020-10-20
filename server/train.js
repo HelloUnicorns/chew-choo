@@ -5,7 +5,7 @@ const _ = require('lodash');
 
 const { makeid } = require('../common/id.js');
 const constants = require('../common/constants.js');
-const { calculate_speed_and_position, set_train_position } = require('../common/position.js');
+const { calculate_end_speed_and_position, set_train_position } = require('../common/position.js');
 
 const { get_rails, init_rails } = require('./rail.js');
 
@@ -17,7 +17,7 @@ function grid_distance(point0, point1) {
 }
 
 class Train {
-    constructor(rail, allocated=false) {
+    constructor(update_time, rail, allocated=false) {
         /* Base attributes */
         this.id = makeid();
         this.rail = rail;
@@ -28,18 +28,20 @@ class Train {
         this.allocatable = true;
 
         /* Game attributes */
-        this.position = 0;
-        this.last_position_update = Train.time;
         this.is_in_leftover = false;
         this.length = 3;
-        this.speed = constants.MIN_SPEED; /* in tiles per second */
-        this.is_speed_up = false;
-        this.is_speed_down = false;
         this.invincibility_state = constants.TRAIN_NOT_INVINCIBLE;
         this.invincibility_timeout = undefined;
         this.kill_notified = false;
         this.is_bot = true;
-        this.acceleration = constants.DEFAULT_START_ACCELERATION; /* Isn't passed to the client; but required for calculate_speed_and_position */        
+        this.position = 0;
+        this.latest_speed_update = {
+            update_type: constants.SpeedType.SPEED_CONSTANT,
+            update_time,
+            update_time_position: 0,
+            update_time_speed: constants.MIN_SPEED,
+        }
+        this.postponed_events = []
 
         /* Update maps */
         trains[this.id] = this;
@@ -55,6 +57,10 @@ class Train {
         return Math.floor(this.position);
     }
 
+    #invincibility_change_event() {
+        return { invincibility_change: { id: this.id, new_invincibility_state: this.invincibility_state } };
+    }
+
     #make_invincible = () => {
         clearTimeout(this.invincibility_timeout);
 
@@ -63,11 +69,13 @@ class Train {
         this.invincibility_timeout = setTimeout(
             () => {
                 this.invincibility_state = constants.TRAIN_BLINKING;
+                this.postponed_events.push(this.#invincibility_change_event());
                 /* Start blinking timer */
                 this.invincibility_timeout = setTimeout(
                     () => {
                         /* Train is not invincible anymore */
                         this.invincibility_state = constants.TRAIN_NOT_INVINCIBLE;
+                        this.postponed_events.push(this.#invincibility_change_event());
                     }, constants.TRAIN_BLINKING_TIME_MS);
             }, constants.TRAIN_FULLY_INVISIBLE_TIME_MS);
     }
@@ -98,34 +106,78 @@ class Train {
         return this.active && this.invincibility_state == constants.TRAIN_NOT_INVINCIBLE;
     }
 
-    /* Periodic updates */
-    update() {
+    #step(current_time) {
         let length = this.is_in_leftover ? Infinity : this.rail.length();
-        calculate_speed_and_position(this, length, Train.time);
+        return calculate_end_speed_and_position(this.latest_speed_update, current_time - this.latest_speed_update.update_time, length);
+    }
+
+    #do_route_update(update_time) {
+        this.latest_speed_update.update_time = update_time;
+        this.latest_speed_update.update_time_position = this.position;
+        this.latest_speed_update.update_time_speed = end_speed;
+        return { route_update: { id: this.id, 
+                                 tracks: this.rail.new_tracks_for_event(),
+                                 latest_speed_update: _.clone(this.latest_speed_update),
+            }
+        };
+    }
+
+    change_speed(is_speed_up, is_speed_down) {
+        let update_time = performance.now();
+        const { end_speed, end_position } = this.#step(update_time);
+        this.latest_speed_update.update_time = update_time;
+        this.latest_speed_update.update_time_position = end_position;
+        this.latest_speed_update.update_time_speed = end_speed;
+
+        if (!(is_speed_up ^ is_speed_down)) {
+            this.latest_speed_update.speed_type = constants.SpeedType.SPEED_CONSTANT;
+        } else if (is_speed_up) {
+            this.latest_speed_update.speed_type = constants.SpeedType.SPEED_ACCELERATING;
+        } else {
+            this.latest_speed_update.speed_type = constants.SpeedType.SPEED_DECELERATING;
+        }
+
+        this.postponed_events.push({
+            speed: { 
+                id: this.id, 
+                update: _.clone(this.latest_speed_update)
+            }
+        });
+    }
+
+    /* Periodic updates */
+    update(update_time) {
+        let events = this.postponed_events;
+        this.postponed_events = [];
+        const { end_speed, end_position } = this.#step(update_time);
+        this.position = end_position;
 
         if (this.is_in_leftover) {
             if (this.position >= this.rail.leftover_length()) {
+                this.position -= this.rail.leftover_length();
+                
                 /* Train has just left the leftover */
-                set_train_position(this, this.position - this.rail.leftover_length(), this.rail.length());
                 this.rail.clear_leftover();
                 this.is_in_leftover = false;
-                return true;
+                events.push(this.#do_route_update(update_time));
             }
         }
 
-        return false;
+        return events;
     }
 
     /* Hand the train over from a human to a bot or vice versa */
-    handover(allocated=false) {
+    handover(update_time, allocated=false) {
         let rail_id = this.rail.id;
         let position = this.position;
+        let latest_speed_update = this.latest_speed_update;
         this.#destruct();
 
         /* From this point we should not address 'this' at all */
 
-        let new_train = new Train(get_rails()[rail_id], allocated=allocated);
+        let new_train = new Train(update_time, get_rails()[rail_id], allocated=allocated);
         new_train.position = position;
+        new_train.latest_speed_update = latest_speed_update;
 
         console.log(`Rail ${new_train.rail.id} is now owned by ${new_train.id}`);
 
@@ -139,17 +191,37 @@ class Train {
         this.allocatable = false;
     }
 
+    #new_train_struct() {
+        return { 
+            length: this.length, 
+            is_bot: this.is_bot,
+            invincibility_state: this.invincibility_state,
+            latest_speed_update: _.clone(this.latest_speed_update)
+        };
+    }
+
+    #new_route_event() {
+        return { new_route: { 
+            route: {
+                train: this.#new_train_struct(), 
+                tracks: this.rail.new_tracks_for_event(),
+                id: this.id
+            } 
+        } }
+    }
+
     /* Train was abandoned by a human player (killed by a bot or left the game) */
-    #abandon(update_obj) {
-        update_obj.kills.push({ killed_route_id: this.id, killer_route_id: undefined });
-        
-        let bot_position = Train.bot_position();
+    #abandon(events, update_time) {
+        events.push({ route_removed: { id: this.id }});
+
+        let bot_latest_speed_update = Train.bot_latest_speed_update(update_time);
     
         let rail_ids = this.rail.separate();
         for (const rail_id of rail_ids) {
-            let new_train = rail_id_to_train[rail_id].handover();
-            new_train.position = bot_position;
-            update_obj.route_ids.add(new_train.id);
+            let new_train = rail_id_to_train[rail_id].handover(update_time);
+            new_train.latest_speed_update = _.clone(bot_latest_speed_update);
+            new_train.#step(update_time);
+            events.push(new_train.#new_route_event());
         }
     }
 
@@ -184,25 +256,12 @@ class Train {
 
     get state() {
         return {
-            train_attributes: {
-                position: this.position,
-                length: this.length,
-                speed: this.speed,
-                is_stopped: this.is_stopped,
-                invincibility_state: this.invincibility_state,
-                is_speed_up: this.is_speed_up,
-                is_speed_down: this.is_speed_down,
-                is_bot: this.is_bot,
-                killed: !this.active,
-            },
-            tracks: this.rail.tracks,
-            leftover_tracks: this.rail.leftover_tracks,
             id: this.id
         }
     }
 
     static init() {
-        Train.update_time();
+        let update_time = performance.now();
         trains = {};
         rail_id_to_train = {};
 
@@ -210,30 +269,31 @@ class Train {
         let rails = get_rails();
         
         for (let i = 0; i < constants.NUMBER_OF_TRAINS; ++i) {
-            new Train(rails[i]);
+            new Train(update_time, rails[i]);
         }
     }
 
-    static update_time() {
-        Train.time = performance.now();
-    }
-
-    static bot_position() {
+    static bot_latest_speed_update(update_time) {
         let bot = Object.values(Train.all).find((train) => train.is_bot && train.active);
         if (bot) {
-            return bot.position;
+            return bot.latest_speed_update;
         }
 
-        return 0;
+        return {
+            update_type: constants.SpeedType.SPEED_CONSTANT,
+            update_time,
+            update_time_position: 0,
+            update_time_speed: constants.MIN_SPEED,
+        }
     }
 
-    static allocate() {
+    static allocate(update_time) {
         for (const train of Object.values(Train.all)) {
             if (!train.allocatable) {
                 continue;  
             }
 
-            return train.handover(true);
+            return train.handover(update_time, true);
         }
         return undefined;
     }
@@ -258,15 +318,15 @@ class Train {
         return Train.active_trains.map(train => train.state);
     }
 
-    static #handle_collision = (trains_pair, coordinates, update_obj) => {
+    static #handle_collision = (trains_pair, coordinates, events, update_time) => {
         if (trains_pair.some(train => !train.collidable)) {
-            return undefined;
+            return;
         }
     
         if (trains_pair.every(train => train.is_bot)) {
             /* Should not happen */
             console.log(`WARN: bot in rail ${trains_pair[0].rail.id} and bot in rail ${trains_pair[1].rail.id} collided`);
-            return undefined;
+            return;
         }
     
         const distances = trains_pair.map((train) => 
@@ -294,7 +354,7 @@ class Train {
     
         if (killer.is_bot) {
             console.log(`Train in rail ${killee.rail.id} got killed by a bot`);
-            killee.#abandon(update_obj);
+            killee.#abandon(events, update_time);
         } else {
             console.log(`Train in rail ${killee.rail.id} got killed by a human player`);
             let {position, old_rails} = killer.rail.merge(killee.rail, killer.position_int);
@@ -306,27 +366,20 @@ class Train {
             for (const rail_id of old_rails) {
                 let cur_train = rail_id_to_train[rail_id];
                 cur_train.kill();
-                /* TODO: separate tracks and leftover tracks after we update the server-client protocol */
-                update_obj.route_ids.add(cur_train.id);
+                events.push({ route_removed: { id: cur_train.id }})
             }
-    
-            /* Also report update of the killer rail */
-            update_obj.route_ids.add(killer.id);
+            events.push(killer.#do_route_update());
         }
-    
-        update_obj.kills.push({ killer_route_id: killer_id, killed_route_id: killee_id });
     }
 
-    static #update_before_movement = (update_obj) => {
+    static #update_before_movement = (events, update_time) => {
         /* Handle abandoned trains first */
         for (const train of Object.values(Train.all).filter(train => train.abandoned)) {
-            train.#abandon(update_obj);
+            train.#abandon(events, update_time);
         }
     }
 
-    static #update_movement = (update_obj) => {
-        Train.update_time();
-    
+    static #update_movement = (events, update_time) => {    
         let train_ids = Object.keys(Train.all);
     
         /* Iterating over pre-generated list of ids since the current train ids might change during this loop */
@@ -342,11 +395,7 @@ class Train {
             }
     
             /* Periodic update of speed and position */
-            if (train.update()) {
-                /* Update caused rail change */
-                update_obj.route_ids.add(train.id);
-            };
-    
+            events.push(...train.update(update_time));
             
             let collision = train.occupy_location();
             /* Theoretically it's possible, but practically it should not happen.
@@ -357,42 +406,30 @@ class Train {
                 continue;
             }
     
-            Train.#handle_collision(collision[0].trains, collision[0].coordinates, update_obj);
+            Train.#handle_collision(collision[0].trains, collision[0].coordinates, events, update_time);
         }
     }
 
-    static #update_after_movement = (update_obj) => {
+    static #update_after_movement = (events) => {
         for (const train of Object.values(Train.all)) {
             if(!train.active) {
                 continue;
             }
-    
-            if (!train.is_stopped && train.is_bot) {
-                /* TODO: DELETE THIS LATER AFTER WE SOLVE THE BUG
-                    DEBUG - CHECK ALL BOTS ARE IN SYNC */
-                if (Train.bot_position() != train.position) {
-                    throw new Exception(`Bot ${train.id} in rail ${train.rail.id} drifted off`);
-                }
-            }
-    
             if (!train.reported) {
-                update_obj.route_ids.add(train.id);
+                events.push(train.#new_route_event());
                 train.reported = true;
             }
         }
     }
 
-    static update() {
-        let update_obj = {
-            kills: [],
-            route_ids: new Set()
-        }
+    static update(update_time) {
+        let events = [];
 
-        Train.#update_before_movement(update_obj);
-        Train.#update_movement(update_obj);
-        Train.#update_after_movement(update_obj);
+        Train.#update_before_movement(events, update_time);
+        Train.#update_movement(events, update_time);
+        Train.#update_after_movement(events, update_time);
     
-        return update_obj;
+        return events;
     }
 }
 

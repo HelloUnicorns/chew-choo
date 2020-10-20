@@ -14,42 +14,33 @@ function my_delta_mod(number, mod) {
     return (((number % mod) + mod + mod/2) % mod) - mod/2;
 }
 
-function set_train_position(train, position, route_len) {
-    train.position = my_mod(position, route_len);
-    if (!train.position) {
-        debugger;
+function calculate_end_position_when_at_linear_speed(start_position, time_delta, speed, route_len) {
+    return my_mod(start_position + time_delta * speed, route_len);
+}
+
+function calculate_end_position_and_speed_when_accelerating(latest_speed_update, time_delta, max_speed, acceleration, route_len) {
+    let acceleration_time_delta = Math.min(time_delta, Math.abs((max_speed - latest_speed_update.update_time_speed) / acceleration));
+    let end_speed = latest_speed_update.update_time_speed + acceleration_time_delta * acceleration;
+    let acceleration_end_position = my_mod(latest_speed_update.update_time_position + 
+        latest_speed_update.update_time_speed * acceleration_time_delta + constants.ACCELERATION * time_delta * time_delta / 2,
+        route_len);
+    let end_position = calculate_end_position_when_at_linear_speed(acceleration_end_position, time_delta - acceleration_time_delta, end_speed, route_len);
+    return { end_position, end_speed };
+}
+
+function calculate_end_speed_and_position(latest_speed_update, time_delta, route_len) {
+    switch(latest_speed_update.update_type) {
+        case constants.SpeedType.SPEED_CONSTANT:
+            return { 
+                end_position: calculate_end_position_when_at_linear_speed(latest_speed_update.update_time_position, time_delta / 1000, latest_speed_update.update_time_speed, route_len),
+                end_speed: latest_speed_update.update_time_speed
+            }
+        case constants.SpeedType.SPEED_ACCELERATING:
+            return calculate_end_position_and_speed_when_accelerating(latest_speed_update, time_delta / 1000, constants.MAX_SPEED, constants.ACCELERATION, route_len);
+        case constants.SpeedType.SPEED_DECELERATING:
+            return calculate_end_position_and_speed_when_accelerating(latest_speed_update, time_delta / 1000, constants.MIN_SPEED, -constants.ACCELERATION, route_len);
     }
 }
 
-function calculate_speed_and_position(train, route_len, new_time) {
-    let time_passed_in_seconds = (new_time - train.last_position_update) / 1000;
-
-    if (time_passed_in_seconds == 0) {
-        return;
-    }
-    if (train.is_stopped) {
-        train.last_position_update = new_time;
-        return;
-    }
-
-    train.speed += train.acceleration * time_passed_in_seconds;
-    let old_speed = train.speed;
-    let new_speed = train.speed;
-    new_speed += train.is_speed_up ? constants.ACCELERATION * time_passed_in_seconds : 0;
-    new_speed -= train.is_speed_down ? constants.ACCELERATION * time_passed_in_seconds : 0;
-    new_speed = new_speed > constants.MAX_SPEED ? constants.MAX_SPEED : new_speed;
-    new_speed = new_speed < constants.MIN_SPEED ? constants.MIN_SPEED : new_speed;
-
-    acceleration_time = Math.abs((new_speed - old_speed) / constants.ACCELERATION);
-    average_speed = (old_speed + new_speed) * acceleration_time / time_passed_in_seconds / 2 + 
-    new_speed * (time_passed_in_seconds - acceleration_time) / time_passed_in_seconds;
-    
-    set_train_position(train, train.position + average_speed * time_passed_in_seconds, route_len);
-
-    train.speed = new_speed;
-    train.last_position_update = new_time;
-}
-
-exports.calculate_speed_and_position = calculate_speed_and_position;
-exports.set_train_position = set_train_position;
+exports.calculate_end_speed_and_position = calculate_end_speed_and_position;
 exports.my_delta_mod = my_delta_mod;
