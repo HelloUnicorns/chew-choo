@@ -21,9 +21,6 @@ const NORMAL_TRAIN_ALPHA = 1;
 
 const BLINKING_INTERVAL_MS = 10;
 
-const t1 = 0.1;
-const t2 = 0.1;
-
 const DIRECTION_TO_CART_ANGLE = {
     [constants.Direction.BOTTOM_TO_TOP]: 270,
     [constants.Direction.BOTTOM_TO_LEFT]: 225,
