@@ -51,9 +51,14 @@ class GameManager {
 
         let events = Train.update(update_time);
         if (events.length) {
-            this.broadcast_message('update', { 
-                server_time: update_time,
-                events
+            this.active_clients.forEach(game_client => {
+                let events_for_client = events.filter(event => (!(event.new_route && event.new_route.route.id == game_client.player.id)));
+                if (events_for_client) {
+                    game_client.send_message('update', { 
+                        server_time: update_time,
+                        events: events_for_client
+                    });
+                }
             });
         }
 
@@ -72,7 +77,7 @@ class GameManager {
         /* Victory! :) */
         console.log(`Player in route ${winner.player.train.id} win!`);
 
-        winner.send_win_event();
+        winner.send_win_message();
         winner.leave();
     }
 
@@ -81,8 +86,8 @@ class GameManager {
         Train.init();
         /* Time updates */
         this.intervals.push(setInterval(() => {
-            this.broadcast_message('time', { time: performance.now() });
-        }, 1000 / 10));
+            this.broadcast_message('time', { server_time: performance.now() });
+        }, 1000 / 4));
     
         /* Position and kill */
         this.intervals.push(setInterval(() => this.game_tick(), 1000 / 60));

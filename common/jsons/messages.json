@@ -121,7 +121,7 @@
               "id": 1
             },
             "tracks": {
-              "rule": "repeated",
+              "rule": "required",
               "type": "NewTracks",
               "id": 2
             },
@@ -277,11 +277,20 @@
         "WinServerMessage": {
           "fields": {}
         },
+        "TimeServerMessage": {
+          "fields": {
+            "server_time": {
+              "rule": "required",
+              "type": "double",
+              "id": 1
+            }
+          }
+        },
         "LatencyServerMessage": {
           "fields": {
             "latency": {
               "rule": "required",
-              "type": "double",
+              "type": "float",
               "id": 1
             }
           }
@@ -290,17 +299,18 @@
           "oneofs": {
             "type": {
               "oneof": [
-                "latency",
+                "time",
                 "error",
                 "win",
                 "connection",
-                "update"
+                "update",
+                "latency"
               ]
             }
           },
           "fields": {
-            "latency": {
-              "type": "LatencyServerMessage",
+            "time": {
+              "type": "TimeServerMessage",
               "id": 1
             },
             "error": {
@@ -318,12 +328,16 @@
             "update": {
               "type": "UpdateServerMessage",
               "id": 7
+            },
+            "latency": {
+              "type": "LatencyServerMessage",
+              "id": 8
             }
           }
         },
-        "LatencyRequestClientMessage": {
+        "LatencyUpdateClientMessage": {
           "fields": {
-            "server_time": {
+            "prev_server_time": {
               "rule": "required",
               "type": "float",
               "id": 1
@@ -347,7 +361,7 @@
             "type": {
               "oneof": [
                 "start_playing",
-                "latency_request",
+                "latency_update",
                 "speed_change"
               ]
             }
@@ -357,8 +371,8 @@
               "type": "StartPlayingClientMessage",
               "id": 1
             },
-            "latency_request": {
-              "type": "LatencyRequestClientMessage",
+            "latency_update": {
+              "type": "LatencyUpdateClientMessage",
               "id": 2
             },
             "speed_change": {

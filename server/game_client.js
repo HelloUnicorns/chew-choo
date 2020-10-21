@@ -1,3 +1,4 @@
+const assert = require('assert');
 const { performance } = require('perf_hooks');
 const { Train } = require('./train.js');
 const { Player } = require('./player.js');
@@ -80,11 +81,13 @@ class GameClient {
         }
         let full_message = {};
         full_message[message_type] = message;
-        let err = ServerMessage.verify(message);
+        let err = ServerMessage.verify(full_message);
         if (err) {
             throw Error(err);
         }
-        this.ws_client.send(ServerMessage.encode(ServerMessage.create(message)).finish());
+        let server_message = ServerMessage.create(full_message);
+        assert(server_message.type != undefined, 'message type cannot be undefined!');
+        this.ws_client.send(ServerMessage.encode(server_message).finish());
     }
 
     leave() {

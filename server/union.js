@@ -1,3 +1,4 @@
+const { direction_to_direction_components, direction_from_direction_components } = require('../common/utils.js');
 const flatten = (crossings) => Object.values(crossings).flatMap(Object.values);
 
 function find_crossings(tracks_array) {
@@ -133,7 +134,10 @@ function union_tracks(controller, controllee, controller_position) {
             crossings);
 
         /* Update orientation of first track */
-        path[0].direction_from = tracks_arrays[1 - current_tracks_array_index][current_crossing.track_indices[1 - current_tracks_array_index]].direction_from;
+        const { from: end_of_previous_direction_from } = direction_to_direction_components(
+            tracks_arrays[1 - current_tracks_array_index][current_crossing.track_indices[1 - current_tracks_array_index]].direction);
+        const { to: first_direction_to } = direction_to_direction_components(path[0].direction);
+        path[0].direction = direction_from_direction_components(end_of_previous_direction_from, first_direction_to);
         
         current_crossing = crossing;
         new_tracks_parts.push(path);

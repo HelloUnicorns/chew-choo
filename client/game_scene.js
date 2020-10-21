@@ -14,12 +14,13 @@ export class GameScene extends Phaser.Scene {
         super('GameScene');
         global_data.game_scene = this;
         this.game_inited = false;
-        this.up_key = undefined;
-        this.down_key = undefined;
+        this.space_key = undefined;
+        this.is_space_pressed = false;
         this.stopped = false;
         this.game_socket = undefined;
         this.player_route = undefined;
         this.routes = {};
+        this.postponed_events = [];
     }
 
     preload() {
@@ -32,7 +33,6 @@ export class GameScene extends Phaser.Scene {
         this.load.audio('bg_music', 'assets/bg_music.mp3');
         this.load.audio("crash","assets/crash.wav")
         this.load.audio("up","assets/up.wav")
-
     }
 
 
@@ -48,33 +48,25 @@ export class GameScene extends Phaser.Scene {
 
         _.values(this.routes).forEach(route => route.draw());
         this.cameras.main.startFollow(this.player_route.train.sprites[0], true);
-        this.up_key = this.input.keyboard.addKey('up');
-        this.down_key = this.input.keyboard.addKey('down');
+        this.space_key = this.input.keyboard.addKey('space');
     }
 
-    send_start_playing_event() {
-        this.game_socket.send_event('start_playing');
+    send_start_playing_message() {
+        this.game_socket.send_message('start_playing');
     }
 
     client_loaded() {
         this.draw_map();
-        this.send_start_playing_event();
+        this.send_start_playing_message();
         this.game_inited = true;
     }
 
     create() {
-        this.game_socket = new GameSocket();
-
-        this.game_socket.register_event_handler('position', event => this.handle_position_event(event));
-        this.game_socket.register_event_handler('win', event => this.handle_win_event(event));
-        this.game_socket.register_event_handler('kill', event => this.handle_kill_event(event));
-        this.game_socket.register_event_handler('error', event => this.handle_error_event(event));
-        this.game_socket.register_event_handler('connection', event => this.handle_connection_event(event));
+        this.game_socket = new GameSocket(this);
 
         this.start_music();
         this.crash = this.sound.add("crash")
         this.up = this.sound.add("up")
-
     }
 
     get_speed_message_value(is_speed_up, is_speed_down) {
@@ -82,15 +74,12 @@ export class GameScene extends Phaser.Scene {
     }
 
     update_speed_change() {
-        let is_up_pressed = this.input.keyboard.checkDown(this.up_key);
-        if (this.player_route.train.is_speed_up != is_up_pressed) {
-            this.player_route.train.is_speed_up = is_up_pressed;
-            this.game_socket.send_event('speed_change', { value: this.get_speed_message_value(is_up_pressed, this.player_route.train.is_speed_down)});
-        }
-        let is_down_pressed = this.input.keyboard.checkDown(this.down_key);
-        if (this.player_route.train.is_speed_down != is_down_pressed) {
-            this.player_route.train.is_speed_down = is_down_pressed;
-            this.game_socket.send_event('speed_change', { value: this.get_speed_message_value(this.player_route.train.is_speed_up, is_down_pressed)});
+        let is_space_pressed = this.input.keyboard.checkDown(this.space_key);
+        if (this.is_space_pressed != is_space_pressed) {
+            this.game_socket.send_message('speed_change', { 
+                type: is_space_pressed ? constants.SpeedType.SPEED_ACCELERATING : constants.SpeedType.SPEED_DECELERATING
+            });
+            this.is_space_pressed = is_space_pressed;
         }
     }
 
@@ -109,80 +98,12 @@ export class GameScene extends Phaser.Scene {
         if (!this.game_inited || this.stopped) {
             return;
         }
+        let server_time = performance.now() + this.server_time_delta;
         this.update_player();
-        _.values(this.routes).forEach(route => route.update());
+        _.values(this.routes).forEach(route => route.update(server_time));
         this.update_camera();
     }
 
-    handle_connection_event(event) {
-        global_data.player_route_id = event.route_id;
-        for (const route of event.routes) {
-            this.update_server_route(route.id, route, route.id == event.route_id);
-        }
-        this.player_route = this.routes[event.route_id];
-        this.client_loaded();
-    };
-    
-    handle_position_event(event) {
-        if (this.stopped) {
-            return;
-        }
-
-        let routes_to_delete = new Set(Object.keys(this.routes))
-        for (const route of event.routes) {
-            routes_to_delete.delete(route.id);
-            if (route.tracks.length) {
-                this.update_tracks_from_server(route.id, route.tracks);
-            }
-            this.routes[route.id].train.update_server_train_state(route.train_attributes, route.tracks.length != 0);
-        }
-
-        for (const route_id of routes_to_delete) {
-            console.log(`Remove route in ${route_id}`);
-            this.remove_route(route_id);
-        }
-    };
-    
-    handle_kill_event(event) {
-        if (this.stopped) {
-            return;
-        }
-        let kills = event.kills.map(kill => ({
-            killed: kill.killed_route_id,
-            killer: kill.killer_route_id
-        })); 
-    
-        let killed = kills.map(kill => kill.killed);
-    
-        let player_died = false;
-        for (let route_id of killed) {
-            player_died = player_died || this.remove_route(route_id);
-        }
-        if (player_died) {
-            return;
-        }
-
-        this.up.play();
-    };
-    
-    handle_win_event(event) {
-        if (!this.game_inited) {
-            return;
-        }
-    
-        if (this.bg_music) {
-            this.bg_music.mute = true;
-        }
-        global_data.game.scene.start('WinScene');
-        global_data.game.scene.stop('GameOverlayScene');
-    };
-    
-    handle_error_event(event) {
-        global_data.game.scene.start('ErrorScene', event.message);
-        global_data.game.scene.stop('GameOverlayScene');
-        global_data.game.scene.stop('GameScene');
-    };
-    
     remove_route(route_id) {
         if (route_id == this.player_route.route_id) {
             /* The client's player was killed */
@@ -200,28 +121,78 @@ export class GameScene extends Phaser.Scene {
             this.routes[route_id].remove();
             delete this.routes[route_id];
         }
+        this.up.play();
     }
 
-    update_tracks_from_server(route_id, server_tracks) {
-        if (server_tracks.length == 0) {
-            return this.remove_route(route_id);
+    handle_new_route(new_route) {
+        this.routes[new_route.id] = new Route(new_route, new_route.id == this.player_route_id);
+    }
+
+    #server_event_handlers = {
+        new_route: (server_time, server_event) => { 
+            this.handle_new_route(server_event.route);
+        },
+        route_update: (server_time, server_event) => { 
+            this.routes[server_event.id].update_route(server_event.tracks, server_event.latest_speed_update);
+        },
+        route_removed: (server_time, server_event) => { 
+            this.remove_route(server_event.id);
+        },
+        invincibility_change: (server_time, server_event) => { 
+            this.routes[server_event.id].train.update_invincibility(server_event.new_invincibility_state);
+        },
+        speed: (server_time, server_event) => {
+            this.routes[server_event.id].update_latest_speed_update(server_event.update);
         }
-        if (!(route_id in this.routes)) {
-            this.routes[route_id] = new Route(route_id, new Train(false), false); /* server will not re-build own tracks */
-        }
-        let route = this.routes[route_id];
-        route.remove_tracks();
-        route.tracks = server_tracks.map(server_track => Track.from_server_track(server_track, route.is_own));
-        route.draw_tracks();
+    }
+
+    handle_server_event(server_time, server_event) {
+        this.#server_event_handlers[server_event.type](server_time, server_event[server_event.type]);
+    }
+    handle_server_message(message_type, message) {
+        this.#server_message_handlers[message_type](message);
+    }
+
+    #server_message_handlers = {
+        connection: (message) => {
+            global_data.player_route_id = message.route_id;
+            this.player_route_id = message.route_id;
+            for (const route of message.routes) {
+                this.handle_new_route(route);
+            }
+            this.player_route = this.routes[this.player_route_id];
+            this.postponed_events.filter(postponed_event => postponed_event.server_time >= message.server_time)
+                .forEach(postponed_event => this.handle_server_event(postponed_event.server_time, postponed_event.event));
+            this.postponed_events = [];
+            this.server_time_delta = message.server_time - performance.now();
+            this.client_loaded();
+        },
+        update: (message) => {
+            if (this.stopped) {
+                return;
+            }
+            if (!this.player_route_id) {
+                this.postponed_events.push(message.events.map(event => ({ event, server_time: message.server_time})));
+                return;
+            }
+            message.events.forEach(event => this.handle_server_event(message.server_time, event));
+        },
+        win: (message) => {
+            if (!this.game_inited) {
+                return;
+            }
+        
+            if (this.bg_music) {
+                this.bg_music.mute = true;
+            }
+            global_data.game.scene.start('WinScene');
+            global_data.game.scene.stop('GameOverlayScene');
+        },
+        error: (message) => {
+            global_data.game.scene.start('ErrorScene', event.message);
+            global_data.game.scene.stop('GameOverlayScene');
+            global_data.game.scene.stop('GameScene');
+        },
     }
     
-    update_server_route(route_id, server_route, is_own) {
-        if (!(route_id in this.routes)) {
-            let train = new Train(is_own);
-            this.routes[route_id] = new Route(route_id, train, is_own);
-        }
-        let route = this.routes[route_id];
-        this.update_tracks_from_server(route_id, server_route.tracks);
-        route.train.update_server_train_state(server_route.train_attributes, true);
-    }    
 }

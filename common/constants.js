@@ -1,7 +1,9 @@
 const assert  = require('assert');
-const { SpeedType } = require('./proto.js');
+const { SpeedType, Direction, InvincibilityState } = require('./proto.js');
 
 exports.SpeedType = SpeedType;
+exports.Direction = Direction;
+exports.InvincibilityState = InvincibilityState;
 
 exports.CANVAS_HEIGHT = 720;
 exports.CANVAS_WIDTH = 1280;
@@ -10,7 +12,7 @@ exports.NUMBER_OF_TRAINS = 65;
 
 exports.MIN_SPEED = 10;
 exports.MAX_SPEED = 30;
-exports.ACCELERATION = 5;
+exports.ACCELERATION = 9;
 
 exports.DEFAULT_START_ACCELERATION = 0; /* in tiles per second squared */
 
@@ -37,11 +39,6 @@ exports.START_PLAYING_EVENT_TIMEOUT_MS = 60 * 1000;
 exports.TRAIN_NOT_INVINCIBLE = 0;
 exports.TRAIN_BLINKING = 1;
 exports.TRAIN_FULLY_INVISIBLE = 2;
-
-exports.LEFT = 0;
-exports.RIGHT = 1;
-exports.TOP = 2;
-exports.BOTTOM = 3;
 
 exports.HOW_TO=`Chew Choo! is a multiplayer/singleplayer web-game where the player controls a train on a cyclic route.  
 The routes of trains of different players cross each other,  

@@ -149,7 +149,7 @@ class Rail {
         this.id = rail_id;
 
         let start_position = rail_start_positions[this.id];
-        this.tracks = build_rectangular_rail(start_position.x, start_position.y, constants.TRACK_WIDTH, constants.TRACK_HEIGHT, this.id);
+        this.tracks = build_rectangular_rail(start_position.x, start_position.y, constants.TRACK_WIDTH, constants.TRACK_HEIGHT);
         this.leftover_tracks = [];
         this.crossings = {};
         this.dead_crossings = [];
@@ -475,9 +475,10 @@ class Rail {
     }
 
     new_tracks_for_event() {
+        let tracks_clone = _.cloneDeep(this.tracks);
         return {
             tracks: _.cloneDeep(this.tracks),
-            leftover_tracks: _.cloneDeep(this.tracks),
+            leftover_tracks: _.cloneDeep(this.leftover_tracks),
         }
     }
 }
@@ -652,31 +653,31 @@ function get_boxes() {
     return _boxes;
 }
 
-function build_rectangular_rail(grid_x, grid_y, width, height, rail_id) {
+function build_rectangular_rail(grid_x, grid_y, width, height) {
     let rail = [];
     for (let i = 1; i < width - 1; i++) {
-        rail.push({x: grid_x + i, y: grid_y, direction_from: constants.LEFT, direction_to: constants.RIGHT, rail_id});
+        rail.push({x: grid_x + i, y: grid_y, direction: constants.Direction.LEFT_TO_RIGHT});
     }
 
-    rail.push({x: grid_x + width - 1, y: grid_y, direction_from: constants.LEFT, direction_to: constants.BOTTOM, rail_id});
+    rail.push({x: grid_x + width - 1, y: grid_y, direction: constants.Direction.LEFT_TO_BOTTOM});
     
     for (let i = 1; i < height - 1; i++) {
-        rail.push({x: grid_x + width - 1, y: grid_y + i, direction_from: constants.TOP, direction_to: constants.BOTTOM, rail_id});
+        rail.push({x: grid_x + width - 1, y: grid_y + i, direction: constants.Direction.TOP_TO_BOTTOM});
     }
 
-    rail.push({x: grid_x + width - 1, y: grid_y + height - 1, direction_from: constants.TOP, direction_to: constants.LEFT, rail_id});
+    rail.push({x: grid_x + width - 1, y: grid_y + height - 1, direction: constants.Direction.TOP_TO_LEFT});
     
     for (let i = width - 2; i > 0; i--) {
-        rail.push({x: grid_x + i, y: grid_y + height - 1, direction_from: constants.RIGHT, direction_to: constants.LEFT, rail_id});
+        rail.push({x: grid_x + i, y: grid_y + height - 1, direction: constants.Direction.RIGHT_TO_LEFT});
     }
     
-    rail.push({x: grid_x, y: grid_y + height - 1, direction_from: constants.RIGHT, direction_to: constants.TOP, rail_id});
+    rail.push({x: grid_x, y: grid_y + height - 1, direction: constants.Direction.RIGHT_TO_TOP});
     
     for (let i = height - 2; i > 0; i--) {
-        rail.push({x: grid_x, y: grid_y + i, direction_from: constants.BOTTOM, direction_to: constants.TOP, rail_id});
+        rail.push({x: grid_x, y: grid_y + i, direction: constants.Direction.BOTTOM_TO_TOP});
     }
 
-    rail.push({x: grid_x, y: grid_y, direction_from: constants.BOTTOM, direction_to: constants.RIGHT, rail_id});
+    rail.push({x: grid_x, y: grid_y, direction: constants.Direction.BOTTOM_TO_RIGHT});
  
     return rail;
 }

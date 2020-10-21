@@ -29,7 +29,7 @@ class Player {
 
         speed_change : (event) => {
             /* TODO: add code to avoid too many speed changes for the same player */
-            this.train.change_speed(!!(event.value & constants.SPEED_UP_FLAG), !!(event.value & constants.SPEED_DOWN_FLAG));
+            this.train.change_speed(event.type);
         }
     }
 

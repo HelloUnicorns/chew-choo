@@ -17,7 +17,7 @@ function grid_distance(point0, point1) {
 }
 
 class Train {
-    constructor(update_time, rail, allocated=false) {
+    constructor(update_time, rail, allocated=false, already_reported=false) {
         /* Base attributes */
         this.id = makeid();
         this.rail = rail;
@@ -42,13 +42,15 @@ class Train {
             update_time_speed: constants.MIN_SPEED,
         }
         this.postponed_events = []
+        this.reported = already_reported;
 
         /* Update maps */
         trains[this.id] = this;
         rail_id_to_train[this.rail.id] = trains[this.id];
 
+
         if (allocated) {
-            this.#allocate();
+            this.#allocate(already_reported);
         }
     }
     
@@ -85,11 +87,11 @@ class Train {
         this.invincibility_state = constants.TRAIN_NOT_INVINCIBLE
     }
 
-    #allocate = () => {
+    #allocate = (already_reported=false) => {
         this.is_bot = false;
         this.allocatable = false;
         this.is_stopped = true;
-        this.reported = false;
+        this.reported = already_reported;
         this.#make_invincible();
     }
 
@@ -114,6 +116,7 @@ class Train {
     #do_route_update(update_time) {
         this.latest_speed_update.update_time = update_time;
         this.latest_speed_update.update_time_position = this.position;
+        const { end_speed } = this.#step(update_time);
         this.latest_speed_update.update_time_speed = end_speed;
         return { route_update: { id: this.id, 
                                  tracks: this.rail.new_tracks_for_event(),
@@ -122,20 +125,13 @@ class Train {
         };
     }
 
-    change_speed(is_speed_up, is_speed_down) {
+    change_speed(new_speed_type) {
         let update_time = performance.now();
         const { end_speed, end_position } = this.#step(update_time);
         this.latest_speed_update.update_time = update_time;
         this.latest_speed_update.update_time_position = end_position;
         this.latest_speed_update.update_time_speed = end_speed;
-
-        if (!(is_speed_up ^ is_speed_down)) {
-            this.latest_speed_update.speed_type = constants.SpeedType.SPEED_CONSTANT;
-        } else if (is_speed_up) {
-            this.latest_speed_update.speed_type = constants.SpeedType.SPEED_ACCELERATING;
-        } else {
-            this.latest_speed_update.speed_type = constants.SpeedType.SPEED_DECELERATING;
-        }
+        this.latest_speed_update.update_type = new_speed_type;
 
         this.postponed_events.push({
             speed: { 
@@ -271,7 +267,8 @@ class Train {
         let rails = get_rails();
         
         for (let i = 0; i < constants.NUMBER_OF_TRAINS; ++i) {
-            new Train(update_time, rails[i]);
+            /* Players would receive these in the 'connection' message */
+            new Train(update_time, rails[i], false, true);
         }
     }
 
@@ -370,7 +367,7 @@ class Train {
                 cur_train.kill();
                 events.push({ route_removed: { id: cur_train.id }})
             }
-            events.push(killer.#do_route_update());
+            events.push(killer.#do_route_update(update_time));
         }
     }
 
