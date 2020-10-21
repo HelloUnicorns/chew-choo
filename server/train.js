@@ -200,14 +200,16 @@ class Train {
         };
     }
 
+    #new_route_struct() {
+        return {
+            train: this.#new_train_struct(), 
+            tracks: this.rail.new_tracks_for_event(),
+            id: this.id
+        };
+    }
+
     #new_route_event() {
-        return { new_route: { 
-            route: {
-                train: this.#new_train_struct(), 
-                tracks: this.rail.new_tracks_for_event(),
-                id: this.id
-            } 
-        } }
+        return { new_route: { route: this.#new_route_struct() } }
     }
 
     /* Train was abandoned by a human player (killed by a bot or left the game) */
@@ -314,8 +316,8 @@ class Train {
         return Object.values(Train.all).filter(train => train.active);
     }
 
-    static get state() {
-        return Train.active_trains.map(train => train.state);
+    static get new_route_structs() {
+        return Train.active_trains.map(train => train.#new_route_struct());
     }
 
     static #handle_collision = (trains_pair, coordinates, events, update_time) => {

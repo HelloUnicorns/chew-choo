@@ -51,7 +51,10 @@ class GameManager {
 
         let events = Train.update(update_time);
         if (events.length) {
-            console.log(events);
+            this.broadcast_message('update', { 
+                server_time: update_time,
+                events
+            });
         }
 
         this.check_win_condition();

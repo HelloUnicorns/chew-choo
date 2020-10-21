@@ -132,15 +132,6 @@
             }
           }
         },
-        "LatencyServerEvent": {
-          "fields": {
-            "latency": {
-              "rule": "required",
-              "type": "double",
-              "id": 1
-            }
-          }
-        },
         "SpeedServerEvent": {
           "fields": {
             "id": {
@@ -210,7 +201,6 @@
           "oneofs": {
             "type": {
               "oneof": [
-                "latency",
                 "speed",
                 "new_route",
                 "route_update",
@@ -220,10 +210,6 @@
             }
           },
           "fields": {
-            "latency": {
-              "type": "LatencyServerEvent",
-              "id": 1
-            },
             "speed": {
               "type": "SpeedServerEvent",
               "id": 2
@@ -258,7 +244,7 @@
               "type": "string",
               "id": 2
             },
-            "new_routes": {
+            "routes": {
               "rule": "repeated",
               "type": "NewRoute",
               "id": 3
@@ -291,10 +277,20 @@
         "WinServerMessage": {
           "fields": {}
         },
+        "LatencyServerMessage": {
+          "fields": {
+            "latency": {
+              "rule": "required",
+              "type": "double",
+              "id": 1
+            }
+          }
+        },
         "ServerMessage": {
           "oneofs": {
             "type": {
               "oneof": [
+                "latency",
                 "error",
                 "win",
                 "connection",
@@ -303,6 +299,10 @@
             }
           },
           "fields": {
+            "latency": {
+              "type": "LatencyServerMessage",
+              "id": 1
+            },
             "error": {
               "type": "ErrorServerMessage",
               "id": 2

@@ -28,7 +28,7 @@ class GameClient {
     #message_handlers = {
         latency_update : (message) => {
             let latency = (performance.now() - message.prev_server_time) / 2;
-            this.send_message('latency', {latency});
+            this.send_message('latency', { latency });
         }
     }
 
@@ -68,8 +68,9 @@ class GameClient {
 
     send_connection_message() {
         this.send_message('connection', {
-            routes: Train.state,
-            route_id: this.player.id
+            routes: Train.new_route_structs,
+            route_id: this.player.id, 
+            server_time: performance.now()
         });
     }
 

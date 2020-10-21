@@ -87,10 +87,6 @@ message NewRoute {
 /*                                                       */
 /*********************************************************/
 
-message LatencyServerEvent {
-    required double latency = 1;
-}
-
 message SpeedServerEvent {
     required string id = 1;
     required LatestSpeedUpdate update = 2;
@@ -117,7 +113,6 @@ message InvincibilityChangeServerEvent {
 
 message ServerEvent {
     oneof type {
-        LatencyServerEvent latency = 1;
         SpeedServerEvent speed = 2;
         NewRouteServerEvent new_route = 3;
         RouteUpdateServerEvent route_update = 4;
@@ -144,7 +139,7 @@ message ConnectionServerMessage {
     */
     required float server_time = 1; /* the server time at the time of the latest server tick. */
     required string route_id = 2; /* route id of the connected player */
-    repeated NewRoute new_routes = 3;
+    repeated NewRoute routes = 3;
 }
 
 message UpdateServerMessage {
@@ -160,8 +155,13 @@ message WinServerMessage {
 
 }
 
+message LatencyServerMessage {
+    required double latency = 1;
+}
+
 message ServerMessage {
     oneof type {
+        LatencyServerMessage latency = 1;
         ErrorServerMessage error = 2;
         WinServerMessage win = 3;
         ConnectionServerMessage connection = 6;
