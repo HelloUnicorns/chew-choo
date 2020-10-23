@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const constants = require('../common/constants.js');
-const {union_tracks, flatten} = require('./union.js')
+const { position_mod } = require('../common/position.js')
+const { union_tracks, flatten } = require('./union.js')
 const assert  = require('assert');
 
 
@@ -164,7 +165,6 @@ class Rail {
 
                 crossing.rail_id = this.id;
                 crossing.occupied = false;
-                crossing.entering = false;
 
                 this.crossings[crossing.x] = this.crossings[crossing.x] || {};
                 this.crossings[crossing.x][crossing.y] = crossing;
@@ -188,7 +188,6 @@ class Rail {
                     y,
                     neighbor: undefined,
                     occupied: false,
-                    entering: false,
                 };
 
                 let neighbor_rail = rails[neighbor_rail_id];
@@ -199,7 +198,6 @@ class Rail {
                     y,
                     neighbor: undefined,
                     occupied: false,
-                    entering: false,
                 };
 
                 current_crossing.neighbor = neighbor_crossing;
@@ -214,40 +212,39 @@ class Rail {
         }
     }
 
-    occupy(index, entering=false) {
-        let x = this.tracks[index].x;
-        let y = this.tracks[index].y;
+    occupy(active_tracks) {
+        this.tracks.concat(this.leftover_tracks).forEach(track => this.#free_position(track.x, track.y));
+        return active_tracks.map(track => this.#occupy_position(track.x, track.y)).filter(rail_id => rail_id != undefined);
+    }
+
+    #occupy_position(x, y) {
         if (!this.crossings[x] || !this.crossings[x][y]) {
-            return undefined;
+            return;
         }
 
         let crossing = this.crossings[x][y];
         crossing.occupied = true;
-        crossing.entering = entering;
 
         assert(crossing.neighbor.x == crossing.x && crossing.neighbor.y == crossing.y);
 
         if (crossing.neighbor.occupied) {
-            return crossing.neighbor.rail_id;
+            return { rail_id: crossing.neighbor.rail_id, coordinates : { x, y } };
         }
 
-        return undefined;
+        return;
     }
 
-    free(index) {
-        let x = this.tracks[index].x;
-        let y = this.tracks[index].y;
+    #free_position(x, y) {
         if (!this.crossings[x] || !this.crossings[x][y]) {
             return undefined;
         }
 
         let crossing = this.crossings[x][y];
         crossing.occupied = false;
-        crossing.entering = false;
     }
 
-    merge(merged_rail, position) {
-        let update = union_tracks(this, merged_rail, position);
+    merge(merged_rail, position, train_length) {
+        let update = union_tracks(this, merged_rail, position, train_length);
 
         let consume_suspects = [];
 
@@ -322,21 +319,6 @@ class Rail {
         return (this.crossings[x] && this.crossings[x][y]) != undefined;
     }
 
-    length() {
-        return this.tracks.length;
-    }
-
-    leftover_length() {
-        return this.leftover_tracks.length;
-    }
-
-    clear_leftover() {
-        for (const track of this.leftover_tracks) {
-            assert(!this.has_crossing(track.x, track.y));
-        }
-        this.leftover_tracks = [];
-    }
-
     empty() {
         this.tracks = [];
         this.leftover_tracks = [];
@@ -365,35 +347,23 @@ class Rail {
         }
     }
 
-    coordinates(index) {
-        if (this.tracks.length <= index) {
-            return undefined;
-        }
-
-        return {x: this.tracks[index].x, y: this.tracks[index].y};
+    get all_tracks() {
+        return this.leftover_tracks.concat(this.tracks);
     }
 
-    coordinates_by_position(position) {
-        let index = Math.floor(position);
-        let next_index = (index + 1) % this.tracks.length;
-        let fraction = position - index;
-        let first_coord = this.coordinates(index);
-        let second_coord = this.coordinates(next_index);
+    track_by_position(position) {
+        return this.all_tracks[Math.floor(position_mod(position, this.tracks.length, this.leftover_tracks.length))];
+    }
+
+    coordinates_by_position(position, use_fraction=true) {
+        let fraction = use_fraction ? (position % 1) : 0;
+        let first_track = this.track_by_position(position);
+        let second_track = this.track_by_position(position + 1);
 
         return { 
-            x: first_coord.x * (1 - fraction) + second_coord.x * fraction, 
-            y: first_coord.y * (1 - fraction) + second_coord.y * fraction, 
+            x: first_track.x * (1 - fraction) + second_track.x * fraction, 
+            y: first_track.y * (1 - fraction) + second_track.y * fraction, 
         };
-    }
-
-    index_of(x, y) {
-        for (const [index, track] of tracks.entries()) {
-            if (track.x == x && track.y == y) {
-                return index;
-            }
-        }
-
-        return -1;
     }
 
     get_neighbor_ids(degree=1) {

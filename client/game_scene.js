@@ -1,7 +1,7 @@
 const global_data = require('./global_data.js');
 const _ = require('lodash');
 const constants = require('../common/constants.js');
-const { Route } = require('./routes.js');
+const { Route } = require('./route.js');
 const { GameSocket } = require('./game_socket.js');
 const { GRID_PIECE_WIDTH } = require('./grid.js');
 
@@ -122,13 +122,13 @@ export class GameScene extends Phaser.Scene {
         this.up.play();
     }
 
-    handle_new_route(new_route) {
-        this.routes[new_route.id] = new Route(new_route, new_route.id == this.player_route_id);
+    handle_new_route(server_time, new_route) {
+        this.routes[new_route.id] = new Route(server_time, new_route, new_route.id == this.player_route_id);
     }
 
     #server_event_handlers = {
         new_route: (server_time, server_event) => { 
-            this.handle_new_route(server_event.route);
+            this.handle_new_route(server_time, server_event.route);
         },
         route_update: (server_time, server_event) => { 
             this.routes[server_event.id].update_route(server_event.tracks, server_event.latest_speed_update);
@@ -156,7 +156,7 @@ export class GameScene extends Phaser.Scene {
             global_data.player_route_id = message.route_id;
             this.player_route_id = message.route_id;
             for (const route of message.routes) {
-                this.handle_new_route(route);
+                this.handle_new_route(message.server_time, route);
             }
             this.player_route = this.routes[this.player_route_id];
             this.postponed_events.filter(postponed_event => postponed_event.server_time >= message.server_time)
@@ -173,6 +173,7 @@ export class GameScene extends Phaser.Scene {
                 this.postponed_events.push(message.events.map(event => ({ event, server_time: message.server_time})));
                 return;
             }
+            this.server_time_delta = message.server_time - performance.now();
             message.events.forEach(event => this.handle_server_event(message.server_time, event));
         },
         win: (message) => {

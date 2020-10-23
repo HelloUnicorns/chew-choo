@@ -1,4 +1,5 @@
 const constants = require('./constants.js');
+const assert = require('assert');
 
 const DIRECTION_TO_COMPONENTS = {
     [constants.Direction.BOTTOM_TO_TOP]: { from: 'bottom', to: 'top' },
@@ -39,11 +40,15 @@ const COMPONENTS_TO_DIRECTION = {
 };
 
 function direction_to_direction_components(direction) {
-    return DIRECTION_TO_COMPONENTS[direction];
+    let components = DIRECTION_TO_COMPONENTS[direction];
+    assert(components != undefined, "components can't be undefined");
+    return components;
 }
 
 function direction_from_direction_components(from, to) {
-    return COMPONENTS_TO_DIRECTION[from][to];
+    let direction = COMPONENTS_TO_DIRECTION[from][to];
+    assert(direction != undefined, "direction can't be undefined");
+    return direction;
 }
 
 exports.direction_to_direction_components = direction_to_direction_components;

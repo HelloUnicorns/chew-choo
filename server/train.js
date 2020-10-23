@@ -5,7 +5,7 @@ const _ = require('lodash');
 
 const { makeid } = require('../common/id.js');
 const constants = require('../common/constants.js');
-const { calculate_end_speed_and_position, set_train_position } = require('../common/position.js');
+const { advance_train } = require('../common/position.js');
 
 const { get_rails, init_rails } = require('./rail.js');
 
@@ -28,7 +28,6 @@ class Train {
         this.allocatable = true;
 
         /* Game attributes */
-        this.is_in_leftover = false;
         this.length = 3;
         this.invincibility_state = constants.TRAIN_NOT_INVINCIBLE;
         this.invincibility_timeout = undefined;
@@ -109,8 +108,12 @@ class Train {
     }
 
     #step(current_time) {
-        let length = this.is_in_leftover ? Infinity : this.rail.length();
-        return calculate_end_speed_and_position(this.latest_speed_update, current_time - this.latest_speed_update.update_time, length);
+        const { end_position, end_speed, used_tracks } = 
+            advance_train(current_time - this.latest_speed_update.update_time, this.latest_speed_update, 
+                          this.length, this.rail.tracks, this.rail.leftover_tracks);
+        this.position = end_position;
+        let collisions = this.rail.occupy(used_tracks);
+        return { end_position, end_speed, used_tracks, collisions }
     }
 
     #do_route_update(update_time) {
@@ -142,23 +145,16 @@ class Train {
     }
 
     /* Periodic updates */
-    update(update_time) {
+    update(update_time, collisions) {
         let events = this.postponed_events;
         this.postponed_events = [];
-        const { end_speed, end_position } = this.#step(update_time);
-        this.position = end_position;
-
-        if (this.is_in_leftover) {
-            if (this.position >= this.rail.leftover_length()) {
-                this.position -= this.rail.leftover_length();
-                
-                /* Train has just left the leftover */
-                this.rail.clear_leftover();
-                this.is_in_leftover = false;
-                events.push(this.#do_route_update(update_time));
-            }
-        }
-
+        const { collisions: new_collisions } = this.#step(update_time);
+        
+        collisions.push(...new_collisions.map(collision => ({
+            trains: [this, rail_id_to_train[collision.rail_id]],
+            coordinates: collision.coordinates
+        })));
+    
         return events;
     }
 
@@ -221,35 +217,6 @@ class Train {
             new_train.#step(update_time);
             events.push(new_train.#new_route_event());
         }
-    }
-
-    occupy_location() {
-        let locomotive_position = this.position_int;
-        let collisions = [];
-    
-        /* Locomotive */
-        let loco_collision = this.rail.occupy(locomotive_position);
-        if (loco_collision) {
-            collisions.push({
-                trains: [this, rail_id_to_train[loco_collision]],
-                coordinates: this.rail.coordinates(locomotive_position)
-            });
-        }
-    
-        /* Last cart */
-        let last_cart_position = (locomotive_position - this.length + 1 + this.rail.length()) % this.rail.length();
-        let cart_collision = this.rail.occupy(last_cart_position);
-        if (cart_collision && cart_collision != loco_collision) {
-            collisions.push({
-                trains: [this, rail_id_to_train[cart_collision]],
-                coordinates: this.rail.coordinates(last_cart_position)
-            });
-        }
-    
-        /* Tile behind last cart */
-        this.rail.free((locomotive_position - this.length + this.rail.length()) % this.rail.length());
-    
-        return collisions;
     }
 
     get state() {
@@ -327,7 +294,7 @@ class Train {
             console.log(`WARN: bot in rail ${trains_pair[0].rail.id} and bot in rail ${trains_pair[1].rail.id} collided`);
             return;
         }
-    
+
         const distances = trains_pair.map((train) => 
             grid_distance(coordinates,
                           train.rail.coordinates_by_position(train.position)));
@@ -356,11 +323,7 @@ class Train {
             killee.#abandon(events, update_time);
         } else {
             console.log(`Train in rail ${killee.rail.id} got killed by a human player`);
-            let {position, old_rails} = killer.rail.merge(killee.rail, killer.position_int);
-            if (killer.rail.leftover_tracks.length > 0) {
-                killer.is_in_leftover = true;
-                console.log(`Route ${killer.id} in leftover`);
-            }
+            let {position, old_rails} = killer.rail.merge(killee.rail, killer.position_int, killer.length);
             killer.position = position;
             for (const rail_id of old_rails) {
                 let cur_train = rail_id_to_train[rail_id];
@@ -393,10 +356,11 @@ class Train {
                 continue;
             }
     
+            let collision = [];
+
             /* Periodic update of speed and position */
-            events.push(...train.update(update_time));
+            events.push(...train.update(update_time, collision));
             
-            let collision = train.occupy_location();
             /* Theoretically it's possible, but practically it should not happen.
                 Let's keep the assert for now */
             assert(collision.length <= 1, '2 or more collisions occurred in the same rail');

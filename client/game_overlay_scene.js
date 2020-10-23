@@ -21,7 +21,7 @@ const LEADERBOARD_DEFAULT_PLAYER_ROW_Y = 56 + 26 * LEADERBOARD_TOP_SIZE;
 
 class GameOverlayScene extends Phaser.Scene {
     constructor() {
-        super({ key: 'GameOverlayScene', active: true });
+        super({ key: 'GameOverlayScene' });
     }
 
     preload() {
@@ -29,7 +29,13 @@ class GameOverlayScene extends Phaser.Scene {
         this.load.image('speed_meter_arrow', 'assets/speed_meter_arrow.png');
     }
 
-    create() {        
+    create() {
+        console.log('start');
+        if (!this.created) {
+            this.created = true;
+        } else {
+            debugger;
+        }
         let speed_meter_colors = this.add.sprite(
             constants.CANVAS_WIDTH - SPEED_METER_COLORS_WIDTH / 2 - 10,
             constants.CANVAS_HEIGHT - SPEED_METER_COLORS_HEIGHT / 2,
@@ -79,9 +85,9 @@ class GameOverlayScene extends Phaser.Scene {
         if (!global_data.game_scene.player_route) {
             return;
         }
-
-        this.speed_meter.setText(`${global_data.game_scene.player_route.train.speed.toFixed(0)} tps`);
-        let angle = SPEED_METER_ARROW_MIN_ANGLE + (SPEED_METER_ARROW_MAX_ANGLE - SPEED_METER_ARROW_MIN_ANGLE) * (global_data.game_scene.player_route.train - constants.MIN_SPEED) / (constants.MAX_SPEED - constants.MIN_SPEED);
+        let speed = global_data.game_scene.player_route.speed;
+        this.speed_meter.setText(`${speed.toFixed(1)} tps`);
+        let angle = SPEED_METER_ARROW_MIN_ANGLE + (SPEED_METER_ARROW_MAX_ANGLE - SPEED_METER_ARROW_MIN_ANGLE) * (speed - constants.MIN_SPEED) / (constants.MAX_SPEED - constants.MIN_SPEED);
         this.speed_meter_arrow.setAngle(angle);
         
         let number_of_remaining_players = Object.keys(global_data.game_scene.routes).length;

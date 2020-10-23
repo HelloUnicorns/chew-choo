@@ -1,7 +1,6 @@
 const constants = require('../common/constants.js');
 const global_data = require('./global_data.js')
 const { draw_grid_sprite, update_grid_sprite, GRID_PIECE_WIDTH, CART_Z_INEDX } = require('./grid.js');
-const { calculate_end_speed_and_position, my_delta_mod } = require('../common/position.js');
 
 const CART_IMAGE_WIDTH = 100;
 const CART_WIDTH = GRID_PIECE_WIDTH;
@@ -38,11 +37,7 @@ const DIRECTION_TO_CART_ANGLE = {
 
 export class Train {
     constructor(is_own, new_train) {
-        this.position = 0;
-        this.speed = 0;
         this.length = new_train.length;
-        this.is_speed_up = false;
-        this.is_speed_down = false;
         this.is_stopped = false;
         this.is_bot = new_train.is_bot;
         this.is_own = is_own;
@@ -52,7 +47,6 @@ export class Train {
         this.alpha = undefined;
         this.invincibility_state = undefined;
         this.update_invincibility(new_train.invincibility_state);
-        this.latest_speed_update = new_train.latest_speed_update;
     }
 
     update_invincibility(new_invincibility_state) {
@@ -77,15 +71,6 @@ export class Train {
         }
     }
 
-    get position_int() {
-        /* TODO: maybe move to round instead of floor? */
-        return Math.floor(this.position);
-    }
-
-    get position_fraction() {
-        return this.position - Math.floor(this.position);
-    }
-
     start_blinking() {
         if (this.blinking_interval) {
             return;
@@ -107,16 +92,12 @@ export class Train {
         this.alpha = NORMAL_TRAIN_ALPHA;
     }
 
-    draw_cart_by_index(cart_index, is_engine, active_tracks) {
-        let route_index = (this.position_int - cart_index + active_tracks.length) % active_tracks.length;
-        let track = active_tracks[route_index];
-        let angle = DIRECTION_TO_CART_ANGLE[track.direction];
-
+    draw_cart(is_engine, track) {
         let cart_sprite = draw_grid_sprite(
-            track.x, track.y, angle, 
+            track.x, track.y, DIRECTION_TO_CART_ANGLE[track.direction], 
             is_engine ? 'engine' : 'cart', 
             is_engine ? ENGINE_SCALE : CART_SCALE, 
-            CART_Z_INEDX, 
+            CART_Z_INEDX,
             this.get_cart_color(),
             this.alpha);
         this.sprites.push(cart_sprite);
@@ -126,9 +107,8 @@ export class Train {
         if (this.drawn) {
             return;
         }
-        this.draw_cart_by_index(0, true, active_tracks);
-        for (let cart_index = 1; cart_index < this.length; cart_index++) {
-            this.draw_cart_by_index(cart_index, false, active_tracks);
+        for (const [cart_index, track] of Object.entries(active_tracks)) {
+            this.draw_cart(cart_index == active_tracks.length - 1, track);
         }
         this.drawn = true;
     }
@@ -137,20 +117,15 @@ export class Train {
         return this.is_own ? PLAYER_TRAIN_COLOR: this.is_bot ? BOT_TRAIN_COLOR : ENEMY_TRAIN_COLOR;
     }
 
-    update(server_time, active_tracks) {
-        /* draw the drain if it isn't already drawn */
-        this.draw(active_tracks);
+    update(active_tracks, next_track, fraction) {
+        let tracks = active_tracks.concat([next_track]);
 
-        const { end_position, end_speed } = calculate_end_speed_and_position(this.latest_speed_update, server_time - this.latest_speed_update.update_time, active_tracks.length);
-        this.speed = end_speed;
-        this.position = end_position;
+        /* draw the train if it isn't already drawn */
+        this.draw(active_tracks);
        
         let train_tint = this.get_cart_color(this.is_own, this.is_bot);
-
-        for (let cart_index = 0; cart_index < this.length; cart_index++) {
-            let tile_index = (this.position_int - cart_index + active_tracks.length) % active_tracks.length;
-            let track = active_tracks[tile_index];
-            let next_track = active_tracks[(tile_index + 1) % active_tracks.length];
+        active_tracks.forEach((track, cart_index) => { 
+            let next_track = tracks[cart_index + 1];
             let track_angle = DIRECTION_TO_CART_ANGLE[track.direction];
             let next_track_angle = DIRECTION_TO_CART_ANGLE[next_track.direction];
             if (track_angle == 305 && next_track_angle == 0) {
@@ -159,14 +134,10 @@ export class Train {
             else if (track_angle == 0 && next_track_angle == 305) {
                 track_angle = 360;
             }
-            let position_x = track.x * (1 - this.position_fraction) + next_track.x * this.position_fraction;
-            let position_y = track.y * (1 - this.position_fraction) + next_track.y * this.position_fraction;
-            let angle = track_angle * (1 - this.position_fraction) + next_track_angle * this.position_fraction;
+            let position_x = track.x * (1 - fraction) + next_track.x * fraction;
+            let position_y = track.y * (1 - fraction) + next_track.y * fraction;
+            let angle = track_angle * (1 - fraction) + next_track_angle * fraction;
             update_grid_sprite(this.sprites[cart_index], position_x, position_y, angle, train_tint, this.alpha);
-        }
-    }
-
-    update_latest_speed_update(new_latest_speed_update) {
-        this.latest_speed_update = new_latest_speed_update;
+        });
     }
 }

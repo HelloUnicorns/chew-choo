@@ -9,16 +9,16 @@ class MenuScene extends Phaser.Scene {
     }
 
     preload() {
-        this.scene.stop('GameOverlayScene');
         this.load.image('pic', 'assets/menuwallpaper.jpg');
         this.load.image('logo', 'assets/logo.png');
         this.load.audio('menu_music', 'assets/LoveInVain.mp3');
-
     }
 
     startGame() {
         this.scene.start('GameScene');
+        console.log('showing')
         this.scene.start('GameOverlayScene');
+        console.log('shown')
         this.scene.stop('MenuScene');
         this.menu_music.stop();
     }
