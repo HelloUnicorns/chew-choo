@@ -67,7 +67,7 @@ export class Track {
         }
     }
     remove(fading=true) {
-        if (fading) {
+        if (fading && this.sprite) {
             this.fade_out();
             return;
         }

@@ -1,6 +1,6 @@
 const constants = require('../common/constants.js');
 const global_data = require('./global_data.js')
-const { draw_grid_sprite, update_grid_sprite, GRID_PIECE_WIDTH, CART_Z_INEDX } = require('./grid.js');
+const { draw_grid_sprite, update_grid_sprite, GRID_PIECE_WIDTH, CART_Z_INEDX, LABELS_Z_INDEX } = require('./grid.js');
 
 const CART_IMAGE_WIDTH = 100;
 const CART_WIDTH = GRID_PIECE_WIDTH;
@@ -36,12 +36,14 @@ const DIRECTION_TO_CART_ANGLE = {
 };
 
 export class Train {
-    constructor(is_own, new_train) {
+    constructor(is_own, new_train, id) {
+        this.id = id;
         this.length = new_train.length;
         this.is_stopped = false;
         this.is_bot = new_train.is_bot;
         this.is_own = is_own;
         this.sprites = [];
+        this.text = undefined;
         this.drawn = false;
         this.blinking_interval = undefined;
         this.alpha = undefined;
@@ -110,11 +112,19 @@ export class Train {
         for (const [cart_index, track] of Object.entries(active_tracks)) {
             this.draw_cart(cart_index == active_tracks.length - 1, track);
         }
+        this.text = global_data.game_scene.add.text(0, 0, this.id, { font: '18px Arial', fill: '#000000' });
+        this.text.setOrigin(0.5, 0.5);
+        this.text.setDepth(LABELS_Z_INDEX);
+        this.update_text();
         this.drawn = true;
     }
 
     get_cart_color() {
         return this.is_own ? PLAYER_TRAIN_COLOR: this.is_bot ? BOT_TRAIN_COLOR : ENEMY_TRAIN_COLOR;
+    }
+
+    update_text() {
+        this.text.setPosition(this.sprites[this.sprites.length - 1].x - 30, this.sprites[this.sprites.length - 1].y - 30);
     }
 
     update(active_tracks, next_track, fraction) {
@@ -139,5 +149,17 @@ export class Train {
             let angle = track_angle * (1 - fraction) + next_track_angle * fraction;
             update_grid_sprite(this.sprites[cart_index], position_x, position_y, angle, train_tint, this.alpha);
         });
+        this.update_text();
+    }
+
+    remove() {
+        for (const sprite of this.sprites) {
+            sprite.destroy();
+        }
+        this.sprites = [];
+        if (this.text) {
+            this.text.destroy();
+            this.text = undefined;
+        }
     }
 }

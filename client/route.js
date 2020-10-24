@@ -12,7 +12,7 @@ export class Route {
          this.tracks = [];
          this.leftover_tracks = [];
          this.speed = 0;
-         this.train = new Train(is_own, new_route.train);
+         this.train = new Train(is_own, new_route.train, this.route_id);
          this.drawn = false;
          this.update_route(new_route.tracks, new_route.train.latest_speed_update);
          this.update(server_time);
@@ -36,9 +36,7 @@ export class Route {
 
      remove_train() {
         if (this.train) {
-            for (let sprite of this.train.sprites) {
-                sprite.destroy();
-            }
+            this.train.remove();
             this.train = undefined;
         }
     }

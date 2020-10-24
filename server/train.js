@@ -17,7 +17,7 @@ function grid_distance(point0, point1) {
 }
 
 class Train {
-    constructor(update_time, rail, allocated=false, already_reported=false) {
+    constructor(update_time, rail, allocated=false) {
         /* Base attributes */
         this.id = makeid();
         this.rail = rail;
@@ -41,7 +41,6 @@ class Train {
             update_time_speed: constants.MIN_SPEED,
         }
         this.postponed_events = []
-        this.reported = already_reported;
 
         /* Update maps */
         trains[this.id] = this;
@@ -49,7 +48,7 @@ class Train {
 
 
         if (allocated) {
-            this.#allocate(already_reported);
+            this.#allocate();
         }
     }
     
@@ -83,14 +82,14 @@ class Train {
 
     #make_vincible = () => {
         clearTimeout(this.invincibility_timeout);
+        this.invincibility_timeout = undefined;
         this.invincibility_state = constants.TRAIN_NOT_INVINCIBLE
     }
 
-    #allocate = (already_reported=false) => {
+    #allocate = () => {
         this.is_bot = false;
         this.allocatable = false;
         this.is_stopped = true;
-        this.reported = already_reported;
         this.#make_invincible();
     }
 
@@ -107,19 +106,22 @@ class Train {
         return this.active && this.invincibility_state == constants.TRAIN_NOT_INVINCIBLE;
     }
 
-    #step(current_time) {
+    #step(current_time, skip_updates=false) {
         const { end_position, end_speed, used_tracks } = 
             advance_train(current_time - this.latest_speed_update.update_time, this.latest_speed_update, 
                           this.length, this.rail.tracks, this.rail.leftover_tracks);
-        this.position = end_position;
-        let collisions = this.rail.occupy(used_tracks);
+        let collisions;
+        if (!skip_updates) {
+            this.position = end_position;
+            collisions = this.rail.occupy(used_tracks);
+        }
         return { end_position, end_speed, used_tracks, collisions }
     }
 
     #do_route_update(update_time) {
+        const { end_speed } = this.#step(update_time, true);
         this.latest_speed_update.update_time = update_time;
         this.latest_speed_update.update_time_position = this.position;
-        const { end_speed } = this.#step(update_time);
         this.latest_speed_update.update_time_speed = end_speed;
         return { route_update: { id: this.id, 
                                  tracks: this.rail.new_tracks_for_event(),
@@ -160,6 +162,7 @@ class Train {
 
     /* Hand the train over from a human to a bot or vice versa */
     handover(update_time, allocated=false) {
+        let route_removed_event = { route_removed: { id: this.id } };
         let rail_id = this.rail.id;
         let position = this.position;
         let latest_speed_update = this.latest_speed_update;
@@ -170,6 +173,9 @@ class Train {
         let new_train = new Train(update_time, get_rails()[rail_id], allocated=allocated);
         new_train.position = position;
         new_train.latest_speed_update = latest_speed_update;
+
+        new_train.postponed_events.push(route_removed_event);
+        new_train.postponed_events.push(new_train.#new_route_event());
 
         console.log(`Rail ${new_train.rail.id} is now owned by ${new_train.id}`);
 
@@ -215,13 +221,6 @@ class Train {
             let new_train = rail_id_to_train[rail_id].handover(update_time);
             new_train.latest_speed_update = _.clone(bot_latest_speed_update);
             new_train.#step(update_time);
-            events.push(new_train.#new_route_event());
-        }
-    }
-
-    get state() {
-        return {
-            id: this.id
         }
     }
 
@@ -258,10 +257,8 @@ class Train {
             if (!train.allocatable) {
                 continue;  
             }
-
             return train.handover(update_time, true);
         }
-        return undefined;
     }
 
     static get(train_id) {
@@ -377,10 +374,6 @@ class Train {
         for (const train of Object.values(Train.all)) {
             if(!train.active) {
                 continue;
-            }
-            if (!train.reported) {
-                events.push(train.#new_route_event());
-                train.reported = true;
             }
         }
     }

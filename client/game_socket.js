@@ -21,9 +21,6 @@ export class GameSocket {
     message_handler(message_obj) {
         message_obj.data.arrayBuffer().then(array_buffer => { 
             let message = ServerMessage.decode(Buffer.from(array_buffer,'binary'));
-            if (undefined == message.type) {
-                debugger;
-            }
             if (message.type in this.#message_handlers) {
                 this.#message_handlers[message.type](message[message.type]);
             } else {

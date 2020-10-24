@@ -33,8 +33,6 @@ class GameOverlayScene extends Phaser.Scene {
         console.log('start');
         if (!this.created) {
             this.created = true;
-        } else {
-            debugger;
         }
         let speed_meter_colors = this.add.sprite(
             constants.CANVAS_WIDTH - SPEED_METER_COLORS_WIDTH / 2 - 10,
