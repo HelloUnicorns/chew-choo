@@ -130,13 +130,13 @@ export class GameScene extends Phaser.Scene {
         new_route: (server_time, server_event) => { 
             this.handle_new_route(server_time, server_event.route);
         },
-        route_update: (server_time, server_event) => { 
+        route_update: (server_time, server_event) => {
             this.routes[server_event.id].update_route(server_event.tracks, server_event.latest_speed_update);
         },
-        route_removed: (server_time, server_event) => { 
+        route_removed: (server_time, server_event) => {
             this.remove_route(server_event.id);
         },
-        invincibility_change: (server_time, server_event) => { 
+        invincibility_change: (server_time, server_event) => {
             this.routes[server_event.id].train.update_invincibility(server_event.new_invincibility_state);
         },
         speed: (server_time, server_event) => {
@@ -174,7 +174,13 @@ export class GameScene extends Phaser.Scene {
                 return;
             }
             this.server_time_delta = message.server_time - performance.now();
-            message.events.forEach(event => this.handle_server_event(message.server_time, event));
+            for (const event of message.events) {
+                this.handle_server_event(message.server_time, event);
+                if (this.stopped) {
+                    /* there could be a message that killed the player */
+                    return;
+                }
+            }
         },
         win: (message) => {
             if (!this.game_inited) {
