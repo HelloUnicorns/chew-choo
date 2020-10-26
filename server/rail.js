@@ -278,8 +278,9 @@ class Rail {
         merged_rail.empty();
 
         /* Now we check if a rail does not have crossing and consume it */
-        consume_suspects = [...new Set(consume_suspects)];
-        let consumed = this.#handle_consume(consume_suspects);
+        /*consume_suspects = [...new Set(consume_suspects)];
+        let consumed = this.#handle_consume(consume_suspects);*/
+        let consumed = [];
 
         return {position: update.position, old_rails: consumed.concat(merged_rail.id)};
     }
