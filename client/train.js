@@ -112,7 +112,7 @@ export class Train {
         for (const [cart_index, track] of Object.entries(active_tracks)) {
             this.draw_cart(cart_index == active_tracks.length - 1, track);
         }
-        this.text = global_data.game_scene.add.text(0, 0, this.id, { font: '18px Arial', fill: '#000000' });
+        this.text = global_data.game_scene.add.text(0, 0, this.id, { font: '18px Lucida Console', fill: '#000000' });
         this.text.setOrigin(0.5, 0.5);
         this.text.setDepth(LABELS_Z_INDEX);
         this.update_text();
