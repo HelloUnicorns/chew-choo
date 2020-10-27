@@ -1,4 +1,3 @@
-const global_data = require('./global_data.js');
 const _ = require('lodash');
 const constants = require('../common/constants.js');
 const { Route } = require('./route.js');
@@ -10,7 +9,6 @@ const VERTICAL_GRID_TILES_PER_PLAYER_TRAIN_TILES = 2;
 export class GameScene extends Phaser.Scene {
     constructor() {
         super('GameScene');
-        global_data.game_scene = this;
         this.game_inited = false;
         this.space_key = undefined;
         this.is_space_pressed = false;
@@ -49,19 +47,15 @@ export class GameScene extends Phaser.Scene {
         this.space_key = this.input.keyboard.addKey('space');
     }
 
-    send_start_playing_message() {
-        this.game_socket.send_message('start_playing');
-    }
-
     client_loaded() {
-        this.draw_map();
-        this.send_start_playing_message();
+        this.game_socket.send_message('start_playing');
         this.game_inited = true;
+        this.draw_map();
     }
 
     create() {
+        this.scene.launch('GameOverlayScene', this);
         this.game_socket = new GameSocket(this);
-
         this.start_music();
         this.crash = this.sound.add("crash")
         this.up = this.sound.add("up")
@@ -110,8 +104,7 @@ export class GameScene extends Phaser.Scene {
             }
             this.stopped = true;
             this.crash.play()
-            global_data.game.scene.start('GameoverScene');
-            global_data.game.scene.stop('GameOverlayScene');
+            this.game.scene.start('GameoverScene');
             return true;
         }
 
@@ -123,7 +116,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     handle_new_route(server_time, new_route) {
-        this.routes[new_route.id] = new Route(server_time, new_route, new_route.id == this.player_route_id);
+        this.routes[new_route.id] = new Route(this, server_time, new_route, new_route.id == this.player_route_id);
     }
 
     #server_event_handlers = {
@@ -147,13 +140,13 @@ export class GameScene extends Phaser.Scene {
     handle_server_event(server_time, server_event) {
         this.#server_event_handlers[server_event.type](server_time, server_event[server_event.type]);
     }
+
     handle_server_message(message_type, message) {
         this.#server_message_handlers[message_type](message);
     }
 
     #server_message_handlers = {
         connection: (message) => {
-            global_data.player_route_id = message.route_id;
             this.player_route_id = message.route_id;
             for (const route of message.routes) {
                 this.handle_new_route(message.server_time, route);
@@ -190,13 +183,10 @@ export class GameScene extends Phaser.Scene {
             if (this.bg_music) {
                 this.bg_music.mute = true;
             }
-            global_data.game.scene.start('WinScene');
-            global_data.game.scene.stop('GameOverlayScene');
+            this.game.scene.start('WinScene');
         },
         error: (message) => {
-            global_data.game.scene.start('ErrorScene', event.message);
-            global_data.game.scene.stop('GameOverlayScene');
-            global_data.game.scene.stop('GameScene');
+            this.game.scene.start('ErrorScene', event.message);
         },
     }
     

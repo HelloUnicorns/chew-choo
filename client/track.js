@@ -19,7 +19,8 @@ const DIRECTION_TO_PIECE_ORIENTATION = {
 };
 
 export class Track {
-    constructor(x, y, direction, is_own, special_color=undefined) {
+    constructor(scene, x, y, direction, is_own, special_color=undefined) {
+        this.scene = scene;
         this.special_color = special_color;
         this.x = x;
         this.y = y;
@@ -58,6 +59,7 @@ export class Track {
     draw() {
         if (!this.sprite) {
             this.sprite = draw_grid_sprite(
+                this.scene,
                 this.x, this.y, this.angle, 
                 (this.is_own ? 'own_' : '') + (this.is_corner ? 'turn' : 'track'), 
                 TRACK_SCALE, 
@@ -82,11 +84,11 @@ export class Track {
         this.removed = true;
     }
 
-    static from_server_new_tracks(server_tracks, is_own, special_color=undefined) {
-        return server_tracks.map(server_track => new Track(server_track.x, server_track.y, server_track.direction, is_own, special_color));
+    static from_server_new_tracks(scene, server_tracks, is_own, special_color=undefined) {
+        return server_tracks.map(server_track => new Track(scene, server_track.x, server_track.y, server_track.direction, is_own, special_color));
     }
 
-    static create_connector_track(tracks, leftover_tracks, special_color=undefined) {
+    static create_connector_track(scene, tracks, leftover_tracks, special_color=undefined) {
         if (!leftover_tracks.length) {
             return;
         }
@@ -95,6 +97,6 @@ export class Track {
         let first_regular_track_direction_components = direction_to_direction_components(first_regular_track.direction);
         let last_leftover_track_direction_components = direction_to_direction_components(last_leftover_track.direction);
         let direction = direction_from_direction_components(last_leftover_track_direction_components.from, first_regular_track_direction_components.to);
-        return new Track(first_regular_track.x, first_regular_track.y, direction, first_regular_track.is_own, special_color);
+        return new Track(scene, first_regular_track.x, first_regular_track.y, direction, first_regular_track.is_own, special_color);
     }
 }

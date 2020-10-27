@@ -15,17 +15,12 @@ class MenuScene extends Phaser.Scene {
     }
 
     startGame() {
-        this.scene.start('GameScene');
-        console.log('showing')
-        this.scene.start('GameOverlayScene');
-        console.log('shown')
-        this.scene.stop('MenuScene');
         this.menu_music.stop();
+        this.scene.start('GameScene');
     }
 
     guideScene(){
         this.scene.start('GuideScene');
-        this.scene.stop('MenuScene');
     }
 
 

@@ -15,9 +15,7 @@ class GuideScene extends Phaser.Scene {
     }
 
     backMenu() {
-        this.scene.stop('GuideScene');
         this.scene.start('MenuScene');
-        
     }
 
 

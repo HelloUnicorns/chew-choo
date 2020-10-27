@@ -3,7 +3,8 @@ const { Track } = require('./track.js');
 const { advance_train, position_mod } = require('../common/position.js');
 
 export class Route {
-     constructor(server_time, new_route, is_own) {
+     constructor(scene, server_time, new_route, is_own) {
+         this.scene = scene;
          this.is_own = is_own;
          this.route_id = new_route.id;
          this.active_tracks = [];
@@ -12,7 +13,7 @@ export class Route {
          this.tracks = [];
          this.leftover_tracks = [];
          this.speed = 0;
-         this.train = new Train(is_own, new_route.train, this.route_id);
+         this.train = new Train(this.scene, is_own, new_route.train, this.route_id);
          this.drawn = false;
          this.update_route(new_route.tracks, new_route.train.latest_speed_update);
          this.update(server_time);
@@ -86,9 +87,9 @@ export class Route {
 
      update_route(tracks, latest_speed_update) { 
         this.remove_tracks();
-        this.tracks = Track.from_server_new_tracks(tracks.tracks, this.is_own, this.is_own ? 0x8ac466 : 0x8ac466);
-        this.leftover_tracks = Track.from_server_new_tracks(tracks.leftover_tracks, this.is_own, this.is_own ? 0x8ac466 : 0x755753);
-        this.connector_track = Track.create_connector_track(this.tracks, this.leftover_tracks, this.is_own ? 0x668ac4 : 0x3cbda9);
+        this.tracks = Track.from_server_new_tracks(this.scene, tracks.tracks, this.is_own, this.is_own ? 0x8ac466 : 0x8ac466);
+        this.leftover_tracks = Track.from_server_new_tracks(this.scene, tracks.leftover_tracks, this.is_own, this.is_own ? 0x8ac466 : 0x755753);
+        this.connector_track = Track.create_connector_track(this.scene, this.tracks, this.leftover_tracks, this.is_own ? 0x668ac4 : 0x3cbda9);
         this.update_latest_speed_update(latest_speed_update);
         this.drawn = false;
      }

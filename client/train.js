@@ -1,5 +1,4 @@
 const constants = require('../common/constants.js');
-const global_data = require('./global_data.js')
 const { draw_grid_sprite, update_grid_sprite, GRID_PIECE_WIDTH, CART_Z_INEDX, LABELS_Z_INDEX } = require('./grid.js');
 
 const CART_IMAGE_WIDTH = 100;
@@ -36,7 +35,8 @@ const DIRECTION_TO_CART_ANGLE = {
 };
 
 export class Train {
-    constructor(is_own, new_train, id) {
+    constructor(scene, is_own, new_train, id) {
+        this.scene = scene;
         this.id = id;
         this.length = new_train.length;
         this.is_stopped = false;
@@ -96,6 +96,7 @@ export class Train {
 
     draw_cart(is_engine, track) {
         let cart_sprite = draw_grid_sprite(
+            this.scene,
             track.x, track.y, DIRECTION_TO_CART_ANGLE[track.direction], 
             is_engine ? 'engine' : 'cart', 
             is_engine ? ENGINE_SCALE : CART_SCALE, 
@@ -112,7 +113,7 @@ export class Train {
         for (const [cart_index, track] of Object.entries(active_tracks)) {
             this.draw_cart(cart_index == active_tracks.length - 1, track);
         }
-        this.text = global_data.game_scene.add.text(0, 0, this.id, { font: '18px Lucida Console', fill: '#000000' });
+        this.text = this.scene.add.text(0, 0, this.id, { font: '18px Lucida Console', fill: '#000000' });
         this.text.setOrigin(0.5, 0.5);
         this.text.setDepth(LABELS_Z_INDEX);
         this.update_text();

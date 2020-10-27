@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const global_data = require('./global_data.js');
 const constants = require('../common/constants.js');
 
 const SPEED_METER_SCALE = 0.5;
@@ -23,6 +22,7 @@ const LEADERBOARD_FONT = '20px Lucida Console';
 class GameOverlayScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameOverlayScene' });
+        this.game_scene = undefined;
     }
 
     preload() {
@@ -30,11 +30,8 @@ class GameOverlayScene extends Phaser.Scene {
         this.load.image('speed_meter_arrow', 'assets/speed_meter_arrow.png');
     }
 
-    create() {
-        console.log('start');
-        if (!this.created) {
-            this.created = true;
-        }
+    create(game_scene) {
+        this.game_scene = game_scene;
         let speed_meter_colors = this.add.sprite(
             constants.CANVAS_WIDTH - SPEED_METER_COLORS_WIDTH / 2 - 10,
             constants.CANVAS_HEIGHT - SPEED_METER_COLORS_HEIGHT / 2,
@@ -85,23 +82,23 @@ class GameOverlayScene extends Phaser.Scene {
     }
 
     update() {
-        if (!global_data.game_scene.player_route) {
+        if (!this.game_scene.player_route) {
             return;
         }
-        let speed = global_data.game_scene.player_route.speed;
+        let speed = this.game_scene.player_route.speed;
         this.speed_meter.setText(`${speed.toFixed(1)} tps`);
         let angle = SPEED_METER_ARROW_MIN_ANGLE + (SPEED_METER_ARROW_MAX_ANGLE - SPEED_METER_ARROW_MIN_ANGLE) * (speed - constants.MIN_SPEED) / (constants.MAX_SPEED - constants.MIN_SPEED);
         this.speed_meter_arrow.setAngle(angle);
         
-        let number_of_remaining_players = Object.keys(global_data.game_scene.routes).length;
+        let number_of_remaining_players = Object.keys(this.game_scene.routes).length;
         this.remaining_players.setText(`Remaining: ${number_of_remaining_players}`);
         let leaderboard_info = [];
-        for (const [route_id, route] of Object.entries(global_data.game_scene.routes)) {
+        for (const [route_id, route] of Object.entries(this.game_scene.routes)) {
             leaderboard_info.push({ route_id, score: route.score });
         }
         leaderboard_info.sort((info_a, info_b) => { return info_b.score - info_a.score })
 
-        let player_rank = leaderboard_info.findIndex((info) => { return info.route_id == global_data.game_scene.player_route.route_id });
+        let player_rank = leaderboard_info.findIndex((info) => { return info.route_id == this.game_scene.player_route.route_id });
         let player_found_in_top = false;
         for (let i = 0; i < LEADERBOARD_TOP_SIZE; i++) {
             if (i >= number_of_remaining_players) {
@@ -117,7 +114,7 @@ class GameOverlayScene extends Phaser.Scene {
                     player_found_in_top = true;
                 }
                 else {
-                    if (global_data.game_scene.routes[leaderboard_info[i].route_id].is_bot) {
+                    if (this.game_scene.routes[leaderboard_info[i].route_id].is_bot) {
                         this.leaderboard_rows_bots[i].setText(this.get_leaderboard_text(leaderboard_info[i].route_id, i + 1, leaderboard_info[i].score));
                         this.leaderboard_rows_not_bots[i].setText('')
                     }

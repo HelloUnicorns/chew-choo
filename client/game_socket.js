@@ -1,11 +1,11 @@
 const assert = require('assert');
-let global_data = require('./global_data.js');
 const { ClientMessage, ServerMessage } = require('../common/proto.js');
 
 const HOST = location.origin.replace(/^http/, 'ws');
 
 export class GameSocket {
     constructor(game_scene) {
+        this.latency = 0;
         this.game_scene = game_scene;
         this.ws = new WebSocket(HOST);
         window.addEventListener('beforeunload', () => this.close());
@@ -51,7 +51,7 @@ export class GameSocket {
         }, 
         latency: (message) => {
             document.getElementById('server-latency').innerHTML = 'Latency: ' + message.latency + ' ms';
-            global_data.latency = message.latency;
+            this.latency = message.latency;
         }
     }    
 }

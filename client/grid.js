@@ -1,4 +1,3 @@
-const global_data = require('./global_data.js')
 const GRID_ORIGIN_X = 40;
 const GRID_ORIGIN_Y = 40;
 
@@ -18,8 +17,8 @@ function update_grid_sprite(sprite, grid_x, grid_y, angle, tint, alpha=1) {
     sprite.setAlpha(alpha, alpha, alpha, alpha);
 }
 
-function draw_grid_sprite(grid_x, grid_y, angle, sprite_name, scale, depth, tint, alpha=1) {
-    let grid_sprite = global_data.game_scene.add.sprite(0, 0, sprite_name);
+function draw_grid_sprite(scene, grid_x, grid_y, angle, sprite_name, scale, depth, tint, alpha=1) {
+    let grid_sprite = scene.add.sprite(0, 0, sprite_name);
     update_grid_sprite(grid_sprite, grid_x, grid_y, angle, tint, alpha);
     grid_sprite.setScale(scale);
     grid_sprite.setDepth(depth);
