@@ -11,7 +11,7 @@ class GameoverScene extends Phaser.Scene {
     preload() {}
 
     restartGame(){
-        location.reload()
+        this.scene.start('GameScene');
     }
 
     create() {
@@ -22,7 +22,7 @@ class GameoverScene extends Phaser.Scene {
         this.restart.setInteractive()
         .on('pointerover',() => this.restart.setFill(over_color))
         .on('pointerout',() => this.restart.setFill(out_color))
-        .on('pointerdown', this.restartGame)
+        .on('pointerdown', () => this.restartGame())
 
     }
     

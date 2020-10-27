@@ -13,6 +13,7 @@ class GameManager {
     }
 
     handle_new_client(ws_client) {
+        console.log("New client");
         if (!this.has_active_players()) {
             console.log('New client arrived - starting game');
             this.start();
@@ -51,7 +52,12 @@ class GameManager {
 
         let events = Train.update(update_time);
         if (events.length) {
-            this.active_clients.forEach(game_client => {
+            let result = events.filter(event => (event.new_route));
+            if (result.length > 0) {
+                console.log("New routes:")
+                console.log(result);
+            }
+            this.game_clients.forEach(game_client => {
                 let events_for_client = events.filter(event => (!(event.new_route && event.new_route.route.id == game_client.player.id)));
                 if (events_for_client) {
                     game_client.send_message('update', { 
@@ -59,10 +65,16 @@ class GameManager {
                         events: events_for_client
                     });
                 }
+
+                if (events.some(event => event.route_removed && event.route_removed.id == game_client.player.id)) {
+                    game_client.leave();
+                }
             });
         }
 
         this.check_win_condition();
+
+
     }
 
     check_win_condition() {

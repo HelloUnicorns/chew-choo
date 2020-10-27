@@ -12,6 +12,8 @@ const { get_rails, init_rails } = require('./rail.js');
 let trains = {};
 let rail_id_to_train = {};
 
+const LOSER_MODE = false;
+
 function grid_distance(point0, point1) {
     return Math.abs(point0.x - point1.x) + Math.abs(point0.y - point1.y);
 }
@@ -98,7 +100,7 @@ class Train {
         delete trains[this.id];
         delete rail_id_to_train[this.rail.id];
     
-        this.id = undefined;
+        this.id = "already used meap " + this.id;
         this.rail = undefined;
     }
 
@@ -302,10 +304,10 @@ class Train {
         
         let killer = undefined;
         let killee = undefined;
-        if (!trains_pair[0].is_bot && trains_pair[1].is_bot) {
+        if (LOSER_MODE && !trains_pair[0].is_bot && trains_pair[1].is_bot) {
             killer = trains_pair[0];
             killee = trains_pair[1];
-        } else if (!trains_pair[1].is_bot && trains_pair[0].is_bot) {
+        } else if (LOSER_MODE && !trains_pair[1].is_bot && trains_pair[0].is_bot) {
             killer = trains_pair[1];
             killee = trains_pair[0];
         } else if (distances[0] < distances[1]) {
