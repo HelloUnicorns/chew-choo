@@ -212,6 +212,10 @@ class Train {
 
     /* Train was abandoned by a human player (killed by a bot or left the game) */
     #abandon(events, update_time) {
+        if (!this.active) {
+            /* Train already dead */
+            return;
+        }
         events.push({ route_removed: { id: this.id }});
 
         let bot_latest_speed_update = Train.bot_latest_speed_update(update_time);
