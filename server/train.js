@@ -100,7 +100,7 @@ class Train {
         delete trains[this.id];
         delete rail_id_to_train[this.rail.id];
     
-        this.id = "already used meap " + this.id;
+        this.id = undefined;
         this.rail = undefined;
     }
 

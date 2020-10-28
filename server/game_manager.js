@@ -52,11 +52,6 @@ class GameManager {
 
         let events = Train.update(update_time);
         if (events.length) {
-            let result = events.filter(event => (event.new_route));
-            if (result.length > 0) {
-                console.log("New routes:")
-                console.log(result);
-            }
             this.game_clients.forEach(game_client => {
                 let events_for_client = events.filter(event => (!(event.new_route && event.new_route.route.id == game_client.player.id)));
                 if (events_for_client) {
@@ -66,7 +61,13 @@ class GameManager {
                     });
                 }
 
-                if (events.some(event => event.route_removed && event.route_removed.id == game_client.player.id)) {
+                if (game_client.player.id === undefined) {
+                    /* Collect dead player */
+                    game_client.leave();
+                }
+
+                else if (events.some(event => event.route_removed && event.route_removed.id == game_client.player.id)) {
+                    /* If somehow the train was not destructed  */
                     game_client.leave();
                 }
             });
