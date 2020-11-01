@@ -19,7 +19,7 @@ function grid_distance(point0, point1) {
 }
 
 class Train {
-    constructor(update_time, rail, allocated=false) {
+    constructor(update_time, rail, is_bot=true) {
         /* Base attributes */
         this.id = makeid();
         this.rail = rail;
@@ -34,7 +34,7 @@ class Train {
         this.invincibility_state = constants.TRAIN_NOT_INVINCIBLE;
         this.invincibility_timeout = undefined;
         this.kill_notified = false;
-        this.is_bot = true;
+        this.is_bot = is_bot;
         this.position = 0;
         this.latest_speed_update = {
             update_type: constants.SpeedType.SPEED_CONSTANT,
@@ -49,7 +49,7 @@ class Train {
         rail_id_to_train[this.rail.id] = trains[this.id];
 
 
-        if (allocated) {
+        if (!is_bot) {
             this.#allocate();
         }
     }
@@ -163,16 +163,18 @@ class Train {
     }
 
     /* Hand the train over from a human to a bot or vice versa */
-    handover(update_time, allocated=false) {
+    handover(update_time, is_bot=true, latest_speed_update=undefined) {
         let route_removed_event = { route_removed: { id: this.id } };
         let rail_id = this.rail.id;
         let position = this.position;
-        let latest_speed_update = this.latest_speed_update;
+        if (!latest_speed_update) {
+            latest_speed_update = this.latest_speed_update;
+        }
         this.#destruct();
 
         /* From this point we should not address 'this' at all */
 
-        let new_train = new Train(update_time, get_rails()[rail_id], allocated=allocated);
+        let new_train = new Train(update_time, get_rails()[rail_id], is_bot);
         new_train.position = position;
         new_train.latest_speed_update = latest_speed_update;
 
@@ -224,8 +226,7 @@ class Train {
     
         let rail_ids = this.rail.separate();
         for (const rail_id of rail_ids) {
-            let new_train = rail_id_to_train[rail_id].handover(update_time);
-            new_train.latest_speed_update = _.clone(bot_latest_speed_update);
+            let new_train = rail_id_to_train[rail_id].handover(update_time, true, _.clone(bot_latest_speed_update));
             new_train.#step(update_time);
         }
     }
@@ -239,8 +240,7 @@ class Train {
         let rails = get_rails();
         
         for (let i = 0; i < constants.NUMBER_OF_TRAINS; ++i) {
-            /* Players would receive these in the 'connection' message */
-            new Train(update_time, rails[i], false, true);
+            new Train(update_time, rails[i]);
         }
     }
 
@@ -263,7 +263,7 @@ class Train {
             if (!train.allocatable) {
                 continue;  
             }
-            return train.handover(update_time, true);
+            return train.handover(update_time, false);
         }
     }
 
