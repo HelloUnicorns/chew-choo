@@ -1,3 +1,4 @@
+const assert = require('assert');
 const { direction_to_direction_components, direction_from_direction_components } = require('../common/utils.js');
 const flatten = (crossings) => Object.values(crossings).flatMap(Object.values);
 
@@ -37,6 +38,7 @@ function walk_tracks_to_next_crossing(rail, start_track_index, crossings) {
         cur_index++;
         track = rail.track_by_position(cur_index);
         crossing = find_crossing_by_track(crossings, track);
+        assert(rail.track_by_position(start_track_index) != track, "Infinite loop detected");
     } while (!crossing);
     return { path, crossing, crossing_track: track };
 }
