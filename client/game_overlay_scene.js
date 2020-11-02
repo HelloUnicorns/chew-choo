@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const constants = require('../common/constants.js');
+const { Leaderboard } = require('./leaderboard.js');
 
 const SPEED_METER_SCALE = 0.5;
 
@@ -14,15 +15,11 @@ const SPEED_METER_ARROWS_X_OFFSET = SPEED_METER_ARROWS_IMAGE_X_OFFSET * SPEED_ME
 const SPEED_METER_ARROW_MIN_ANGLE = -85;
 const SPEED_METER_ARROW_MAX_ANGLE = 85;
 
-const LEADERBOARD_TOP_SIZE = 5;
-const LEADERBOARD_DEFAULT_PLAYER_ROW_Y = 56 + 26 * LEADERBOARD_TOP_SIZE;
-
-const LEADERBOARD_FONT = '20px Lucida Console';
-
-class GameOverlayScene extends Phaser.Scene {
+export class GameOverlayScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameOverlayScene' });
         this.game_scene = undefined;
+        this.leaderboard = new Leaderboard(this);
     }
 
     preload() {
@@ -55,30 +52,7 @@ class GameOverlayScene extends Phaser.Scene {
             { font: '36px Lucida Console', fill: '#000000' });
         this.speed_meter.setOrigin(0.5, 0.5);
         
-        this.leaderboard_background = this.add.rectangle(constants.CANVAS_WIDTH - 10, 10, 220, 210, 0xffffff, 0.9);
-        this.leaderboard_background.setOrigin(1, 0);
-
-        this.remaining_players = this.add.text(
-            this.leaderboard_background.x - this.leaderboard_background.width + 20, 20, 
-            'Remaining: 0', { font: LEADERBOARD_FONT, fill: '#000000' });
-
-        this.leaderboard_rows_bots = [];
-        this.leaderboard_rows_not_bots = [];
-        for (let i = 0; i < LEADERBOARD_TOP_SIZE; i++) {
-            this.leaderboard_rows_bots.push(this.add.text(
-                this.leaderboard_background.x - this.leaderboard_background.width + 20, 56 + 26 * i, 
-                '', { font: LEADERBOARD_FONT, fill: '#000000' }));
-            this.leaderboard_rows_not_bots.push(this.add.text(
-                this.leaderboard_background.x - this.leaderboard_background.width + 20, 56 + 26 * i, 
-                '', { font: LEADERBOARD_FONT, fill: '#cc0000' }));
-        }
-        this.leaderboard_player_row = this.add.text(
-            this.leaderboard_background.x - this.leaderboard_background.width + 20, LEADERBOARD_DEFAULT_PLAYER_ROW_Y, 
-            '', { font: LEADERBOARD_FONT, fill: '#00cc00' });
-    }
-
-    get_leaderboard_text(player_name, player_rank, player_score) {
-        return `${player_rank}.${player_name}:`.padEnd(13) + `${player_score}`;
+        this.leaderboard.create();
     }
 
     update() {
@@ -89,54 +63,7 @@ class GameOverlayScene extends Phaser.Scene {
         this.speed_meter.setText(`${speed.toFixed(1)} tps`);
         let angle = SPEED_METER_ARROW_MIN_ANGLE + (SPEED_METER_ARROW_MAX_ANGLE - SPEED_METER_ARROW_MIN_ANGLE) * (speed - constants.MIN_SPEED) / (constants.MAX_SPEED - constants.MIN_SPEED);
         this.speed_meter_arrow.setAngle(angle);
-        
-        let number_of_remaining_players = Object.keys(this.game_scene.routes).length;
-        this.remaining_players.setText(`Remaining: ${number_of_remaining_players}`);
-        let leaderboard_info = [];
-        for (const [route_id, route] of Object.entries(this.game_scene.routes)) {
-            leaderboard_info.push({ route_id, score: route.score });
-        }
-        leaderboard_info.sort((info_a, info_b) => { return info_b.score - info_a.score })
-
-        let player_rank = leaderboard_info.findIndex((info) => { return info.route_id == this.game_scene.player_route.route_id });
-        let player_found_in_top = false;
-        for (let i = 0; i < LEADERBOARD_TOP_SIZE; i++) {
-            if (i >= number_of_remaining_players) {
-                this.leaderboard_rows_bots[i].setText('');
-                this.leaderboard_rows_not_bots[i].setText('');
-            }
-            else {
-                if (i == player_rank) {
-                    this.leaderboard_rows_bots[i].setText('');
-                    this.leaderboard_rows_not_bots[i].setText('');
-                    this.leaderboard_player_row.y = this.leaderboard_rows_not_bots[i].y;
-                    this.leaderboard_player_row.setText(this.get_leaderboard_text(leaderboard_info[i].route_id, i + 1, leaderboard_info[i].score));
-                    player_found_in_top = true;
-                }
-                else {
-                    if (this.game_scene.routes[leaderboard_info[i].route_id].is_bot) {
-                        this.leaderboard_rows_bots[i].setText(this.get_leaderboard_text(leaderboard_info[i].route_id, i + 1, leaderboard_info[i].score));
-                        this.leaderboard_rows_not_bots[i].setText('')
-                    }
-                    else {
-                        this.leaderboard_rows_bots[i].setText('')
-                        this.leaderboard_rows_not_bots[i].setText(this.get_leaderboard_text(leaderboard_info[i].route_id, i + 1, leaderboard_info[i].score));
-                    }
-                }
-            }
-        }
-        if (!player_found_in_top) {
-            if (leaderboard_info[player_rank]) {
-                this.leaderboard_player_row.y = LEADERBOARD_DEFAULT_PLAYER_ROW_Y;
-                this.leaderboard_player_row.setText(this.get_leaderboard_text(leaderboard_info[player_rank].route_id, player_rank + 1, leaderboard_info[player_rank].score));
-            }
-            else {
-                this.leaderboard_player_row.setText('');
-            }
-        }
+        this.leaderboard.update(Object.values(this.game_scene.routes));
     }
 }
 
-module.exports = {
-    GameOverlayScene: GameOverlayScene
-}
