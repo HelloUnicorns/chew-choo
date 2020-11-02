@@ -3,7 +3,7 @@ const constants = require('../common/constants.js');
 const out_color = "#fffeff"
 const over_color = "#00FF3C"
 
-class GuideScene extends Phaser.Scene {
+export class GuideScene extends Phaser.Scene {
     constructor() {
         super('GuideScene');
     }
@@ -68,8 +68,4 @@ class GuideScene extends Phaser.Scene {
         //     this.background.fillAlpha += Math.min(0.1, 0.7 - this.background.fillAlpha);
         // }
     }
-}
-
-module.exports = {
-    GuideScene: GuideScene
 }

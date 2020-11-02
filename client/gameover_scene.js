@@ -3,7 +3,7 @@ const constants = require('../common/constants.js');
 const out_color = "#0f0"
 const over_color = "#FF00FF"
 
-class GameoverScene extends Phaser.Scene {
+export class GameoverScene extends Phaser.Scene {
     constructor() {
         super('GameoverScene');
     }
@@ -31,8 +31,4 @@ class GameoverScene extends Phaser.Scene {
             this.background.fillAlpha += Math.min(0.1, 0.7 - this.background.fillAlpha);
         }
     }
-}
-
-module.exports = {
-    GameoverScene: GameoverScene
 }

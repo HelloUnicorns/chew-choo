@@ -1,6 +1,6 @@
 const constants = require('../common/constants.js');
 
-class WinScene extends Phaser.Scene {
+export class WinScene extends Phaser.Scene {
     constructor() {
         super('WinScene');
     }
@@ -20,6 +20,3 @@ class WinScene extends Phaser.Scene {
     }
 }
 
-module.exports = {
-    WinScene: WinScene
-}

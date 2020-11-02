@@ -1,4 +1,4 @@
-class ErrorScene extends Phaser.Scene {
+export class ErrorScene extends Phaser.Scene {
     constructor() {
         super('ErrorScene');
     }
@@ -14,8 +14,4 @@ class ErrorScene extends Phaser.Scene {
     }
 
     update() {}
-}
-
-module.exports = {
-    ErrorScene: ErrorScene
 }

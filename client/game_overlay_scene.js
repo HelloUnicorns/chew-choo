@@ -66,4 +66,3 @@ export class GameOverlayScene extends Phaser.Scene {
         this.leaderboard.update(Object.values(this.game_scene.routes));
     }
 }
-
