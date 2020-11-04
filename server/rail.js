@@ -2,7 +2,7 @@ const _ = require('lodash');
 const constants = require('../common/constants.js');
 const { position_mod } = require('../common/position.js')
 const { union_tracks, flatten } = require('./union.js')
-const assert  = require('assert');
+const assert = require('assert');
 
 
 const directions = ['right', 'down', 'left', 'up'];

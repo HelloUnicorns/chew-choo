@@ -1,4 +1,4 @@
-const assert  = require('assert');
+const assert = require('assert');
 const { SpeedType, Direction, InvincibilityState } = require('./proto.js');
 
 exports.SpeedType = SpeedType;

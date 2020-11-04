@@ -2,7 +2,7 @@ const _ = require('lodash');
 const constants = require('../common/constants.js');
 const { Route } = require('./route.js');
 const { GameSocket } = require('./game_socket.js');
-const { GRID_PIECE_WIDTH } = require('./grid.js');
+const { Grid, GRID_PIECE_WIDTH } = require('./grid.js');
 
 const VERTICAL_GRID_TILES_PER_PLAYER_TRAIN_TILES = 2;
 
@@ -17,6 +17,7 @@ export class GameScene extends Phaser.Scene {
         this.player_route = undefined;
         this.routes = {};
         this.postponed_events = [];
+        this.grid = undefined;
     }
 
     preload() {
@@ -39,21 +40,15 @@ export class GameScene extends Phaser.Scene {
         mute_key.on('down', function(event) { this.bg_music.mute = !this.bg_music.mute; });
     }
 
-    draw_map() {
-        this.cameras.main.setBackgroundColor(0xf7f1da);
-
-        _.values(this.routes).forEach(route => route.draw());
-        this.cameras.main.startFollow(this.player_route.train.sprites[0], true);
-        this.space_key = this.input.keyboard.addKey('space');
-    }
-
     client_loaded() {
         this.game_socket.send_message('start_playing');
+        this.cameras.main.setBackgroundColor(0xf7f1da);
+        this.space_key = this.input.keyboard.addKey('space');
         this.game_inited = true;
-        this.draw_map();
     }
 
     create() {
+        this.grid = new Grid(this);
         this.scene.launch('GameOverlayScene', this);
         this.stopped = false; // In case or restart
         this.game_socket = new GameSocket(this);
@@ -97,6 +92,7 @@ export class GameScene extends Phaser.Scene {
         if (!this.game_inited || this.stopped) {
             return;
         }
+        this.cameras.main.startFollow(this.player_route.train.carts[0], true);
         let server_time = performance.now() + this.server_time_delta;
         this.update_player();
         _.values(this.routes).forEach(route => route.update(server_time));
@@ -124,7 +120,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     handle_new_route(server_time, new_route) {
-        this.routes[new_route.id] = new Route(this, server_time, new_route, new_route.id == this.player_route_id);
+        this.routes[new_route.id] = new Route(this, server_time, new_route, new_route.id == this.player_route_id, this.grid);
     }
 
     #server_event_handlers = {

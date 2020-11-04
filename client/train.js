@@ -1,5 +1,5 @@
 const constants = require('../common/constants.js');
-const { draw_grid_sprite, update_grid_sprite, GRID_PIECE_WIDTH, CART_Z_INEDX, LABELS_Z_INDEX } = require('./grid.js');
+const { GRID_PIECE_WIDTH, CART_Z_INEDX, LABELS_Z_INDEX } = require('./grid.js');
 
 const CART_IMAGE_WIDTH = 100;
 const CART_WIDTH = GRID_PIECE_WIDTH;
@@ -19,6 +19,8 @@ const NORMAL_TRAIN_ALPHA = 1;
 
 const BLINKING_INTERVAL_MS = 10;
 
+const TEXT_FONT = '18px Lucida Console';
+
 const DIRECTION_TO_CART_ANGLE = {
     [constants.Direction.BOTTOM_TO_TOP]: 270,
     [constants.Direction.BOTTOM_TO_LEFT]: 225,
@@ -34,21 +36,70 @@ const DIRECTION_TO_CART_ANGLE = {
     [constants.Direction.RIGHT_TO_BOTTOM]: 135,
 };
 
+class TrainCart {
+    constructor(grid, train, is_engine) {
+        this.x = 0;
+        this.y = 0;
+        this.grid_x = 0;
+        this.grid_y = 0;
+        this.train = train;
+        this.is_engine = is_engine;
+        this.grid_sprite = grid.create_grid_sprite(is_engine ? 'engine' : 'cart',
+                                                   sprite => this.on_sprite_create(sprite));
+    }
+
+    on_sprite_create(sprite) {
+        let tint = this.train.is_own ? PLAYER_TRAIN_COLOR: this.train.is_bot ? BOT_TRAIN_COLOR : ENEMY_TRAIN_COLOR;
+        sprite.setAlpha(this.train.alpha);
+        sprite.setAngle(0);
+        sprite.setScale(this.is_engine ? ENGINE_SCALE : CART_SCALE);
+        sprite.setDepth(CART_Z_INEDX);
+        sprite.setTint(tint, tint, tint, tint);
+    }
+
+    update(grid_x, grid_y, angle) {
+        this.grid_sprite.update(grid_x, grid_y, (sprite, x, y) => {
+            this.grid_x = grid_x;
+            this.grid_y = grid_y;
+            this.x = x;
+            this.y = y;
+            sprite.setPosition(x, y);
+            sprite.setAngle(angle);
+            sprite.setAlpha(this.train.alpha);
+        });
+    }
+
+    destroy() {
+        this.grid_sprite.destroy();
+        this.grid_sprite = undefined;
+    }
+}
+
 export class Train {
-    constructor(scene, is_own, new_train, id) {
+    constructor(scene, is_own, new_train, id, grid) {
         this.scene = scene;
         this.id = id;
         this.length = new_train.length;
         this.is_stopped = false;
         this.is_bot = new_train.is_bot;
         this.is_own = is_own;
-        this.sprites = [];
-        this.text = undefined;
-        this.drawn = false;
+        this.carts = [];
+        for (let i = 0; i < this.length; i++) {
+            this.carts.push(new TrainCart(grid, this, i == this.length - 1));
+        }
+        this.text = grid.create_grid_text(TEXT_FONT, text => this.on_text_create(text));
         this.blinking_interval = undefined;
         this.alpha = undefined;
         this.invincibility_state = undefined;
         this.update_invincibility(new_train.invincibility_state);
+    }
+    
+    on_text_create(text) {
+        text.setText(this.id);
+        text.setOrigin(0.5, 0.5);
+        text.setOrigin(0.5, 0.5);
+        text.setDepth(LABELS_Z_INDEX);
+        text.setFill('black');
     }
 
     update_invincibility(new_invincibility_state) {
@@ -94,47 +145,13 @@ export class Train {
         this.alpha = NORMAL_TRAIN_ALPHA;
     }
 
-    draw_cart(is_engine, track) {
-        let cart_sprite = draw_grid_sprite(
-            this.scene,
-            track.x, track.y, DIRECTION_TO_CART_ANGLE[track.direction], 
-            is_engine ? 'engine' : 'cart', 
-            is_engine ? ENGINE_SCALE : CART_SCALE, 
-            CART_Z_INEDX,
-            this.get_cart_color(),
-            this.alpha);
-        this.sprites.push(cart_sprite);
-    }
-
-    draw(active_tracks) {
-        if (this.drawn) {
-            return;
-        }
-        for (const [cart_index, track] of Object.entries(active_tracks)) {
-            this.draw_cart(cart_index == active_tracks.length - 1, track);
-        }
-        this.text = this.scene.add.text(0, 0, this.id, { font: '18px Lucida Console', fill: '#000000' });
-        this.text.setOrigin(0.5, 0.5);
-        this.text.setDepth(LABELS_Z_INDEX);
-        this.update_text();
-        this.drawn = true;
-    }
-
-    get_cart_color() {
-        return this.is_own ? PLAYER_TRAIN_COLOR: this.is_bot ? BOT_TRAIN_COLOR : ENEMY_TRAIN_COLOR;
-    }
-
     update_text() {
-        this.text.setPosition(this.sprites[this.sprites.length - 1].x - 30, this.sprites[this.sprites.length - 1].y - 30);
+        this.text.setPosition(this.carts[this.carts.length - 1].x - 30, this.carts[this.carts.length - 1].y - 30);
     }
 
     update(active_tracks, next_track, fraction) {
         let tracks = active_tracks.concat([next_track]);
-
-        /* draw the train if it isn't already drawn */
-        this.draw(active_tracks);
-       
-        let train_tint = this.get_cart_color(this.is_own, this.is_bot);
+        
         active_tracks.forEach((track, cart_index) => { 
             let next_track = tracks[cart_index + 1];
             let track_angle = DIRECTION_TO_CART_ANGLE[track.direction];
@@ -145,19 +162,21 @@ export class Train {
             else if (track_angle == 0 && next_track_angle == 305) {
                 track_angle = 360;
             }
-            let position_x = track.x * (1 - fraction) + next_track.x * fraction;
-            let position_y = track.y * (1 - fraction) + next_track.y * fraction;
+            let grid_x = track.x * (1 - fraction) + next_track.x * fraction;
+            let grid_y = track.y * (1 - fraction) + next_track.y * fraction;
             let angle = track_angle * (1 - fraction) + next_track_angle * fraction;
-            update_grid_sprite(this.sprites[cart_index], position_x, position_y, angle, train_tint, this.alpha);
+            this.carts[cart_index].update(grid_x, grid_y, angle);
         });
-        this.update_text();
+        this.text.update(this.carts[this.carts.length - 1].grid_x, this.carts[this.carts.length - 1].grid_y, (text, x, y) => {
+            text.setPosition(x - 30, y - 30);
+        });
     }
 
     remove() {
-        for (const sprite of this.sprites) {
-            sprite.destroy();
+        for (const cart of this.carts) {
+            cart.destroy();
         }
-        this.sprites = [];
+        this.carts = [];
         if (this.text) {
             this.text.destroy();
             this.text = undefined;

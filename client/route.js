@@ -3,8 +3,9 @@ const { Track } = require('./track.js');
 const { advance_train, position_mod } = require('../common/position.js');
 
 export class Route {
-     constructor(scene, server_time, new_route, is_own) {
+     constructor(scene, server_time, new_route, is_own, grid) {
          this.scene = scene;
+         this.grid = grid;
          this.is_own = is_own;
          this.route_id = new_route.id;
          this.active_tracks = [];
@@ -13,8 +14,7 @@ export class Route {
          this.tracks = [];
          this.leftover_tracks = [];
          this.speed = 0;
-         this.train = new Train(this.scene, is_own, new_route.train, this.route_id);
-         this.drawn = false;
+         this.train = new Train(this.scene, is_own, new_route.train, this.route_id, grid);
          this.update_route(new_route.tracks, new_route.train.latest_speed_update);
          this.update(server_time);
      }
@@ -57,44 +57,22 @@ export class Route {
         
         this.speed = end_speed;
         this.train.update(this.active_tracks, this.next_track, end_position % 1);
-
-        if (!this.drawn) {
-            this.draw();
-            this.drawn = true;
-        }
     }
 
-    draw_tracks() {
-        for (let track of this.tracks) {
-            track.draw();
-        }
-        for (let track of this.leftover_tracks) {
-           track.draw();
-        }
-        if (this.connector_track) {
-            this.connector_track.draw();
-        }
-     }
-
-     draw() {
-        this.draw_tracks();
-        this.train.draw(this.active_tracks);
-     }
-
-     get score() {
+    get score() {
         return this.tracks.length;
-     }
+    }
 
-     update_route(tracks, latest_speed_update) { 
+    update_route(tracks, latest_speed_update) { 
         this.remove_tracks();
-        this.tracks = Track.from_server_new_tracks(this.scene, tracks.tracks, this.is_own, this.is_own ? 0x8ac466 : 0x8ac466);
-        this.leftover_tracks = Track.from_server_new_tracks(this.scene, tracks.leftover_tracks, this.is_own, this.is_own ? 0x8ac466 : 0x755753);
-        this.connector_track = Track.create_connector_track(this.scene, this.tracks, this.leftover_tracks, this.is_own ? 0x668ac4 : 0x3cbda9);
+        this.tracks = Track.from_server_new_tracks(this.grid, tracks.tracks, this.is_own, this.is_own ? 0x8ac466 : 0x8ac466);
+        this.leftover_tracks = Track.from_server_new_tracks(this.grid, tracks.leftover_tracks, this.is_own, this.is_own ? 0x8ac466 : 0x755753);
+        this.connector_track = Track.create_connector_track(this.grid, this.tracks, this.leftover_tracks, this.is_own ? 0x668ac4 : 0x3cbda9);
         this.update_latest_speed_update(latest_speed_update);
         this.drawn = false;
-     }
+    }
 
-     update_latest_speed_update(latest_speed_update) {
+    update_latest_speed_update(latest_speed_update) {
         this.latest_speed_update = latest_speed_update;
-     }
- }
+    }
+}
