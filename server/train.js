@@ -43,6 +43,7 @@ class Train {
         }
         this.postponed_events = [];
         this.used_tracks = [];
+        this.abandoned = false;
 
         /* Update maps */
         trains[this.id] = this;
@@ -152,8 +153,8 @@ class Train {
     }
 
     /* Periodic updates */
-    update(update_time, collisions) {
-        let events = this.postponed_events;
+    update(update_time, events, collisions) {
+        events.push(...this.postponed_events);
         this.postponed_events = [];
         const { collisions: new_collisions } = this.#step(update_time);
         
@@ -161,8 +162,6 @@ class Train {
             trains: [this, rail_id_to_train[collision.rail_id]],
             coordinates: collision.coordinates
         })));
-    
-        return events;
     }
 
     /* Hand the train over from a human to a bot or vice versa */
@@ -270,14 +269,6 @@ class Train {
         }
     }
 
-    static get(train_id) {
-        if (train_id in Train.all) {
-            return Train.all[train_id];
-        }
-
-        return undefined;
-    }
-
     static get all() {
         return trains;
     }
@@ -342,30 +333,24 @@ class Train {
 
     static #update_before_movement = (events, update_time) => {
         /* Handle abandoned trains first */
-        for (const train of Object.values(Train.all).filter(train => train.abandoned)) {
-            train.#abandon(events, update_time);
+        for (const train of Object.values(Train.all)) {
+            if (train.abandoned) {
+                train.#abandon(events, update_time);
+            }
         }
     }
 
     static #update_movement = (events, update_time) => {    
-        let train_ids = Object.keys(Train.all);
-    
-        /* Iterating over pre-generated list of ids since the current train ids might change during this loop */
-        for (const train_id of train_ids) {
-            let train = Train.get(train_id);
-            if (!train) {
-                /* This train no longer exists, skip it */
-                continue;
-            }
-    
+         /* Iterating over pre-generated list of ids since the current train ids might change during this loop */
+         for (const train of Object.values(Train.all)) {
             if (!train.active || train.is_stopped) {
                 continue;
             }
-    
+            
             let collision = [];
 
             /* Periodic update of speed and position */
-            events.push(...train.update(update_time, collision));
+            train.update(update_time, events, collision);
             
             /* Theoretically it's possible, but practically it should not happen.
                 Let's keep the assert for now */
@@ -379,21 +364,12 @@ class Train {
         }
     }
 
-    static #update_after_movement = (events) => {
-        for (const train of Object.values(Train.all)) {
-            if(!train.active) {
-                continue;
-            }
-        }
-    }
-
     static update(update_time) {
         let events = [];
 
-        Train.#update_before_movement(events, update_time);
-        Train.#update_movement(events, update_time);
-        Train.#update_after_movement(events, update_time);
-    
+       Train.#update_before_movement(events, update_time);
+       Train.#update_movement(events, update_time);
+
         return events;
     }
 }
