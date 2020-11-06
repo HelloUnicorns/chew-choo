@@ -62,12 +62,12 @@ function advance_train(time_delta, latest_speed_update, train_length, tracks, le
     assert(time_delta >= 0, "time delta cannot be negative");
     let { end_position, end_speed } = calculate_end_speed_and_position(latest_speed_update, time_delta);
     let int_end_position = Math.floor(end_position);
-    let leftover_trailing_tracks = leftover_tracks.slice(0, int_end_position - (train_length - 1));
-    let all_tracks = leftover_tracks.concat(tracks);
+    let train_start_idx = int_end_position - (train_length - 1);
+    let leftover_trailing_tracks = (train_start_idx >= leftover_tracks.length) ? leftover_tracks : leftover_tracks.slice(0, train_start_idx);
     let used_tracks = [];
     for (let i = 0; i < train_length; i++) {
         let track_idx = position_mod(int_end_position - (train_length - 1) + i, tracks.length, leftover_tracks.length);
-        let track = all_tracks[track_idx];
+        let track = track_idx < leftover_tracks.length ? leftover_tracks[track_idx] : tracks[track_idx - leftover_tracks.length];
         assert(track != undefined, "Track can't be undefined");
         used_tracks.push(track);
     }
