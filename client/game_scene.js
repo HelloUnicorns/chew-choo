@@ -49,19 +49,17 @@ export class GameScene extends Phaser.Scene {
     }
 
     create() {
+        this.stopped = false;
+        this.game_inited = false;
+        this.is_space_pressed = false;
+        this.player_route = undefined;
+        this.routes = {};
         this.grid = new Grid(this);
         this.scene.launch('GameOverlayScene', this);
-        this.stopped = false; // In case or restart
         this.game_socket = new GameSocket(this);
         this.start_music();
         this.crash = this.sound.add("crash")
         this.up = this.sound.add("up")
-    }
-
-    clear() {
-        this.is_space_pressed = false;
-        this.player_route = undefined;
-        this.routes = {};
     }
 
     get_speed_message_value(is_speed_up, is_speed_down) {
@@ -152,7 +150,6 @@ export class GameScene extends Phaser.Scene {
 
     #server_message_handlers = {
         connection: (message) => {
-            this.clear();
             this.player_route_id = message.route_id;
             for (const route of message.routes) {
                 this.handle_new_route(message.server_time, route);
