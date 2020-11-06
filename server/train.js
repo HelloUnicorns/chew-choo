@@ -276,7 +276,7 @@ class Train {
     }
 
     static get all() {
-        return {...trains};
+        return trains;
     }
 
     static get active_trains() {
