@@ -28,14 +28,15 @@ export class Track {
         this.is_own = is_own;
         this.angle = angle;
         this.grid_sprite = grid.create_grid_sprite((this.is_own ? 'own_' : '') + (is_corner ? 'turn' : 'track'),
-                                                   sprite => this.on_sprite_create(sprite));
-        this.grid_sprite.update(this.x, this.y, (sprite, x, y) => sprite.setPosition(x, y));
+                                                   (sprite, x, y) => this.on_sprite_create(sprite, x, y));
+        this.grid_sprite.update(x, y);
         this.faded = false;
         this.fade_interval = undefined;
         this.removed = false;
     }
 
-    on_sprite_create(sprite) {
+    on_sprite_create(sprite, x, y) {
+        sprite.setPosition(x, y);
         sprite.setAlpha(1);
         sprite.setAngle(this.angle);
         sprite.setTint(this.tint, this.tint, this.tint, this.tint);

@@ -44,6 +44,7 @@ export class GameScene extends Phaser.Scene {
         this.game_socket.send_message('start_playing');
         this.cameras.main.setBackgroundColor(0xf7f1da);
         this.space_key = this.input.keyboard.addKey('space');
+        this.cameras.main.startFollow(this.player_route.train.carts[0], true);
         this.game_inited = true;
     }
 
@@ -92,11 +93,11 @@ export class GameScene extends Phaser.Scene {
         if (!this.game_inited || this.stopped) {
             return;
         }
-        this.cameras.main.startFollow(this.player_route.train.carts[0], true);
         let server_time = performance.now() + this.server_time_delta;
         this.update_player();
         _.values(this.routes).forEach(route => route.update(server_time));
         this.update_camera();
+        this.grid.update();
     }
 
     remove_route(route_id) {

@@ -44,7 +44,7 @@ class TrainCart {
         this.grid_y = 0;
         this.train = train;
         this.is_engine = is_engine;
-        this.grid_sprite = grid.create_grid_sprite(is_engine ? 'engine' : 'cart',
+        this.grid_sprite = grid.create_grid_sprite(is_engine ? 'engine' : 'cart', 
                                                    sprite => this.on_sprite_create(sprite));
     }
 
@@ -58,9 +58,9 @@ class TrainCart {
     }
 
     update(grid_x, grid_y, angle) {
+        this.grid_x = grid_x;
+        this.grid_y = grid_y;
         this.grid_sprite.update(grid_x, grid_y, (sprite, x, y) => {
-            this.grid_x = grid_x;
-            this.grid_y = grid_y;
             this.x = x;
             this.y = y;
             sprite.setPosition(x, y);
@@ -96,7 +96,6 @@ export class Train {
     
     on_text_create(text) {
         text.setText(this.id);
-        text.setOrigin(0.5, 0.5);
         text.setOrigin(0.5, 0.5);
         text.setDepth(LABELS_Z_INDEX);
         text.setFill('black');
@@ -143,10 +142,6 @@ export class Train {
         }
         clearInterval(this.blinking_interval);
         this.alpha = NORMAL_TRAIN_ALPHA;
-    }
-
-    update_text() {
-        this.text.setPosition(this.carts[this.carts.length - 1].x - 30, this.carts[this.carts.length - 1].y - 30);
     }
 
     update(active_tracks, next_track, fraction) {
