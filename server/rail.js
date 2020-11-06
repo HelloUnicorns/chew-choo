@@ -212,9 +212,12 @@ class Rail {
         }
     }
 
-    occupy(active_tracks) {
-        this.tracks.concat(this.leftover_tracks).forEach(track => this.#free_position(track.x, track.y));
-        return active_tracks.map(track => this.#occupy_position(track.x, track.y)).filter(rail_id => rail_id != undefined);
+    free(tracks) {
+        tracks.forEach(track => this.#free_position(track.x, track.y));
+    }
+
+    occupy(tracks) {
+        return tracks.map(track => this.#occupy_position(track.x, track.y)).filter(rail_id => rail_id != undefined);
     }
 
     #occupy_position(x, y) {

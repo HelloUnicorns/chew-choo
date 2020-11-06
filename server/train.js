@@ -1,4 +1,3 @@
-
 const { performance } = require('perf_hooks');
 const assert = require('assert');
 const _ = require('lodash');
@@ -42,7 +41,8 @@ class Train {
             update_time_position: 0,
             update_time_speed: constants.MIN_SPEED,
         }
-        this.postponed_events = []
+        this.postponed_events = [];
+        this.used_tracks = [];
 
         /* Update maps */
         trains[this.id] = this;
@@ -115,7 +115,10 @@ class Train {
         let collisions;
         if (!skip_updates) {
             this.position = end_position;
-            collisions = this.rail.occupy(used_tracks);
+            let old_used_tracks = this.used_tracks;
+            this.used_tracks = used_tracks;
+            this.rail.free(_.difference(old_used_tracks, this.used_tracks));
+            collisions = this.rail.occupy(_.difference(this.used_tracks, old_used_tracks));
         }
         return { end_position, end_speed, used_tracks, collisions }
     }
